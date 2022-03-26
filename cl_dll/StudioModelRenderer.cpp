@@ -21,6 +21,16 @@
 #include "StudioModelRenderer.h"
 #include "GameStudioModelRenderer.h"
 
+// SHADOWS START
+#include "pmtrace.h"
+#include "pm_defs.h"
+#include "event_api.h"
+#include "PlatformHeaders.h"
+
+#include <gl/GL.h>
+#include <gl/GLU.h>
+// SHADOWS END
+
 extern cvar_t* tfc_newmodels;
 
 extern extra_player_info_t g_PlayerExtraInfo[MAX_PLAYERS_HUD + 1];
@@ -55,6 +65,14 @@ void CStudioModelRenderer::Init()
 	m_pChromeSprite = IEngineStudio.GetChromeSprite();
 
 	IEngineStudio.GetModelCounters(&m_pStudioModelCount, &m_pModelsDrawn);
+
+	// SHADOWS START
+	r_shadows = CVAR_CREATE("r_shadows", "1", FCVAR_ARCHIVE);
+	r_shadow_height = CVAR_CREATE("r_shadow_height", "0", 0);
+	r_shadow_x = CVAR_CREATE("r_shadow_x", "1", 0);
+	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
+	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0.2", FCVAR_ARCHIVE);
+	// SHADOWS END
 
 	// Get pointers to engine data structures
 	m_pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])IEngineStudio.StudioGetBoneTransform();
@@ -1691,7 +1709,9 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 		for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
 		{
 			IEngineStudio.StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
-
+			// SHADOWS START
+			StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+			// SHADOWS END
 			if (m_fDoInterp)
 			{
 				// interpolation messes up bounding boxes.
@@ -1700,7 +1720,11 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 
 			IEngineStudio.GL_SetRenderMode(rendermode);
 			IEngineStudio.StudioDrawPoints();
-			IEngineStudio.GL_StudioDrawShadow();
+			// SHADOWS START
+			StudioGetVerts();
+			if (m_pCurrentEntity != gEngfuncs.GetViewModel() && !m_pCurrentEntity->player)
+				StudioDrawShadow();
+			// SHADOWS END
 		}
 	}
 
@@ -1731,3 +1755,172 @@ void CStudioModelRenderer::StudioRenderFinal()
 		StudioRenderFinal_Software();
 	}
 }
+
+// SHADOWS START
+
+/*
+===============
+pfnStudioSetupModel
+
+===============
+*/
+void CStudioModelRenderer::StudioSetupModel(int bodypart, void** ppbodypart, void** ppsubmodel)
+{
+	int index;
+
+	if (bodypart > m_pStudioHeader->numbodyparts)
+		bodypart = 0;
+
+	m_pBodyPart = (mstudiobodyparts_t*)((byte*)m_pStudioHeader + m_pStudioHeader->bodypartindex) + bodypart;
+
+	index = m_pCurrentEntity->curstate.body / m_pBodyPart->base;
+	index = index % m_pBodyPart->nummodels;
+
+	m_pSubModel = (mstudiomodel_t*)((byte*)m_pStudioHeader + m_pBodyPart->modelindex) + index;
+
+	if (ppbodypart)
+		*ppbodypart = m_pBodyPart;
+	if (ppsubmodel)
+		*ppsubmodel = m_pSubModel;
+}
+
+/*
+===============
+R_StudioDrawPoints
+
+===============
+*/
+void CStudioModelRenderer::StudioGetVerts(void)
+{
+	byte* pvertbone;
+	Vector* pstudioverts;
+
+	if (!m_pStudioHeader)
+		return;
+
+	pvertbone = ((byte*)m_pStudioHeader + m_pSubModel->vertinfoindex);
+
+	pstudioverts = (Vector*)((byte*)m_pStudioHeader + m_pSubModel->vertindex);
+
+	for (int i = 0; i < m_pSubModel->numverts; i++)
+	{
+		Matrix3x4_VectorTransform((*m_pbonetransform)[pvertbone[i]], pstudioverts[i], verts[i]);
+	}
+}
+
+/*
+===============
+R_StudioDrawPointsShadow
+
+===============
+*/
+void CStudioModelRenderer::StudioDrawPointsShadow(void)
+{
+	float *av, height;
+	float vec_x, vec_y;
+	mstudiomesh_t* pmesh;
+	Vector point;
+	int i, k;
+	int hasStencil = 8;
+	static int numpoly = 0;
+
+	Vector vecSrc, vecEnd;
+	pmtrace_t tr;
+	// Store off the old count
+	gEngfuncs.pEventAPI->EV_PushPMStates();
+
+	vecSrc = m_pCurrentEntity->origin;
+	vecEnd = m_pCurrentEntity->origin - Vector(0, 0, 8192);
+
+	gEngfuncs.pEventAPI->EV_SetSolidPlayers(gEngfuncs.GetLocalPlayer()->index - 1);
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
+
+	gEngfuncs.pEventAPI->EV_PopPMStates();
+
+	if (m_pCurrentEntity->curstate.effects & EF_NOSHADOW)
+		return;
+
+	if (hasStencil != 0)
+	{
+		glEnable(GL_STENCIL_TEST);
+	}
+
+	// magic nipples - no more shadows from lightsources because it looks bad
+	height = r_shadow_height->value + 0.1f;
+	vec_y = r_shadow_y->value;
+	vec_x = r_shadow_x->value;
+
+	for (k = 0; k < m_pSubModel->nummesh; k++)
+	{
+		short* ptricmds;
+
+		pmesh = (mstudiomesh_t*)((byte*)m_pStudioHeader + m_pSubModel->meshindex) + k;
+		ptricmds = (short*)((byte*)m_pStudioHeader + pmesh->triindex);
+
+		while (i = *(ptricmds++))
+		{
+			if (i < 0)
+			{
+				glBegin(GL_TRIANGLE_FAN);
+				i = -i;
+			}
+			else
+			{
+				glBegin(GL_TRIANGLE_STRIP);
+			}
+
+			for (; i > 0; i--, ptricmds += 4)
+			{
+				av = verts[ptricmds[0]];
+				point[0] = av[0] - (vec_x * (av[2] - tr.endpos[2]));
+				point[1] = av[1] - (vec_y * (av[2] - tr.endpos[2]));
+				point[2] = tr.endpos[2] + height;
+
+				glVertex3fv(point);
+			}
+
+			glEnd();
+		}
+	}
+
+	if (hasStencil != 0)
+		glDisable(GL_STENCIL_TEST);
+}
+
+/*
+===============
+GL_StudioDrawShadow
+
+g-cont: don't modify this code it's 100% matched with
+original GoldSrc code and used in some mods to enable
+studio shadows with some asm tricks
+===============
+*/
+void CStudioModelRenderer::StudioDrawShadow(void)
+{
+	glDepthMask(GL_TRUE);
+
+	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
+	if (r_shadows->value && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
+	{
+		float color = r_shadow_alpha->value;
+
+		glDisable(GL_TEXTURE_2D);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+		glColor4f(0.0f, 0.0f, 0.0f, 1.0f - color);
+
+		glDepthFunc(GL_LESS);
+		StudioDrawPointsShadow();
+		glDepthFunc(GL_LEQUAL);
+
+		glEnable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glShadeModel(GL_SMOOTH);
+	}
+}
+
+// SHADOWS END

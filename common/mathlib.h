@@ -43,6 +43,10 @@ constexpr Vector vec3_origin(0, 0, 0);
 constexpr Vector g_vecZero(0, 0, 0);
 extern int nanmask;
 
+// SHADOWS START
+#define bound(min, num, max) ((num) >= (min) ? ((num) < (max) ? (num) : (max)) : (min))
+// SHADOWS END
+
 #define IS_NAN(x) (((*(int*)&x) & nanmask) == nanmask)
 
 #define VectorSubtract(a, b, c)   \
@@ -109,7 +113,10 @@ int InvertMatrix(const float* m, float* out);
 int BoxOnPlaneSide(const Vector& emins, const Vector& emaxs, struct mplane_s* plane);
 float anglemod(float a);
 
-
+// SHADOWS START
+void Matrix3x4_VectorTransform(const float in[3][4], const float v[3], float out[3]);
+void Matrix3x4_VectorITransform(const float in[3][4], const float v[3], float out[3]);
+// SHADOWS END
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)                                                                 \
 	(((p)->type < 3) ? (                                                                                   \

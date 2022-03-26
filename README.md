@@ -1,3 +1,11 @@
+﻿MY FORK OF THE HALF LIFE SDK
+============================
+I will add some random features in this repo.
+
+So far i have added:
+Xash shadows in client
+
+
 Half Life 1 SDK LICENSE
 ======================
 

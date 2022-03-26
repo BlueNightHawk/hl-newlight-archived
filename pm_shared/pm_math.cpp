@@ -420,3 +420,25 @@ void ConcatTransforms(float in1[3][4], float in2[3][4], float out[3][4])
 	out[2][3] = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] +
 				in1[2][2] * in2[2][3] + in1[2][3];
 }
+
+// SHADOWS START
+void Matrix3x4_VectorTransform(const float in[3][4], const float v[3], float out[3])
+{
+	out[0] = v[0] * in[0][0] + v[1] * in[0][1] + v[2] * in[0][2] + in[0][3];
+	out[1] = v[0] * in[1][0] + v[1] * in[1][1] + v[2] * in[1][2] + in[1][3];
+	out[2] = v[0] * in[2][0] + v[1] * in[2][1] + v[2] * in[2][2] + in[2][3];
+}
+
+void Matrix3x4_VectorITransform(const float in[3][4], const float v[3], float out[3])
+{
+	Vector dir;
+
+	dir[0] = v[0] - in[0][3];
+	dir[1] = v[1] - in[1][3];
+	dir[2] = v[2] - in[2][3];
+
+	out[0] = dir[0] * in[0][0] + dir[1] * in[1][0] + dir[2] * in[2][0];
+	out[1] = dir[0] * in[0][1] + dir[1] * in[1][1] + dir[2] * in[2][1];
+	out[2] = dir[0] * in[0][2] + dir[1] * in[1][2] + dir[2] * in[2][2];
+}
+// SHADOWS END

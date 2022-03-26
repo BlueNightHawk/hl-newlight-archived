@@ -113,7 +113,9 @@
 #define EF_NIGHTVISION 256	// player nightvision
 #define EF_SNIPERLASER 512	// sniper laser effect
 #define EF_FIBERCAMERA 1024 // fiber camera
-
+// SHADOWS START
+#define EF_NOSHADOW 2048	// exclude shadows for entity
+// SHADOWS END
 
 // entity flags
 #define EFLAG_SLERP 1 // do studio interpolation of this entity

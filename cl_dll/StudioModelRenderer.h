@@ -179,4 +179,26 @@ public:
 	// Concatenated bone and light transforms
 	float (*m_pbonetransform)[MAXSTUDIOBONES][3][4];
 	float (*m_plighttransform)[MAXSTUDIOBONES][3][4];
+
+	// SHADOWS START
+	void StudioDrawShadow(void);
+	void StudioDrawPointsShadow(void);
+	void StudioGetVerts(void);
+
+	Vector verts[MAXSTUDIOVERTS];
+	Vector lightspot;
+
+	int lightage[MAXSTUDIOBONES];
+
+	Vector lightpos[MAXSTUDIOVERTS][32];
+	Vector lightbonepos[MAXSTUDIOBONES][32];
+
+	void StudioSetupModel(int bodypart, void** ppbodypart, void** ppsubmodel);
+
+	cvar_t* r_shadows;
+	cvar_t* r_shadow_height;
+	cvar_t* r_shadow_x;
+	cvar_t* r_shadow_y;
+	cvar_t* r_shadow_alpha;
+	// SHADOWS END
 };
