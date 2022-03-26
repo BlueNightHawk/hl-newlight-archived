@@ -38,6 +38,8 @@ extern float vJumpAngles[3];
 
 
 void V_DropPunchAngle(float frametime, float* ev_punchangle);
+void V_Punch(float* ev_punchangle, float *punch, float frametime);
+
 void VectorAngles(const float* forward, float* angles);
 
 #include "r_studioint.h"
@@ -75,6 +77,8 @@ bool v_resetCamera = true;
 
 Vector v_client_aimangles;
 Vector ev_punchangle;
+Vector ev_oldpunchangle;
+Vector ev_punch;
 
 cvar_t* scr_ofsx;
 cvar_t* scr_ofsy;
@@ -103,6 +107,12 @@ cvar_t v_iroll_level = {"v_iroll_level", "0.1", 0, 0.1};
 cvar_t v_ipitch_level = {"v_ipitch_level", "0.3", 0, 0.3};
 
 float v_idlescale; // used by TFC for concussion grenade effect
+
+#define PUNCH_DAMPING 9.0f // bigger number makes the response more damped, smaller is less damped
+// currently the system will overshoot, with larger damping values it won't
+#define PUNCH_SPRING_CONSTANT 65.0f // bigger number increases the speed at which the view corrects
+
+
 
 //=============================================================================
 /*
@@ -748,8 +758,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 
-	VectorCopy(view->angles, view->curstate.angles);
-	VectorCopy(view->angles, view->prevstate.angles);
 	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
 	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
 	// with view model distortion, this may be a cause. (SJB).
@@ -779,8 +787,16 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	// Include client side punch, too
 	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
+	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
 
-	V_DropPunchAngle(pparams->frametime, (float*)&ev_punchangle);
+	VectorAdd(view->angles, (float*)&(ev_punchangle * 0.5f), view->angles);
+	VectorAdd(view->angles, (float*)&(ev_oldpunchangle * 0.5f), view->angles);
+
+	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
+	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
+
+	VectorCopy(view->angles, view->curstate.angles);
+	VectorCopy(view->angles, view->prevstate.angles);
 
 	// smooth out stair step ups
 #if 1
@@ -1761,6 +1777,42 @@ void V_DropPunchAngle(float frametime, float* ev_punchangle)
 
 /*
 =============
+PLut Client Punch From HL2
+=============
+*/
+
+void V_Punch(float* ev_punchangle, float *punch, float frametime)
+{
+	float damping;
+	float springForceMagnitude;
+
+	if (Length(ev_punchangle) > 0.001 || Length(punch) > 0.001)
+	{
+		VectorMA(ev_punchangle, frametime, punch, ev_punchangle);
+		damping = 1 - (PUNCH_DAMPING * frametime);
+
+		if (damping < 0)
+		{
+			damping = 0;
+		}
+		VectorScale(punch, damping, punch);
+
+		// torsional spring
+		// UNDONE: Per-axis spring constant?
+		springForceMagnitude = PUNCH_SPRING_CONSTANT * frametime;
+		springForceMagnitude = clamp(springForceMagnitude, 0, 2);
+
+		VectorMA(punch, -springForceMagnitude, ev_punchangle, punch);
+
+		// don't wrap around
+		ev_punchangle[0] = clamp(ev_punchangle[0], -7, 7);
+		ev_punchangle[1] = clamp(ev_punchangle[1], -179, 179);
+		ev_punchangle[2] = clamp(ev_punchangle[2], -7, 7);
+	}
+}
+
+/*
+=============
 V_PunchAxis
 
 Client side punch effect
@@ -1768,8 +1820,21 @@ Client side punch effect
 */
 void V_PunchAxis(int axis, float punch)
 {
-	ev_punchangle[axis] = punch;
+	ev_punch[axis] = punch * 20;
 }
+
+/*
+=============
+V_OldPunchAxis
+
+Client side punch effect
+=============
+*/
+void V_OldPunchAxis(int axis, float punch)
+{
+	ev_oldpunchangle[axis] = punch * 20;
+}
+
 
 /*
 =============
