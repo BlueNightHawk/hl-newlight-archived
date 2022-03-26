@@ -3,8 +3,18 @@
 I will add some random features in this repo.
 
 So far i have added:
+
 Xash shadows in client
 
+New viewbob
+
+Weapon sway
+
+Jumping animations
+
+Valve map intro ( can be disabled using -novid launch parameter )
+
+Weapon retracting near walls
 
 Half Life 1 SDK LICENSE
 ======================
