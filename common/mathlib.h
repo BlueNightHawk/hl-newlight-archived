@@ -118,6 +118,9 @@ void Matrix3x4_VectorTransform(const float in[3][4], const float v[3], float out
 void Matrix3x4_VectorITransform(const float in[3][4], const float v[3], float out[3]);
 // SHADOWS END
 
+float lerp(float start, float end, float frac);
+
+
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)                                                                 \
 	(((p)->type < 3) ? (                                                                                   \
 						   ((p)->dist <= (emins)[(p)->type]) ? 1                                           \

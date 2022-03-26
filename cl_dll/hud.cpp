@@ -85,6 +85,7 @@ cvar_t* cl_lw = NULL;
 cvar_t* cl_rollangle = nullptr;
 cvar_t* cl_rollspeed = nullptr;
 cvar_t* cl_bobtilt = nullptr;
+cvar_t* nointro = nullptr;
 
 void ShutdownInput();
 
@@ -333,7 +334,8 @@ void CHud::Init()
 	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
 	cl_rollangle = CVAR_CREATE("cl_rollangle", "2.0", FCVAR_ARCHIVE);
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
-	cl_bobtilt = CVAR_CREATE("cl_bobtilt", "0", FCVAR_ARCHIVE);
+
+	nointro = CVAR_CREATE("nointro", "0", FCVAR_ARCHIVE);
 
 	m_pSpriteList = NULL;
 

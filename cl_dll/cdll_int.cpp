@@ -40,6 +40,8 @@ cl_enginefunc_t gEngfuncs;
 CHud gHUD;
 TeamFortressViewport* gViewPort = NULL;
 
+extern cvar_t* nointro;
+
 
 #include "particleman.h"
 IParticleMan* g_pParticleMan = nullptr;
@@ -121,6 +123,10 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 
 	EV_HookEvents();
 	CL_LoadParticleMan();
+
+	// intro map
+	if (nointro->value == 0)
+		EngineClientCmd("map valve.bsp");
 
 	if (!FileSystem_LoadFileSystem())
 	{

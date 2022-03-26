@@ -97,6 +97,11 @@ cvar_t* cl_weaponlag;
 cvar_t* cl_weaponlagscale;
 cvar_t* cl_weaponlagspeed;
 
+cvar_t* cl_fwdangle;
+cvar_t* cl_fwdspeed;
+
+Vector v_jumppunch, v_jumpangle;
+
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t v_iyaw_cycle = {"v_iyaw_cycle", "2", 0, 2};
@@ -187,7 +192,7 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 	float cycle;
 	Vector vel;
 
-	if (pparams->onground == -1 ||
+	if (!pparams->onground ||
 		pparams->time == lasttime)
 	{
 		// just use old value
@@ -232,11 +237,11 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 
 /*
 ===============
-V_CalcRoll
+V_CalcAngle
 Used by view and sv_user
 ===============
 */
-float V_CalcRoll(Vector angles, Vector velocity, float rollangle, float rollspeed)
+float V_CalcAngle(Vector angles, Vector velocity, float rollangle, float rollspeed, int angle)
 {
 	float sign;
 	float side;
@@ -245,7 +250,20 @@ float V_CalcRoll(Vector angles, Vector velocity, float rollangle, float rollspee
 
 	AngleVectors(angles, forward, right, up);
 
-	side = DotProduct(velocity, right);
+	switch (angle)
+	{
+	case PITCH:
+		side = DotProduct(velocity, forward);
+		break;
+	case YAW:
+		side = DotProduct(velocity, right);
+		break;
+	default:
+	case ROLL:
+		side = DotProduct(velocity, up);
+		break;
+	}
+
 	sign = side < 0 ? -1 : 1;
 	side = fabs(side);
 
@@ -421,23 +439,85 @@ void V_AddIdle(struct ref_params_s* pparams)
 
 /*
 ==============
-V_CalcViewRoll
+V_CalcViewAngles
 
-Roll is induced by movement and damage
 ==============
 */
-void V_CalcViewRoll(struct ref_params_s* pparams)
+void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 {
-	float side;
+	static float l_side = 0.0f, l_pitch = 0.0f, l_forward = 0.0f;
+	float side = 0.0f, pitch = 0.0f, forward = 0.0f;
+	Vector vforward;
 	cl_entity_t* viewentity;
+	static float flFallVelocity = 0.0f;
+
+	AngleVectors(Vector(-view->angles[0], view->angles[1], view->angles[2]), vforward, NULL, NULL);
 
 	viewentity = gEngfuncs.GetEntityByIndex(pparams->viewentity);
 	if (!viewentity)
 		return;
 
-	side = V_CalcRoll(viewentity->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value);
+	// store fall velocity
+	if (!pparams->onground)
+	{
+		flFallVelocity = -pparams->simvel[2];
+	}
 
-	pparams->viewangles[ROLL] += side;
+	// calculate the forward up and right values
+	side = V_CalcAngle(viewentity->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value, YAW /*RIGHT*/);
+
+	if (!pparams->onground && pparams->waterlevel == 0)
+		pitch = clamp(pparams->simvel[2], -500, 100);
+
+	forward = V_CalcAngle(viewentity->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
+
+	// interpolate the values
+	l_side = lerp(l_side, side * 1.2, pparams->frametime * 17.0f);
+	l_pitch = lerp(l_pitch, pitch * 0.055, pparams->frametime * 9.0f);
+	l_forward = lerp(l_forward, forward * 0.8, pparams->frametime * 9.0f);
+
+	// apply the values
+	view->origin = view->origin - vforward * fabs(l_forward);
+
+	view->angles[0] -= (l_forward + (l_pitch * 0.85)) + (v_jumpangle[0] * 3.5);
+	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5);
+
+	if (!pparams->onground)
+	{	
+		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);
+		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);	
+
+		view->angles[0] -= gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);
+		view->angles[1] -= gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);	
+	}
+	pparams->viewangles[PITCH] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
+	pparams->viewangles[YAW] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
+	pparams->viewangles[ROLL] += l_side;
+
+	if (flFallVelocity != 0 && pparams->onground)
+	{
+		v_jumppunch[0] = ev_punch[0] = (flFallVelocity * 0.013) * 6; // punch z axis
+		v_jumppunch[1] = ev_punch[1] = (flFallVelocity * 0.013) * 6; // punch z axis
+		flFallVelocity = 0;
+	}
+
+	// Add in the punchangle, if any
+	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
+
+	// Include client side punch, too
+	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
+	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
+
+	VectorAdd(view->angles, (float*)&(ev_punchangle * 0.5f), view->angles);
+	VectorAdd(view->angles, (float*)&(ev_oldpunchangle * 0.5f), view->angles);
+
+	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
+	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
+	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);
+
+	// apply angles
+	VectorCopy(view->angles, view->curstate.angles);
+	VectorCopy(view->angles, view->prevstate.angles);
 
 	if (pparams->health <= 0 && (pparams->viewheight[2] != 0))
 	{
@@ -582,6 +662,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	int i;
 	Vector angles;
 	float bobRight = 0, bobUp = 0, waterOffset;
+	static float l_bobRight = 0.0f, l_bobUp = 0.0f;
+
 	static viewinterp_t ViewInterp;
 
 	static float oldz = 0;
@@ -612,6 +694,9 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// model origin for the view
 	V_CalcBob(pparams, 1.0f, VB_SIN, bobTimes[0], bobRight, lastTimes[0]);
 	V_CalcBob(pparams, 2.0f, VB_COS, bobTimes[1], bobUp, lastTimes[1]);
+
+	l_bobRight = lerp(l_bobRight, bobRight * 1.2f, pparams->frametime * 17.0f);
+	l_bobUp = lerp(l_bobUp, bobUp * 1.2f, pparams->frametime * 17.0f);
 
 	// refresh position
 	VectorCopy(pparams->simorg, pparams->vieworg);
@@ -691,8 +776,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	pparams->vieworg[2] += waterOffset;
 
-	V_CalcViewRoll(pparams);
-
 	V_AddIdle(pparams);
 
 	// offsets
@@ -745,16 +828,16 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	for (i = 0; i < 3; i++)
 	{
-		view->origin[i] -= bobUp * 0.13f * pparams->up[i];
+		view->origin[i] -= l_bobUp * 0.13f * pparams->up[i];
 	}
 
-	view->angles[0] += bobUp * 0.66f;
-	view->angles[1] -= bobRight * 2.13f;
-	view->angles[2] += bobRight * 0.66f;
+	view->angles[0] += l_bobUp * 0.66f;
+	view->angles[1] -= l_bobRight * 2.13f;
+	view->angles[2] += l_bobRight * 0.66f;
 
-	pparams->viewangles[0] += bobUp * 0.165f;
-	pparams->viewangles[1] += bobRight * 0.085f;
-	pparams->viewangles[2] += bobRight * 0.165f;
+	pparams->viewangles[0] += l_bobUp * 0.165f;
+	pparams->viewangles[1] += l_bobRight * 0.085f;
+	pparams->viewangles[2] += l_bobRight * 0.165f;
 
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 
@@ -782,21 +865,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 		view->origin[2] += 0.5;
 	}
 
-	// Add in the punchangle, if any
-	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
+	V_CalcViewAngles(pparams, view);
 
-	// Include client side punch, too
-	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
-	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
-
-	VectorAdd(view->angles, (float*)&(ev_punchangle * 0.5f), view->angles);
-	VectorAdd(view->angles, (float*)&(ev_oldpunchangle * 0.5f), view->angles);
-
-	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
-	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
-
-	VectorCopy(view->angles, view->curstate.angles);
-	VectorCopy(view->angles, view->prevstate.angles);
 
 	// smooth out stair step ups
 #if 1
@@ -1861,6 +1931,9 @@ void V_Init()
 	cl_weaponlag = gEngfuncs.pfnRegisterVariable("cl_weaponlag", "2.0", 0);
 	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("cl_weaponlagscale", "0.2", FCVAR_ARCHIVE);
 	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("cl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
+
+	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("cl_fwdspeed", "200", FCVAR_ARCHIVE);
+	cl_fwdangle = gEngfuncs.pfnRegisterVariable("cl_fwdangle", "2", FCVAR_ARCHIVE);
 }
 
 
