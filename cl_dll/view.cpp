@@ -436,6 +436,46 @@ void V_AddIdle(struct ref_params_s* pparams)
 }
 
 
+void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	static float v_dist = 0.0f;
+	cl_entity_t* viewentity;
+	pmtrace_t tr;
+	Vector vecSrc, vecEnd, vecFwd;
+
+	viewentity = gEngfuncs.GetEntityByIndex(pparams->viewentity);
+	if (!viewentity)
+		return;
+
+	VectorCopy(pparams->vieworg, vecSrc);
+	VectorCopy(pparams->forward, vecFwd);
+	VectorCopy(vecSrc + vecFwd * 50, vecEnd);
+
+	gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction(0, 1);
+
+	// Store off the old count
+	gEngfuncs.pEventAPI->EV_PushPMStates();
+
+	// Now add in all of the players.
+	gEngfuncs.pEventAPI->EV_SetSolidPlayers(gEngfuncs.GetLocalPlayer()->index - 1);
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_NORMAL, -1, &tr);
+
+	gEngfuncs.pEventAPI->EV_PopPMStates();
+
+	v_dist = lerp(v_dist, -(tr.fraction - 1) * 0.65, pparams->frametime * 15.5f);
+	
+	view->angles[0] += v_dist * 12.25;
+	view->angles[1] -= v_dist * 4.5;
+	for (int i = 0; i < 3; i++)
+	{
+		view->origin[i] -= v_dist * 8.5 * pparams->forward[i];
+		view->origin[i] -= v_dist * 2.5 * pparams->up[i];
+	}
+}
+
+
 /*
 ==============
 V_CalcViewAngles
@@ -513,6 +553,8 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
 	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
 	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);
+
+	V_RetractWeapon(pparams, view);
 
 	// apply angles
 	VectorCopy(view->angles, view->curstate.angles);
