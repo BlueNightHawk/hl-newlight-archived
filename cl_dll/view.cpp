@@ -63,7 +63,6 @@ extern cvar_t *scr_ofsx, *scr_ofsy, *scr_ofsz;
 extern cvar_t* cl_vsmoothing;
 extern cvar_t* cl_rollangle;
 extern cvar_t* cl_rollspeed;
-extern cvar_t* cl_bobtilt;
 
 #define CAM_MODE_RELAX 1
 #define CAM_MODE_FOCUS 2
