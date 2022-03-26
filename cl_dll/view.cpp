@@ -191,7 +191,7 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 	float cycle;
 	Vector vel;
 
-	if (!pparams->onground ||
+	if (!pparams->onground || pparams->waterlevel ||
 		pparams->time == lasttime)
 	{
 		// just use old value
