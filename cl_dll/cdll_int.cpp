@@ -40,9 +40,6 @@ cl_enginefunc_t gEngfuncs;
 CHud gHUD;
 TeamFortressViewport* gViewPort = NULL;
 
-cvar_t* nointro = nullptr;
-
-
 #include "particleman.h"
 IParticleMan* g_pParticleMan = nullptr;
 
@@ -84,6 +81,7 @@ int DLLEXPORT HUD_ConnectionlessPacket(const struct netadr_s* net_from, const ch
 	// If we wanted to response, we'd write data into response_buffer
 	*response_buffer_size = 0;
 
+
 	// Since we don't listen for anything here, just respond that it's a bogus message
 	// If we didn't reject the message, we'd return 1 for success instead.
 	return 0;
@@ -124,10 +122,9 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 	EV_HookEvents();
 	CL_LoadParticleMan();
 
-	nointro = CVAR_CREATE("nointro", "0", FCVAR_ARCHIVE);
-	// intro map
-	if ( nointro && nointro->value == 0)
+	if (0 == gEngfuncs.CheckParm("-novid", NULL))
 		EngineClientCmd("map valve.bsp");
+
 
 	if (!FileSystem_LoadFileSystem())
 	{

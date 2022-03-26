@@ -1722,7 +1722,7 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 			IEngineStudio.StudioDrawPoints();
 			// SHADOWS START
 			StudioGetVerts();
-			if (m_pCurrentEntity != gEngfuncs.GetViewModel() && !m_pCurrentEntity->player)
+			if (m_pCurrentEntity != gEngfuncs.GetViewModel())// && !m_pCurrentEntity->player)
 				StudioDrawShadow();
 			// SHADOWS END
 		}
@@ -1839,7 +1839,8 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 
-	if (m_pCurrentEntity->curstate.effects & EF_NOSHADOW)
+
+	if ((m_pCurrentEntity->curstate.effects & EF_NOSHADOW) != 0)
 		return;
 
 	if (hasStencil != 0)
