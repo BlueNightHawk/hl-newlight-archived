@@ -89,6 +89,10 @@ cvar_t* cl_bobup;
 cvar_t* cl_waterdist;
 cvar_t* cl_chasedist;
 
+cvar_t* cl_weaponlag;
+cvar_t* cl_weaponlagscale;
+cvar_t* cl_weaponlagspeed;
+
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t v_iyaw_cycle = {"v_iyaw_cycle", "2", 0, 2};
@@ -434,6 +438,70 @@ void V_CalcViewRoll(struct ref_params_s* pparams)
 	}
 }
 
+void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
+{
+	float flWeaponLag = cl_weaponlag->value;
+	static Vector m_vecLastFacing;
+	Vector vOriginalOrigin = origin;
+	Vector vOriginalAngles = angles;
+	vOriginalAngles[0] *= -1;
+
+	// Calculate our drift
+	Vector forward, right, up;
+	AngleVectors(vOriginalAngles, forward, right, up);
+
+	if (pparams->frametime != 0.0f) // not in paused
+	{
+		Vector vDifference;
+
+		vDifference = forward - m_vecLastFacing;
+
+		float flSpeed = cl_weaponlagspeed->value;
+
+		// If we start to lag too far behind, we'll increase the "catch up" speed.
+		// Solves the problem with fast cl_yawspeed, m_yaw or joysticks rotating quickly.
+		// The old code would slam lastfacing with origin causing the viewmodel to pop to a new position
+		float flDiff = vDifference.Length();
+		if ((flDiff > flWeaponLag) && (flWeaponLag > 0.0f))
+		{
+			float flScale = flDiff / flWeaponLag;
+			flSpeed *= flScale;
+		}
+
+		// FIXME:  Needs to be predictable?
+		m_vecLastFacing = m_vecLastFacing + vDifference * (flSpeed * pparams->frametime);
+		// Make sure it doesn't grow out of control!!!
+		m_vecLastFacing = m_vecLastFacing.Normalize();
+		origin = origin + (vDifference * -cl_weaponlagscale->value) * 5.0f;
+	}
+
+	AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
+
+	float pitch = -original_angles[PITCH];
+
+	if (pitch > 180.0f)
+	{
+		pitch -= 360.0f;
+	}
+	else if (pitch < -180.0f)
+	{
+		pitch += 360.0f;
+	}
+
+	if (flWeaponLag <= 0.0f)
+	{
+		origin = vOriginalOrigin;
+		angles = vOriginalAngles;
+	}
+	else
+	{
+		// FIXME: These are the old settings that caused too many exposed polys on some models
+		origin = origin + forward * (-pitch * 0.0175f);
+		origin = origin + right * (-pitch * 0.015f);
+		origin = origin + up * (-pitch * 0.01f);
+	}
+}
+
 
 /*
 ==================
@@ -670,16 +738,18 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 		view->origin[i] -= bobUp * 0.13f * pparams->up[i];
 	}
 
-	view->angles[0] += bobUp * 0.68f;
-	view->angles[1] -= bobRight * 1.64f;
+	view->angles[0] += bobUp * 0.66f;
+	view->angles[1] -= bobRight * 2.13f;
 	view->angles[2] += bobRight * 0.66f;
 
 	pparams->viewangles[0] += bobUp * 0.165f;
 	pparams->viewangles[1] += bobRight * 0.085f;
 	pparams->viewangles[2] += bobRight * 0.165f;
 
-	VectorCopy(view->angles, view->curstate.angles);
+	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 
+	VectorCopy(view->angles, view->curstate.angles);
+	VectorCopy(view->angles, view->prevstate.angles);
 	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
 	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
 	// with view model distortion, this may be a cause. (SJB).
@@ -1717,11 +1787,15 @@ void V_Init()
 	v_centermove = gEngfuncs.pfnRegisterVariable("v_centermove", "0.15", 0);
 	v_centerspeed = gEngfuncs.pfnRegisterVariable("v_centerspeed", "500", 0);
 
-	cl_bobcycle = gEngfuncs.pfnRegisterVariable("cl_bobcycle", "0.95", 0); // best default for my experimental gun wag (sjb)
+	cl_bobcycle = gEngfuncs.pfnRegisterVariable("cl_bobcycle", "1.05", 0); // best default for my experimental gun wag (sjb)
 	cl_bob = gEngfuncs.pfnRegisterVariable("cl_bob", "0.01", 0);		  // best default for my experimental gun wag (sjb)
 	cl_bobup = gEngfuncs.pfnRegisterVariable("cl_bobup", "0.5", 0);
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
+
+	cl_weaponlag = gEngfuncs.pfnRegisterVariable("cl_weaponlag", "2.0", 0);
+	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("cl_weaponlagscale", "0.2", FCVAR_ARCHIVE);
+	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("cl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
 }
 
 
