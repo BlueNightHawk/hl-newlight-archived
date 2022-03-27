@@ -98,6 +98,11 @@ void LoadVModel(const char* szViewModel, CBasePlayer* m_pPlayer)
 	gEngfuncs.CL_LoadModel(szViewModel, &m_pPlayer->pev->viewmodel);
 }
 
+
+float CBasePlayerItem::GetCvarValue(char* sz)
+{
+	return gEngfuncs.pfnGetCvarFloat(sz);
+}
 /*
 =====================
 HUD_PrepEntity

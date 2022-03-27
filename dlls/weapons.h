@@ -254,6 +254,8 @@ public:
 	static inline ItemInfo ItemInfoArray[MAX_WEAPONS];
 	static inline AmmoInfo AmmoInfoArray[MAX_AMMO_SLOTS];
 
+	float GetCvarValue(char* sz);
+
 	CBasePlayer* m_pPlayer;
 	CBasePlayerItem* m_pNext;
 	int m_iId; // WEAPON_???

@@ -397,6 +397,10 @@ void CBasePlayerItem::SetObjectCollisionBox()
 	pev->absmax = pev->origin + Vector(24, 24, 16);
 }
 
+float CBasePlayerItem::GetCvarValue(char *sz)
+{
+	return g_engfuncs.pfnCVarGetFloat(sz);
+}
 
 //=========================================================
 // Sets up movetype, size, solidtype for a new weapon.
