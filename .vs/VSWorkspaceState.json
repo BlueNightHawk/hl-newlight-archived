@@ -1,6 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\cl_dll",
+    "\\projects",
+    "\\projects\\vs2019"
   ],
+  "SelectedNode": "\\cl_dll\\view.cpp",
   "PreviewInSolutionExplorer": false
 }

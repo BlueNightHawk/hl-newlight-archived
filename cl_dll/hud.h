@@ -29,6 +29,8 @@
 #include "common_types.h"
 #include "cl_dll.h"
 #include "ammo.h"
+#include "studio.h"
+
 
 #define DHN_DRAWZERO 1
 #define DHN_2DIGITS 2
@@ -607,6 +609,17 @@ public:
 
 	float GetSensitivity();
 };
+
+typedef struct viewinfo_s
+{
+	Vector attachment_forward[4];
+	Vector attachment_right[4];
+	Vector attachment_up[4];
+
+	studiohdr_t	*phdr;
+} vminfo_t;
+
+extern viewinfo_s g_viewinfo;
 
 extern CHud gHUD;
 

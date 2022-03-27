@@ -31,6 +31,8 @@
 #include <gl/GLU.h>
 // SHADOWS END
 
+viewinfo_s g_viewinfo;
+
 extern cvar_t* tfc_newmodels;
 
 extern extra_player_info_t g_PlayerExtraInfo[MAX_PLAYERS_HUD + 1];
@@ -1234,6 +1236,9 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		StudioRenderModel();
 	}
 
+	if (m_pStudioHeader)
+		g_viewinfo.phdr = m_pStudioHeader;
+
 	return true;
 }
 
@@ -1584,6 +1589,8 @@ void CStudioModelRenderer::StudioCalcAttachments()
 {
 	int i;
 	mstudioattachment_t* pattachment;
+	Vector forward, right, up, bonepos;
+	float d = 0;
 
 	if (m_pStudioHeader->numattachments > 4)
 	{
@@ -1596,6 +1603,26 @@ void CStudioModelRenderer::StudioCalcAttachments()
 	for (i = 0; i < m_pStudioHeader->numattachments; i++)
 	{
 		VectorTransform(pattachment[i].org, (*m_plighttransform)[pattachment[i].bone], m_pCurrentEntity->attachment[i]);
+
+		bonepos[0] = (*m_plighttransform)[pattachment[i].bone][0][3];
+		bonepos[1] = (*m_plighttransform)[pattachment[i].bone][1][3];
+		bonepos[2] = (*m_plighttransform)[pattachment[i].bone][2][3];
+
+		VectorSubtract(m_pCurrentEntity->attachment[i], bonepos, forward); // get forward
+		VectorNormalize(forward);
+		right[0] = forward[2];
+		right[1] = -forward[0];
+		right[2] = forward[1];
+
+		d = DotProduct(forward, right);
+
+		VectorMA(right, -d, forward, right); // get right
+		VectorNormalize(right);
+		CrossProduct(right, forward, up); // get up
+
+		g_viewinfo.attachment_forward[i] = forward;
+		g_viewinfo.attachment_up[i] = up;
+		g_viewinfo.attachment_right[i] = right;
 	}
 }
 

@@ -20,6 +20,7 @@
 
 typedef float vec_t;
 
+#include <float.h>
 #include "vector.h"
 
 typedef vec_t vec4_t[4]; // x,y,z,w
@@ -42,6 +43,15 @@ struct mplane_s;
 constexpr Vector vec3_origin(0, 0, 0);
 constexpr Vector g_vecZero(0, 0, 0);
 extern int nanmask;
+
+// NJS: Inlined to prevent floats from being autopromoted to doubles, as with the old system.
+#ifndef RAD2DEG
+#define RAD2DEG(x) ((float)(x) * (float)(180.f / M_PI))
+#endif
+
+#ifndef DEG2RAD
+#define DEG2RAD(x) ((float)(x) * (float)(M_PI / 180.f))
+#endif
 
 // SHADOWS START
 #define bound(min, num, max) ((num) >= (min) ? ((num) < (max) ? (num) : (max)) : (min))
@@ -118,8 +128,29 @@ void Matrix3x4_VectorTransform(const float in[3][4], const float v[3], float out
 void Matrix3x4_VectorITransform(const float in[3][4], const float v[3], float out[3]);
 // SHADOWS END
 
+void MatrixAngles(const float matrix[3][4], float* angles); // !!!!
+void MatrixAngles(const float matrix[3][4], Vector& angles, Vector& position);
+
+void AngleMatrix(const Vector& angles, float mat[3][4]);
+void AngleMatrix(Vector const& angles, const Vector& position, float matrix[3][4]);
+
+void MatrixGetColumn(const float in[3][4], int column, Vector& out);
+void MatrixSetColumn(const Vector& in, int column, float out[3][4]);
+
+void VectorAngles(const Vector& forward, const Vector& pseudoup, Vector& angles);
+
+void VectorNormalizeFast(Vector& vec);
+
 float lerp(float start, float end, float frac);
 
+// Math routines done in optimized assembly math package routines
+void inline SinCos(float radians, float* sine, float* cosine)
+{
+	*sine = sin(radians);
+	*cosine = cos(radians);
+}
+
+#define INVPITCH(x) Vector(-x[0], x[1], x[2])
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)                                                                 \
 	(((p)->type < 3) ? (                                                                                   \

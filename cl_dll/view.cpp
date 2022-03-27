@@ -438,6 +438,7 @@ void V_AddIdle(struct ref_params_s* pparams)
 
 void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 {
+	// TODO : Use weapon attachment
 	static float v_dist = 0.0f;
 	cl_entity_t* viewentity;
 	pmtrace_t tr;
@@ -447,9 +448,18 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 	if (!viewentity)
 		return;
 
-	VectorCopy(pparams->vieworg, vecSrc);
-	VectorCopy(pparams->forward, vecFwd);
-	VectorCopy(vecSrc + vecFwd * 50, vecEnd);
+	if (g_viewinfo.phdr && g_viewinfo.phdr->numattachments > 0)
+	{
+		VectorCopy(view->attachment[0], vecSrc);
+		VectorCopy(g_viewinfo.attachment_forward[0], vecFwd);
+	}
+	else
+	{
+		VectorCopy(pparams->vieworg, vecSrc);
+		VectorCopy(pparams->forward, vecFwd);
+	}
+
+	VectorCopy(vecSrc + vecFwd * 35, vecEnd);
 
 	gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction(0, 1);
 
@@ -489,6 +499,8 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	Vector vforward;
 	cl_entity_t* viewentity;
 	static float flFallVelocity = 0.0f;
+
+	Vector c_angle;
 
 	AngleVectors(Vector(-view->angles[0], view->angles[1], view->angles[2]), vforward, NULL, NULL);
 
@@ -547,8 +559,8 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
 	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
 
-	VectorAdd(view->angles, (float*)&(ev_punchangle * 0.5f), view->angles);
-	VectorAdd(view->angles, (float*)&(ev_oldpunchangle * 0.5f), view->angles);
+	VectorAdd(view->angles, (float*)&INVPITCH((ev_punchangle * 0.5f)), view->angles);
+	VectorAdd(view->angles, (float*)&INVPITCH((ev_oldpunchangle * 0.5f)), view->angles);
 
 	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
 	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
