@@ -44,6 +44,9 @@ cvar_t allow_spectators = {"allow_spectators", "0.0", FCVAR_SERVER}; // 0 preven
 
 cvar_t mp_chattime = {"mp_chattime", "10", FCVAR_SERVER};
 
+cvar_t sv_bhop = {"sv_enablebhop", "0", FCVAR_SERVER};
+cvar_t sv_autobhop = {"sv_enableautobhop", "0", FCVAR_SERVER};
+
 //CVARS FOR SKILL LEVEL SETTINGS
 // Agrunt
 cvar_t sk_agrunt_health1 = {"sk_agrunt_health1", "0"};
@@ -899,10 +902,18 @@ void GameDLLInit()
 	CVAR_REGISTER(&sk_player_leg3);
 	// END REGISTER CVARS FOR SKILL LEVEL STUFF
 
+	CVAR_REGISTER(&sv_bhop);
+	CVAR_REGISTER(&sv_autobhop);
+
 	SERVER_COMMAND("exec skill.cfg\n");
 }
 
 void GameDLLShutdown()
 {
 	FileSystem_FreeFileSystem();
+}
+
+float PM_CVAR_GET_FLOAT(const char* sz)
+{
+	return g_engfuncs.pfnCVarGetFloat(sz);
 }

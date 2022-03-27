@@ -145,6 +145,8 @@ static char grgchTextureType[CTEXTURESMAX];
 
 bool g_onladder = false;
 
+float PM_CVAR_GET_FLOAT(const char* sz);
+
 void PM_SwapTextures(int i, int j)
 {
 	char chTemp;
@@ -2499,6 +2501,11 @@ void PM_NoClip()
 //-----------------------------------------------------------------------------
 void PM_PreventMegaBunnyJumping()
 {
+	if (PM_CVAR_GET_FLOAT("sv_enablebhop") != 0)
+	{
+		return;
+	}
+
 	// Current player speed
 	float spd;
 	// If we have to crop, apply this cropping fraction to velocity
@@ -3179,16 +3186,26 @@ void PM_PlayerMove(qboolean server)
 		// Not underwater
 		{
 			// Was jump button pressed?
-			if ((pmove->cmd.buttons & IN_JUMP) != 0)
+			// Was jump button pressed?
+			if (PM_CVAR_GET_FLOAT("sv_enableautobhop") != 0)
 			{
-				if (!pLadder)
+				if ((pmove->cmd.buttons & IN_JUMP) != 0)
 				{
 					PM_Jump();
+					pmove->cmd.buttons &= ~IN_JUMP;
+					pmove->oldbuttons &= ~IN_JUMP;
 				}
 			}
 			else
 			{
-				pmove->oldbuttons &= ~IN_JUMP;
+				if ((pmove->cmd.buttons & IN_JUMP) != 0)
+				{
+					PM_Jump();
+				}
+				else
+				{
+					pmove->oldbuttons &= ~IN_JUMP;
+				}
 			}
 
 			// Fricion is handled before we add in any base velocity. That way, if we are on a conveyor,
