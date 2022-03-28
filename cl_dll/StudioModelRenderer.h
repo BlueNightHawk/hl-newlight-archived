@@ -236,7 +236,7 @@ public:
 	float (*m_plighttransform)[MAXSTUDIOBONES][3][4];
 
 	// SHADOWS START
-	void StudioDrawShadow(void);
+	void StudioDrawShadow();
 	void StudioDrawPointsShadow(void);
 	void StudioGetVerts(void);
 

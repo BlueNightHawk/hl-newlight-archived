@@ -150,7 +150,7 @@ void CStudioModelRenderer::Init()
 	r_shadow_height = CVAR_CREATE("r_shadow_height", "0", 0);
 	r_shadow_x = CVAR_CREATE("r_shadow_x", "1", 0);
 	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
-	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0.2", FCVAR_ARCHIVE);
+	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0.05", FCVAR_ARCHIVE);
 	// SHADOWS END
 
 	r_drawlegs = CVAR_CREATE("r_drawlegs", "1", FCVAR_ARCHIVE);
@@ -1586,7 +1586,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			angles[PITCH] = angles[ROLL] = NULL;
 			AngleVectors(angles, forward, NULL, NULL);
 
-			origin = origin - (forward * 15) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			origin = origin - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
 			
 			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
 			VectorCopy(origin, m_pCurrentEntity->origin);
@@ -1620,7 +1620,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			Vector origin, angles, forward;
 			Vector zorg = Vector(0, 0, g_pparams->simvel[2] * -0.9);
 
-			zorg[2] = clamp(zorg[2],-18, 30);
+			zorg[2] = clamp(zorg[2],-18, 15);
 
 			VectorCopy(m_pCurrentEntity->origin, origin);
 			gEngfuncs.GetViewAngles(v_angles);
@@ -1629,7 +1629,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			angles[PITCH] = angles[ROLL] = NULL;
 			AngleVectors(angles, forward, NULL, NULL);
 
-			origin = origin + zorg  - (forward * 15) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			origin = origin + zorg  - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
 
 			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
 			VectorCopy(origin, m_pCurrentEntity->origin);
@@ -2100,8 +2100,11 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	int hasStencil = 8;
 	static int numpoly = 0;
 
+	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
+
 	Vector vecSrc, vecEnd;
 	pmtrace_t tr;
+
 	// Store off the old count
 	gEngfuncs.pEventAPI->EV_PushPMStates();
 
@@ -2113,6 +2116,19 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
 
+
+
+	if (iShouldDrawLegs && !cam_thirdperson)
+	{
+		if (tr.fraction <= 0.00001)
+		{
+			Vector forward;
+			AngleVectors(Vector(0, v_angles[1], v_angles[2]), forward, NULL, NULL);
+
+			gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc + forward * 15, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
+			// gEngfuncs.Con_Printf("%f \n", tr.fraction);
+		}
+	}
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 
 	//glGetIntegerv(GL_STENCIL_BITS, &hasStencil);
@@ -2164,7 +2180,9 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	}
 
 	if (hasStencil != 0)
+	{
 		glDisable(GL_STENCIL_TEST);
+	}
 }
 
 /*
@@ -2176,7 +2194,7 @@ original GoldSrc code and used in some mods to enable
 studio shadows with some asm tricks
 ===============
 */
-void CStudioModelRenderer::StudioDrawShadow(void)
+void CStudioModelRenderer::StudioDrawShadow()
 {
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
@@ -2185,13 +2203,11 @@ void CStudioModelRenderer::StudioDrawShadow(void)
 		float color = r_shadow_alpha->value;
 
 		glDisable(GL_TEXTURE_2D);
-	//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
-		//glColor4f(0.0f, 0.0f, 0.0f, 1.0f - color);
-		glBlendFunc(GL_DST_COLOR, GL_ZERO);
-		glColor4f(0.5, 0.5, 0.5, 1);
+		glColor4f(0.0f, 0.0f, 0.0f, 1.0f - color);
 
-		glDepthFunc(GL_LESS);
+		glDepthFunc(GL_LEQUAL);
 		StudioDrawPointsShadow();
 		glDepthFunc(GL_LEQUAL);
 
