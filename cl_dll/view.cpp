@@ -1843,7 +1843,7 @@ void V_CalcSpectatorRefdef(struct ref_params_s* pparams)
 	VectorCopy(v_angles, pparams->viewangles)
 		VectorCopy(v_origin, pparams->vieworg);
 }
-
+extern void SetupBuffer();
 
 ref_params_s* g_pparams;
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
@@ -1865,6 +1865,10 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	}
 
 	g_pparams = pparams;
+
+	// buz
+	if (CVAR_GET_FLOAT("r_shadows") > 1 )
+		SetupBuffer();
 
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha
