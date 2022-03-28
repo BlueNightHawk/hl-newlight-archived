@@ -38,6 +38,10 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 	case ET_NORMAL:
 		break;
 	case ET_PLAYER:
+	{
+		if ((ent && ent == gEngfuncs.GetLocalPlayer()) && g_iDrawLegs)
+			g_iDrawLegs = 0;
+	}
 	case ET_BEAM:
 	case ET_TEMPENTITY:
 	case ET_FRAGMENTED:

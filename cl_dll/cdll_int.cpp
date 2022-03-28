@@ -50,6 +50,10 @@ void InitInput();
 void EV_HookEvents();
 void IN_Commands();
 
+int g_iDrawLegs = 0;
+
+extern cvar_s* r_drawlegs;
+
 /*
 ================================
 HUD_GetHullBounds
@@ -242,6 +246,11 @@ Called by engine every frame that client .dll is loaded
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
+
+	
+	if (r_drawlegs && r_drawlegs->value != 0)
+		g_iDrawLegs = 1;
+
 
 	GetClientVoiceMgr()->Frame(time);
 }

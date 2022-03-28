@@ -39,6 +39,9 @@
 
 #define HUDELEM_ACTIVE 1
 
+extern int g_iDrawLegs;
+extern bool cam_thirdperson;
+
 typedef struct
 {
 	int x, y;

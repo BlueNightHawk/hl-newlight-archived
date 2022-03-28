@@ -535,11 +535,11 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 
 	if (!pparams->onground)
 	{	
-		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);
-		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);	
+		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);	
 
-		view->angles[0] -= gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);
-		view->angles[1] -= gEngfuncs.pfnRandomFloat(-0.0094, 0.0094) * -(l_pitch);	
+		view->angles[0] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+		view->angles[1] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);	
 	}
 	pparams->viewangles[PITCH] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
 	pparams->viewangles[YAW] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
@@ -724,6 +724,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
     static double bobTimes[2] = {0, 0};
 	static float lastTimes[2] = {0, 0};
+
+	int iShouldDrawLegs = (!g_iDrawLegs);
 
 	Vector camAngles, camForward, camRight, camUp;
 	cl_entity_t* pwater;
@@ -1843,7 +1845,7 @@ void V_CalcSpectatorRefdef(struct ref_params_s* pparams)
 }
 
 
-
+ref_params_s* g_pparams;
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
@@ -1861,6 +1863,8 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	{
 		V_CalcNormalRefdef(pparams);
 	}
+
+	g_pparams = pparams;
 
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha

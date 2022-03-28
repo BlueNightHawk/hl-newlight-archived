@@ -21,6 +21,8 @@
 #include "StudioModelRenderer.h"
 #include "GameStudioModelRenderer.h"
 
+#include "Exports.h"
+
 // SHADOWS START
 #include "pmtrace.h"
 #include "pm_defs.h"
@@ -47,6 +49,10 @@ int m_nPlayerGaitSequences[MAX_PLAYERS];
 
 // Global engine <-> studio model rendering code interface
 engine_studio_api_t IEngineStudio;
+
+cvar_s* r_drawlegs;
+
+extern Vector v_angles;
 
 /////////////////////
 // Implementation of CStudioModelRenderer.h
@@ -75,6 +81,8 @@ void CStudioModelRenderer::Init()
 	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
 	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0.2", FCVAR_ARCHIVE);
 	// SHADOWS END
+
+	r_drawlegs = CVAR_CREATE("r_drawlegs", "1", FCVAR_ARCHIVE);
 
 	// Get pointers to engine data structures
 	m_pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])IEngineStudio.StudioGetBoneTransform();
@@ -1250,8 +1258,11 @@ StudioEstimateGait
 */
 void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 {
+	extern ref_params_s* g_pparams;
 	float dt;
 	Vector est_velocity;
+
+	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
 	dt = (m_clTime - m_clOldTime);
 	if (dt < 0)
@@ -1268,9 +1279,20 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 	// VectorAdd( pplayer->velocity, pplayer->prediction_error, est_velocity );
 	if (m_fGaitEstimation)
 	{
-		VectorSubtract(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin, est_velocity);
-		VectorCopy(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin);
-		m_flGaitMovement = Length(est_velocity);
+		if (iShouldDrawLegs && !cam_thirdperson)
+		{
+			if (g_pparams)
+				VectorCopy(g_pparams->simvel, est_velocity);
+			// VectorSubtract(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin, est_velocity);
+			// VectorCopy(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin);
+			m_flGaitMovement = Length(est_velocity) * dt;
+		}
+		else		
+		{
+			VectorSubtract(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin, est_velocity);
+			VectorCopy(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin);
+			m_flGaitMovement = Length(est_velocity);
+		}
 		if (dt <= 0 || m_flGaitMovement / dt < 5)
 		{
 			m_flGaitMovement = 0;
@@ -1283,11 +1305,14 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 		VectorCopy(pplayer->velocity, est_velocity);
 		m_flGaitMovement = Length(est_velocity) * dt;
 	}
-
+	
 	if (est_velocity[1] == 0 && est_velocity[0] == 0)
 	{
 		float flYawDiff = m_pCurrentEntity->angles[YAW] - m_pPlayerInfo->gaityaw;
-		flYawDiff = flYawDiff - (int)(flYawDiff / 360) * 360;
+		int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
+
+		flYawDiff = flYawDiff - (int)(flYawDiff / 360) * M_PI;
+
 		if (flYawDiff > 180)
 			flYawDiff -= 360;
 		if (flYawDiff < -180)
@@ -1305,12 +1330,13 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 	}
 	else
 	{
-		m_pPlayerInfo->gaityaw = (atan2(est_velocity[1], est_velocity[0]) * 180 / M_PI);
+		m_pPlayerInfo->gaityaw = (atan2f(est_velocity[1], est_velocity[0]) * 180 / M_PI);
 		if (m_pPlayerInfo->gaityaw > 180)
 			m_pPlayerInfo->gaityaw = 180;
 		if (m_pPlayerInfo->gaityaw < -180)
 			m_pPlayerInfo->gaityaw = -180;
 	}
+
 }
 
 /*
@@ -1325,6 +1351,7 @@ void CStudioModelRenderer::StudioProcessGait(entity_state_t* pplayer)
 	float dt;
 	int iBlend;
 	float flYaw; // view direction relative to movement
+
 
 	if (m_pCurrentEntity->curstate.sequence >= m_pStudioHeader->numseq)
 	{
@@ -1349,12 +1376,12 @@ void CStudioModelRenderer::StudioProcessGait(entity_state_t* pplayer)
 		dt = 1;
 
 	StudioEstimateGait(pplayer);
-
-	// Con_DPrintf("%f %f\n", m_pCurrentEntity->angles[YAW], m_pPlayerInfo->gaityaw );
-
+	
 	// calc side to side turning
 	flYaw = m_pCurrentEntity->angles[YAW] - m_pPlayerInfo->gaityaw;
-	flYaw = flYaw - (int)(flYaw / 360) * 360;
+	flYaw = v_angles[YAW] - m_pPlayerInfo->gaityaw;
+
+	flYaw = flYaw - (int)(flYaw / 360) * M_PI;
 	if (flYaw < -180)
 		flYaw = flYaw + 360;
 	if (flYaw > 180)
@@ -1382,8 +1409,9 @@ void CStudioModelRenderer::StudioProcessGait(entity_state_t* pplayer)
 	m_pCurrentEntity->latched.prevcontroller[1] = m_pCurrentEntity->curstate.controller[1];
 	m_pCurrentEntity->latched.prevcontroller[2] = m_pCurrentEntity->curstate.controller[2];
 	m_pCurrentEntity->latched.prevcontroller[3] = m_pCurrentEntity->curstate.controller[3];
-
+	
 	m_pCurrentEntity->angles[YAW] = m_pPlayerInfo->gaityaw;
+	
 	if (m_pCurrentEntity->angles[YAW] < -0)
 		m_pCurrentEntity->angles[YAW] += 360;
 	m_pCurrentEntity->latched.prevangles[YAW] = m_pCurrentEntity->angles[YAW];
@@ -1425,6 +1453,8 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	alight_t lighting;
 	Vector dir;
 
+	extern ref_params_s* g_pparams;
+
 	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
@@ -1435,9 +1465,23 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	if (m_nPlayerIndex < 0 || m_nPlayerIndex >= gEngfuncs.GetMaxClients())
 		return false;
 
+	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
-	m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+	if (iShouldDrawLegs && !cam_thirdperson)
+	{
+		char modelname[256];
+		strcpy(modelname, IEngineStudio.SetupPlayerModel(m_nPlayerIndex)->name);
+		modelname[strlen(modelname) - strlen(".mdl")] = 0;
+		strcat(modelname, "_legs.mdl");
 
+		m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
+		if (!m_pRenderModel)
+			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+	}
+	else
+	{
+		m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+	}
 
 	if (m_pRenderModel == NULL)
 		return false;
@@ -1446,12 +1490,32 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	IEngineStudio.StudioSetHeader(m_pStudioHeader);
 	IEngineStudio.SetRenderModel(m_pRenderModel);
 
+
+
 	if (0 != pplayer->gaitsequence)
 	{
 		Vector orig_angles;
 		m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
 
 		VectorCopy(m_pCurrentEntity->angles, orig_angles);
+
+		if (iShouldDrawLegs && !cam_thirdperson)
+		{
+			Vector origin, angles, forward;
+
+			VectorCopy(m_pCurrentEntity->origin, origin);
+			gEngfuncs.GetViewAngles(v_angles);
+			VectorCopy(v_angles, angles);
+
+			angles[PITCH] = angles[ROLL] = NULL;
+			AngleVectors(angles, forward, NULL, NULL);
+
+			origin = origin - (forward * 15) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			
+			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
+			VectorCopy(origin, m_pCurrentEntity->origin);
+			VectorCopy(origin, m_pCurrentEntity->curstate.origin);
+		}
 
 		StudioProcessGait(pplayer);
 
@@ -1474,6 +1538,28 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 		m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
 		m_pPlayerInfo->gaitsequence = 0;
+
+		if (iShouldDrawLegs && !cam_thirdperson)
+		{
+			Vector origin, angles, forward;
+			Vector zorg = Vector(0, 0, g_pparams->simvel[2] * -0.9);
+
+			zorg[2] = clamp(zorg[2],-18, 30);
+
+			VectorCopy(m_pCurrentEntity->origin, origin);
+			gEngfuncs.GetViewAngles(v_angles);
+			VectorCopy(v_angles, angles);
+
+			angles[PITCH] = angles[ROLL] = NULL;
+			AngleVectors(angles, forward, NULL, NULL);
+
+			origin = origin + zorg  - (forward * 15) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+
+			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
+			VectorCopy(origin, m_pCurrentEntity->origin);
+			VectorCopy(origin, m_pCurrentEntity->curstate.origin);
+		}
+
 
 		StudioSetUpTransform(false);
 	}
@@ -1554,7 +1640,8 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		StudioRenderModel();
 		m_pPlayerInfo = NULL;
 
-		if (0 != pplayer->weaponmodel)
+		if (pplayer->weaponmodel &&
+			((iShouldDrawLegs && cam_thirdperson) || m_pCurrentEntity != gEngfuncs.GetLocalPlayer()))
 		{
 			cl_entity_t saveent = *m_pCurrentEntity;
 
@@ -1569,6 +1656,59 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			IEngineStudio.StudioSetupLighting(&lighting);
 
 			StudioRenderModel();
+
+			StudioCalcAttachments();
+
+			*m_pCurrentEntity = saveent;
+		}
+		else if (pplayer->weaponmodel && (iShouldDrawLegs && !cam_thirdperson)) 
+		{
+			cl_entity_t saveent = *m_pCurrentEntity;
+
+			model_t* pweaponmodel = IEngineStudio.GetModelByIndex(pplayer->weaponmodel);
+
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(pweaponmodel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+
+
+			StudioMergeBones(pweaponmodel);
+
+			IEngineStudio.StudioSetupLighting(&lighting);
+
+			IEngineStudio.SetChromeOrigin();
+			IEngineStudio.SetForceFaceFlags(0);
+
+			int i;
+			int rendermode;
+
+			rendermode = 0 != IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : m_pCurrentEntity->curstate.rendermode;
+			IEngineStudio.SetupRenderer(rendermode);
+
+			if (m_pCvarDrawEntities->value != 2 && m_pCvarDrawEntities->value != 3)
+			{
+				for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
+				{
+					IEngineStudio.StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+					// SHADOWS START
+					StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+					// SHADOWS END
+					if (m_fDoInterp)
+					{
+						// interpolation messes up bounding boxes.
+						m_pCurrentEntity->trivial_accept = 0;
+					}
+
+					IEngineStudio.GL_SetRenderMode(rendermode);
+
+					// SHADOWS START
+					StudioGetVerts();
+					if (m_pCurrentEntity != gEngfuncs.GetViewModel()) // && !m_pCurrentEntity->player)
+						StudioDrawShadow();
+					// SHADOWS END
+				}
+			}
+
+			IEngineStudio.RestoreRenderer();
 
 			StudioCalcAttachments();
 
@@ -1720,6 +1860,8 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 	int i;
 	int rendermode;
 
+	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
+
 	rendermode = 0 != IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : m_pCurrentEntity->curstate.rendermode;
 	IEngineStudio.SetupRenderer(rendermode);
 
@@ -1746,7 +1888,26 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 			}
 
 			IEngineStudio.GL_SetRenderMode(rendermode);
+
+			if (iShouldDrawLegs && !cam_thirdperson)
+			{
+				glDepthFunc(GL_LEQUAL);
+				glDepthRange(0.0f, 0.0f + 0.5f * (1 - 0.0f));
+			}
 			IEngineStudio.StudioDrawPoints();
+			if (iShouldDrawLegs && !cam_thirdperson)
+			{
+				glDepthFunc(GL_LEQUAL);
+				glDepthRange(0.0f, 1.0f);
+				glClearDepth(1.0f);
+			}
+
+			if (iShouldDrawLegs && !cam_thirdperson)
+			{
+				m_pCurrentEntity->curstate.body = 1;
+				StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+			}
+
 			// SHADOWS START
 			StudioGetVerts();
 			if (m_pCurrentEntity != gEngfuncs.GetViewModel())// && !m_pCurrentEntity->player)

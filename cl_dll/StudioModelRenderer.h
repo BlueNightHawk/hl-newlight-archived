@@ -201,4 +201,6 @@ public:
 	cvar_t* r_shadow_y;
 	cvar_t* r_shadow_alpha;
 	// SHADOWS END
+
+	entity_state_t* m_pPlayer;
 };
