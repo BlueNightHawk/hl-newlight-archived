@@ -2028,6 +2028,7 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 
+	//glGetIntegerv(GL_STENCIL_BITS, &hasStencil);
 
 	if ((m_pCurrentEntity->curstate.effects & EF_NOSHADOW) != 0)
 		return;
@@ -2090,8 +2091,6 @@ studio shadows with some asm tricks
 */
 void CStudioModelRenderer::StudioDrawShadow(void)
 {
-	glDepthMask(GL_FALSE);
-
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
@@ -2110,9 +2109,9 @@ void CStudioModelRenderer::StudioDrawShadow(void)
 		glDisable(GL_BLEND);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glShadeModel(GL_SMOOTH);
-	}
 
-	glDepthMask(GL_TRUE);
+		glDepthMask(GL_TRUE);
+	}
 }
 
 // SHADOWS END

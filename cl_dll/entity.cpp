@@ -15,6 +15,14 @@
 #include "Exports.h"
 
 #include "particleman.h"
+
+// SHADOWS START
+#include "PlatformHeaders.h"
+
+#include <gl/GL.h>
+#include <gl/GLU.h>
+// SHADOWS END
+
 extern IParticleMan* g_pParticleMan;
 
 void Game_AddObjects();
@@ -309,6 +317,15 @@ void DLLEXPORT HUD_CreateEntities()
 #if defined(BEAM_TEST)
 	Beams();
 #endif
+
+	// buz: clear also stencil buffer
+	int hasStencil;
+	glGetIntegerv(GL_STENCIL_BITS, &hasStencil);
+	if (hasStencil)
+	{
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glClearStencil(0);
+	}
 
 	// Add in any game specific objects
 	Game_AddObjects();
