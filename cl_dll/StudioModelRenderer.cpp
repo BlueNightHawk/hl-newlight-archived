@@ -1650,7 +1650,6 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(pweaponmodel);
 			IEngineStudio.StudioSetHeader(m_pStudioHeader);
 
-
 			StudioMergeBones(pweaponmodel);
 
 			IEngineStudio.StudioSetupLighting(&lighting);
@@ -2089,7 +2088,7 @@ studio shadows with some asm tricks
 */
 void CStudioModelRenderer::StudioDrawShadow(void)
 {
-	glDepthMask(GL_TRUE);
+	glDepthMask(GL_FALSE);
 
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
@@ -2110,6 +2109,8 @@ void CStudioModelRenderer::StudioDrawShadow(void)
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glShadeModel(GL_SMOOTH);
 	}
+
+	glDepthMask(GL_TRUE);
 }
 
 // SHADOWS END
