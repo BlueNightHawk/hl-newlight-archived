@@ -1586,7 +1586,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 	if ((flags & STUDIO_EVENTS) != 0)
 	{
-		StudioCalcAttachments();
+		if (!(iShouldDrawLegs && !cam_thirdperson))
+			StudioCalcAttachments();
+
 		IEngineStudio.StudioClientEvents();
 		// copy attachments into global entity array
 		if (m_pCurrentEntity->index > 0)
