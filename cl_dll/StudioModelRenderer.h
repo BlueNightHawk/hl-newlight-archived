@@ -102,6 +102,9 @@ public:
 	// Save bone matrices and names
 	virtual void StudioSaveBones();
 
+	// Restore bone matrices and names
+	virtual void StudioRestoreBones();
+
 	// Merge cached bones with current bones for model
 	virtual void StudioMergeBones(model_t* m_pSubModel);
 
@@ -249,6 +252,10 @@ public:
 	Vector lightbonepos[MAXSTUDIOBONES][32];
 
 	void StudioSetupModel(int bodypart, void** ppbodypart, void** ppsubmodel);
+
+	void StudioRenderPlayerFPS(int num);
+	void StudioRenderPlayerShadow(int num);
+	void StudioRenderWeaponShadow(int num);
 
 	cvar_t* r_shadows;
 	cvar_t* r_shadow_height;

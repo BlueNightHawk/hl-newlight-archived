@@ -1,6 +1,8 @@
 // studio_model.cpp
 // routines for setting up to draw 3DStudio models
 
+#pragma warning(disable : 4018)
+
 #include "hud.h"
 #include "cl_util.h"
 #include "const.h"
@@ -1120,6 +1122,22 @@ void CStudioModelRenderer::StudioSaveBones()
 	}
 }
 
+void CStudioModelRenderer::StudioRestoreBones()
+{
+	int i;
+
+	mstudiobone_t* pbones;
+	pbones = (mstudiobone_t*)((byte*)m_pStudioHeader + m_pStudioHeader->boneindex);
+
+	m_nCachedBones = m_pStudioHeader->numbones;
+
+	for (i = 0; i < m_pStudioHeader->numbones; i++)
+	{
+		strcpy(pbones[i].name, m_nCachedBoneNames[i]);
+		MatrixCopy(m_rgCachedBoneTransform[i], (*m_pbonetransform)[i]);
+		MatrixCopy(m_rgCachedLightTransform[i], (*m_plighttransform)[i]);
+	}
+}
 
 /*
 ====================
@@ -1359,8 +1377,6 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 		{
 			if (g_pparams)
 				VectorCopy(g_pparams->simvel, est_velocity);
-			// VectorSubtract(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin, est_velocity);
-			// VectorCopy(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin);
 			m_flGaitMovement = Length(est_velocity) * dt;
 		}
 		else		
@@ -1715,6 +1731,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
+		m_pCurrentEntity->baseline.weaponmodel = pplayer->weaponmodel;
+		m_pCurrentEntity->baseline.gaitsequence = pplayer->gaitsequence;
+
 		StudioRenderModel();
 		m_pPlayerInfo = NULL;
 
@@ -1741,59 +1760,6 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 			*m_pCurrentEntity = saveent;
 			m_pRenderModel = savedmdl; // buz
-		}
-		else if (pplayer->weaponmodel && (iShouldDrawLegs && !cam_thirdperson) && r_shadows->value == 1)  
-		{
-			cl_entity_t saveent = *m_pCurrentEntity;
-
-			model_t* pweaponmodel = IEngineStudio.GetModelByIndex(pplayer->weaponmodel);
-
-			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(pweaponmodel);
-			IEngineStudio.StudioSetHeader(m_pStudioHeader);
-
-
-			StudioMergeBones(pweaponmodel);
-
-			IEngineStudio.StudioSetupLighting(&lighting);
-
-			IEngineStudio.SetChromeOrigin();
-			IEngineStudio.SetForceFaceFlags(0);
-
-			int i;
-			int rendermode;
-
-			rendermode = 0 != IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : m_pCurrentEntity->curstate.rendermode;
-			IEngineStudio.SetupRenderer(rendermode);
-
-			if (m_pCvarDrawEntities->value != 2 && m_pCvarDrawEntities->value != 3)
-			{
-				for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
-				{
-					IEngineStudio.StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
-					// SHADOWS START
-					StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
-					// SHADOWS END
-					if (m_fDoInterp)
-					{
-						// interpolation messes up bounding boxes.
-						m_pCurrentEntity->trivial_accept = 0;
-					}
-
-					IEngineStudio.GL_SetRenderMode(rendermode);
-
-					// SHADOWS START
-					StudioGetVerts();
-					if (m_pCurrentEntity != gEngfuncs.GetViewModel()) // && !m_pCurrentEntity->player)
-						StudioDrawShadow();
-					// SHADOWS END
-				}
-			}
-
-			IEngineStudio.RestoreRenderer();
-
-			StudioCalcAttachments();
-
-			*m_pCurrentEntity = saveent;
 		}
 	}
 
@@ -1965,6 +1931,12 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 	{
 		for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
 		{
+			if (iShouldDrawLegs && !cam_thirdperson)
+			{
+				StudioRenderPlayerFPS(i);
+				StudioRenderPlayerShadow(i);
+				continue;
+			}
 			IEngineStudio.StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
 			// SHADOWS START
 			StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
@@ -1977,30 +1949,17 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 
 			IEngineStudio.GL_SetRenderMode(rendermode);
 
-			if (iShouldDrawLegs && !cam_thirdperson)
-			{
-				glDepthFunc(GL_LEQUAL);
-				glDepthRange(0.0f, 0.0f + 0.5f * (1 - 0.0f));
-			}
 			IEngineStudio.StudioDrawPoints();
-			if (iShouldDrawLegs && !cam_thirdperson)
-			{
-				glDepthFunc(GL_LEQUAL);
-				glDepthRange(0.0f, 1.0f);
-				glClearDepth(1.0f);
-			}
-
-			if (iShouldDrawLegs && !cam_thirdperson)
-			{
-				m_pCurrentEntity->curstate.body = 1;
-				StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
-			}
 
 			// SHADOWS START
 			StudioGetVerts();
 			if (m_pCurrentEntity != gEngfuncs.GetViewModel())// && !m_pCurrentEntity->player)
 				StudioDrawShadow();
 			// SHADOWS END
+		}
+		if (iShouldDrawLegs && !cam_thirdperson)
+		{
+			StudioRenderWeaponShadow(0);
 		}
 	}
 
@@ -2033,6 +1992,140 @@ void CStudioModelRenderer::StudioRenderFinal()
 }
 
 // SHADOWS START
+
+void CStudioModelRenderer::StudioRenderPlayerFPS(int num)
+{
+	int rendermode = rendermode = 0 != IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : m_pCurrentEntity->curstate.rendermode;
+
+	IEngineStudio.StudioSetupModel(num, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+	StudioSetupModel(num, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+
+	if (m_fDoInterp)
+	{
+		// interpolation messes up bounding boxes.
+		m_pCurrentEntity->trivial_accept = 0;
+	}
+
+	IEngineStudio.GL_SetRenderMode(rendermode);
+
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0f, 0.0f + 0.5f * (1 - 0.0f));
+	
+	IEngineStudio.StudioDrawPoints();
+
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0f, 1.0f);
+	glClearDepth(1.0f);
+}
+
+void CStudioModelRenderer::StudioRenderPlayerShadow(int num)
+{
+	if (num == 0)
+	{
+		m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+		if (m_pRenderModel != NULL)
+		{
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+			IEngineStudio.SetRenderModel(m_pRenderModel);
+			m_pCurrentEntity->curstate.body = 255;
+
+			if (0 != m_pCurrentEntity->baseline.gaitsequence)
+			{
+				Vector orig_angles;
+				m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
+
+				VectorCopy(m_pCurrentEntity->angles, orig_angles);
+
+				entity_state_s player;
+				player.gaitsequence = m_pCurrentEntity->baseline.gaitsequence;
+
+				StudioProcessGait(&player);
+
+				m_pCurrentEntity->angles[0] = 0;
+
+				StudioSetUpTransform(false);
+				VectorCopy(orig_angles, m_pCurrentEntity->angles);
+			}
+			else
+			{
+				m_pCurrentEntity->curstate.controller[0] = 127;
+				m_pCurrentEntity->curstate.controller[1] = 127;
+				m_pCurrentEntity->curstate.controller[2] = 127;
+				m_pCurrentEntity->curstate.controller[3] = 127;
+				m_pCurrentEntity->latched.prevcontroller[0] = m_pCurrentEntity->curstate.controller[0];
+				m_pCurrentEntity->latched.prevcontroller[1] = m_pCurrentEntity->curstate.controller[1];
+				m_pCurrentEntity->latched.prevcontroller[2] = m_pCurrentEntity->curstate.controller[2];
+				m_pCurrentEntity->latched.prevcontroller[3] = m_pCurrentEntity->curstate.controller[3];
+
+				StudioSetUpTransform(false);
+			}
+			StudioSetupBones();
+			StudioSaveBones();
+			StudioSetupModel(num, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+		}
+	}
+
+	IEngineStudio.StudioSetupModel(num, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+	StudioSetupModel(num, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+
+	StudioGetVerts();
+	StudioDrawShadow();
+}
+
+void CStudioModelRenderer::StudioRenderWeaponShadow(int num)
+{
+	if (num > 0)
+		return;
+
+	if (m_pCurrentEntity->baseline.weaponmodel)
+	{
+		cl_entity_t saveent = *m_pCurrentEntity;
+
+		model_t* pweaponmodel = IEngineStudio.GetModelByIndex(m_pCurrentEntity->baseline.weaponmodel);
+
+		m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(pweaponmodel);
+		IEngineStudio.StudioSetHeader(m_pStudioHeader);
+
+		StudioMergeBones(pweaponmodel);
+
+		IEngineStudio.SetChromeOrigin();
+		IEngineStudio.SetForceFaceFlags(0);
+
+		int i;
+		int rendermode;
+
+		rendermode = 0 != IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : m_pCurrentEntity->curstate.rendermode;
+		IEngineStudio.SetupRenderer(rendermode);
+
+		if (m_pCvarDrawEntities->value != 2 && m_pCvarDrawEntities->value != 3)
+		{
+			for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
+			{
+				IEngineStudio.StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+				StudioSetupModel(i, (void**)&m_pBodyPart, (void**)&m_pSubModel);
+
+				alight_t lighting;
+				Vector dir;
+				lighting.plightvec = dir;
+				IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
+
+				if (m_fDoInterp)
+				{
+					// interpolation messes up bounding boxes.
+					m_pCurrentEntity->trivial_accept = 0;
+				}
+
+				IEngineStudio.GL_SetRenderMode(rendermode);
+
+				StudioGetVerts();
+				StudioDrawShadow();
+			}
+		}
+
+		*m_pCurrentEntity = saveent;
+	}
+}
 
 /*
 ===============
