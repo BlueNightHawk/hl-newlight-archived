@@ -83,13 +83,17 @@ void CMiniMem::ProcessAll()
 			effect->Think(time);
 		}
 
-		if (0 != effect->m_flDieTime && time >= effect->m_flDieTime)
+	//	if (i == 0)
+	//		gEngfuncs.Con_Printf("%f \n", effect->m_flDieTime - time);
+
+		if (0 != effect->m_flDieTime && effect->m_flDieTime < time)
 		{
 			effect->Die();
-			delete effect;
-
+			//delete effect;
+			
 			//Don't do this! operator delete removes the effect from the list.
-			//_particles.erase(_particles.begin() + i);
+			//sorry solokiller but deleting it makes it fart
+			_particles.erase(_particles.begin() + i);
 			continue;
 		}
 

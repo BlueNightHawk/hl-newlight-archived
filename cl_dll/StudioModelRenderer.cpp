@@ -152,7 +152,7 @@ void CStudioModelRenderer::Init()
 	r_shadow_height = CVAR_CREATE("r_shadow_height", "0", 0);
 	r_shadow_x = CVAR_CREATE("r_shadow_x", "1", 0);
 	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
-	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0.05", FCVAR_ARCHIVE);
+	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "1", FCVAR_ARCHIVE);
 	// SHADOWS END
 
 	r_drawlegs = CVAR_CREATE("r_drawlegs", "1", FCVAR_ARCHIVE);
@@ -1561,6 +1561,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 	if (iShouldDrawLegs && !cam_thirdperson)
 	{
+		if (g_pparams->waterlevel)
+			return false;
+
 		char modelname[256];
 		strcpy(modelname, IEngineStudio.SetupPlayerModel(m_nPlayerIndex)->name);
 		modelname[strlen(modelname) - strlen(".mdl")] = 0;
@@ -2245,7 +2248,6 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 
 		pmesh = (mstudiomesh_t*)((byte*)m_pStudioHeader + m_pSubModel->meshindex) + k;
 		ptricmds = (short*)((byte*)m_pStudioHeader + pmesh->triindex);
-
 		while (i = *(ptricmds++))
 		{
 			if (i < 0)
@@ -2289,16 +2291,24 @@ studio shadows with some asm tricks
 */
 void CStudioModelRenderer::StudioDrawShadow()
 {
+	Vector vColor;
+	float intensity = 0.0;
+
+	gEngfuncs.pTriAPI->LightAtPoint(m_pCurrentEntity->origin + Vector(0,0,2), vColor);
+	intensity = m_pCurrentEntity->baseline.fuser4 = lerp(m_pCurrentEntity->baseline.fuser4, (vColor.x + vColor.y + vColor.z) / 3.0, gHUD.m_flTimeDelta * 17.9f);
+
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
 		glDepthMask(GL_FALSE);
-		float color = r_shadow_alpha->value;
+		float color = (intensity / 255);
+		if (r_shadow_alpha->value < 1)
+			color = 1- r_shadow_alpha->value;
 
 		glDisable(GL_TEXTURE_2D);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_ONE_MINUS_SRC1_ALPHA, GL_SRC0_ALPHA);
 		glEnable(GL_BLEND);
-		glColor4f(0.0f, 0.0f, 0.0f, 1.0f - color);
+		glColor4f( 0, 0, 0, color);
 
 		glDepthFunc(GL_LEQUAL);
 		StudioDrawPointsShadow();

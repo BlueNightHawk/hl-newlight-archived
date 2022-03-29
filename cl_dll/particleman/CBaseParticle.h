@@ -83,6 +83,7 @@ public:
 
 	float m_flTimeCreated; //time object was instanced
 	float m_flDieTime;	   //time to remove an object
+	float m_flRealDieTime;
 
 	float m_flGravity; //how effected by gravity is this object
 	float m_flAfterDampGrav;

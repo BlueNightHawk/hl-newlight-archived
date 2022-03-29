@@ -41,6 +41,11 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
+#include "particleman.h"
+#include "particle_presets.h"
+
+extern IParticleMan* g_pParticleMan;
+
 extern engine_studio_api_t IEngineStudio;
 
 static int tracerCount[MAX_PLAYERS];
@@ -230,7 +235,7 @@ void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName)
 	int iRand;
 	physent_t* pe;
 
-	gEngfuncs.pEfxAPI->R_BulletImpactParticles(pTrace->endpos);
+//	gEngfuncs.pEfxAPI->R_BulletImpactParticles(pTrace->endpos);
 
 	iRand = gEngfuncs.pfnRandomLong(0, 0x7FFF);
 	if (iRand < (0x7fff / 2)) // not every bullet makes a sound.
@@ -256,7 +261,12 @@ void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName)
 	}
 
 	pe = gEngfuncs.pEventAPI->EV_GetPhysent(pTrace->ent);
-
+	
+	CreateWallpuff(pTrace, "sprites/particles/pistol_smoke1.spr", 100, 68, 60, 50);
+	
+	for (int i = 0; i < gEngfuncs.pfnRandomLong(2,10); i++)
+		CreateCollideParticle(pTrace, "sprites/particles/debris_concrete.spr", 0, 100, Vector(gEngfuncs.pfnRandomFloat(-30, 30), gEngfuncs.pfnRandomFloat(-30, 30), 85), gEngfuncs.pfnRandomFloat(1,7), 165);
+		
 	// Only decal brush models such as the world etc.
 	if (decalName && '\0' != decalName[0] && pe && (pe->solid == SOLID_BSP || pe->movetype == MOVETYPE_PUSHSTEP))
 	{

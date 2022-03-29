@@ -158,12 +158,9 @@ void CBaseParticle::Draw()
 	Vector vColor;
 	float intensity = 0.0;
 
-	if ((m_iRenderFlags & LIGHT_NONE) == 0)
-	{
-		gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin, vColor);
+	gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin, vColor);
 
-		intensity = (vColor.x + vColor.y + vColor.z) / 3.0;
-	}
+	intensity = (vColor.x + vColor.y + vColor.z) / 3.0;
 
 	if ((m_iRenderFlags & (RENDER_FACEPLAYER | RENDER_FACEPLAYER_ROTATEZ)) != 0)
 	{
@@ -195,9 +192,9 @@ void CBaseParticle::Draw()
 		resultColor.z = intensity / (m_vColor.z * 255);
 	}
 
-	resultColor.x = std::clamp(resultColor.x, 0.f, 255.f);
-	resultColor.y = std::clamp(resultColor.y, 0.f, 255.f);
-	resultColor.z = std::clamp(resultColor.z, 0.f, 255.f);
+	resultColor.x = std::clamp(resultColor.x * 50000, 0.f, 255.f);
+	resultColor.y = std::clamp(resultColor.y * 50000, 0.f, 255.f);
+	resultColor.z = std::clamp(resultColor.z * 50000, 0.f, 255.f);
 
 	Vector forward, right, up;
 	gEngfuncs.pfnAngleVectors(m_vAngles, forward, right, up);

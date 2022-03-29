@@ -234,8 +234,13 @@ Render any triangles with transparent rendermode needs here
 void DLLEXPORT HUD_DrawTransparentTriangles()
 {
 	//	RecClDrawTransparentTriangles();
+	static float oldtime = 0;
 
-
-	if (g_pParticleMan)
+	if (g_pParticleMan )
+	{
 		g_pParticleMan->Update();
+//		g_pParticleMan->SetVariables()
+	}
+
+	oldtime = gEngfuncs.GetClientTime();
 }
