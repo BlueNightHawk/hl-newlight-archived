@@ -16,6 +16,19 @@ Valve map intro ( can be disabled using -novid launch parameter )
 
 Weapon retracting near walls
 
+Cvars for enable bhop and autobhop ( sv_enablebhop and sv_enableautobhop )
+
+First person player body with shadows
+
+Viewmodel attachment angles
+
+Buzer shadows ( for non-nvidia, enabled by r_shadows 2 )
+
+Basic ParticleMan usage
+
+Builds in this repo:
+https://github.com/BlueNightHawk/hl_bfork
+
 Half Life 1 SDK LICENSE
 ======================
 
