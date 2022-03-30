@@ -1570,6 +1570,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		strcat(modelname, "_legs.mdl");
 
 		m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
+		
+		flags &= ~STUDIO_EVENTS;
+		
 		if (!m_pRenderModel)
 			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
 	}
