@@ -112,9 +112,9 @@ cvar_t v_ipitch_level = {"v_ipitch_level", "0.3", 0, 0.3};
 
 float v_idlescale; // used by TFC for concussion grenade effect
 
-#define PUNCH_DAMPING 9.0f // bigger number makes the response more damped, smaller is less damped
+#define PUNCH_DAMPING 10.0f // bigger number makes the response more damped, smaller is less damped
 // currently the system will overshoot, with larger damping values it won't
-#define PUNCH_SPRING_CONSTANT 65.0f // bigger number increases the speed at which the view corrects
+#define PUNCH_SPRING_CONSTANT 100.0f // bigger number increases the speed at which the view corrects
 
 
 
@@ -895,11 +895,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	pparams->viewangles[2] += l_bobRight * 0.165f;
 
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
-
-	// pushing the view origin down off of the same X/Z plane as the ent's origin will give the
-	// gun a very nice 'shifting' effect when the player looks up/down. If there is a problem
-	// with view model distortion, this may be a cause. (SJB).
-	view->origin[2] -= 1;
 
 	// fudge position around to keep amount of weapon visible
 	// roughly equal with different FOV
@@ -1963,7 +1958,7 @@ Client side punch effect
 */
 void V_OldPunchAxis(int axis, float punch)
 {
-	ev_oldpunchangle[axis] = punch * 20;
+	ev_oldpunchangle[axis] = punch;
 }
 
 

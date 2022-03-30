@@ -53,9 +53,67 @@ static int tracerCount[MAX_PLAYERS];
 #include "pm_shared.h"
 
 void V_PunchAxis(int axis, float punch);
+void V_OldPunchAxis(int axis, float punch);
+
 void VectorAngles(const float* forward, float* angles);
 
 extern cvar_t* cl_lw;
+
+char GetTexType(int idx, pmtrace_t* ptr, float* vecSrc, float* vecEnd)
+{
+	// hit the world, try to play sound based on texture material type
+	char chTextureType = CHAR_TEX_CONCRETE;
+	float fattn = ATTN_NORM;
+	int entity;
+	char* pTextureName;
+	char texname[64];
+	char szbuffer[64];
+
+	entity = gEngfuncs.pEventAPI->EV_IndexFromTrace(ptr);
+
+	// FIXME check if playtexture sounds movevar is set
+	//
+
+	chTextureType = 0;
+
+	// Player
+	if (entity >= 1 && entity <= gEngfuncs.GetMaxClients())
+	{
+		// hit body
+		chTextureType = CHAR_TEX_FLESH;
+	}
+	else if (entity == 0)
+	{
+		// get texture from entity or world (world is ent(0))
+		pTextureName = (char*)gEngfuncs.pEventAPI->EV_TraceTexture(ptr->ent, vecSrc, vecEnd);
+
+		if (pTextureName)
+		{
+			strcpy(texname, pTextureName);
+			pTextureName = texname;
+
+			// strip leading '-0' or '+0~' or '{' or '!'
+			if (*pTextureName == '-' || *pTextureName == '+')
+			{
+				pTextureName += 2;
+			}
+
+			if (*pTextureName == '{' || *pTextureName == '!' || *pTextureName == '~' || *pTextureName == ' ')
+			{
+				pTextureName++;
+			}
+
+			// '}}'
+			strcpy(szbuffer, pTextureName);
+			szbuffer[CBTEXTURENAMEMAX - 1] = 0;
+
+			// get texture type
+			chTextureType = PM_FindTextureType(szbuffer);
+		}
+	}
+
+	return chTextureType;
+}
 
 // play a strike sound based on the texture that was hit by the attack traceline.  VecSrc/VecEnd are the
 // original traceline endpoints used by the attacker, iBulletType is the type of bullet that hit the texture.
@@ -262,11 +320,6 @@ void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName)
 
 	pe = gEngfuncs.pEventAPI->EV_GetPhysent(pTrace->ent);
 	
-	CreateWallpuff(pTrace, "sprites/particles/pistol_smoke1.spr", 100, 68, 60, 50);
-	
-	for (int i = 0; i < gEngfuncs.pfnRandomLong(2,10); i++)
-		CreateCollideParticle(pTrace, "sprites/particles/debris_concrete.spr", 0, 100, Vector(gEngfuncs.pfnRandomFloat(-30, 30), gEngfuncs.pfnRandomFloat(-30, 30), 85), gEngfuncs.pfnRandomFloat(1,7), 165);
-		
 	// Only decal brush models such as the world etc.
 	if (decalName && '\0' != decalName[0] && pe && (pe->solid == SOLID_BSP || pe->movetype == MOVETYPE_PUSHSTEP))
 	{
@@ -405,6 +458,9 @@ void EV_HLDM_FireBullets(int idx, float* forward, float* right, float* up, int c
 
 		tracer = EV_HLDM_CheckTracer(idx, vecSrc, tr.endpos, forward, right, iBulletType, iTracerFreq, tracerCount);
 
+		// Particles
+		WallPuffCluster(&tr, GetTexType(idx, &tr, vecSrc, vecEnd));
+
 		// do damage, paint decals
 		if (tr.fraction != 1.0)
 		{
@@ -475,7 +531,8 @@ void EV_FireGlock1(event_args_t* args)
 		EV_MuzzleFlash();
 		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? GLOCK_SHOOT_EMPTY : GLOCK_SHOOT, 2);
 
-		V_PunchAxis(0, -2.0);
+		V_OldPunchAxis(0, -0.4);
+		V_OldPunchAxis(1, -0.4);
 	}
 
 	EV_GetDefaultShellInfo(args, origin, velocity, ShellVelocity, ShellOrigin, forward, right, up, 20, -12, 4);
@@ -521,7 +578,8 @@ void EV_FireGlock2(event_args_t* args)
 		EV_MuzzleFlash();
 		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? GLOCK_SHOOT_EMPTY : GLOCK_SHOOT, 2);
 
-		V_PunchAxis(0, -2.0);
+		V_OldPunchAxis(0, -0.4);
+		V_OldPunchAxis(1, -0.4);
 	}
 
 	EV_GetDefaultShellInfo(args, origin, velocity, ShellVelocity, ShellOrigin, forward, right, up, 20, -12, 4);
@@ -680,7 +738,7 @@ void EV_FireMP5(event_args_t* args)
 		EV_MuzzleFlash();
 		gEngfuncs.pEventAPI->EV_WeaponAnimation(MP5_FIRE1 + gEngfuncs.pfnRandomLong(0, 2), 2);
 
-		V_PunchAxis(0, gEngfuncs.pfnRandomFloat(-2, 2));
+		V_OldPunchAxis(0, gEngfuncs.pfnRandomFloat(-0.5, -0.35));
 	}
 
 	EV_GetDefaultShellInfo(args, origin, velocity, ShellVelocity, ShellOrigin, forward, right, up, 20, -12, 4);

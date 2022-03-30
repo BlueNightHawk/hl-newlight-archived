@@ -27,5 +27,9 @@ extern CGameStudioModelRenderer g_StudioRenderer;
 
 #include "Platform.h"
 
+#include "pm_materials.h"
+
 CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framerate, float speed, float scale, float brightness);
 CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float frame, float speed, Vector vel, float scale, float brightness);
+
+void WallPuffCluster(pmtrace_t* pTrace, char mat);

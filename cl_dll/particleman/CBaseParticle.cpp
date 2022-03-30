@@ -30,6 +30,11 @@
 #include "pm_defs.h"
 #include "pmtrace.h"
 
+#include "r_studioint.h"
+#include "com_model.h"
+
+extern engine_studio_api_s IEngineStudio;
+
 void CBaseParticle::InitializeSprite(Vector org, Vector normal, model_s* sprite, float size, float brightness)
 {
 	m_flSize = m_flOriginalSize = 10;
@@ -158,8 +163,7 @@ void CBaseParticle::Draw()
 	Vector vColor;
 	float intensity = 0.0;
 
-	gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin, vColor);
-
+	gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin + Vector(0,0,12), vColor);
 	intensity = (vColor.x + vColor.y + vColor.z) / 3.0;
 
 	if ((m_iRenderFlags & (RENDER_FACEPLAYER | RENDER_FACEPLAYER_ROTATEZ)) != 0)

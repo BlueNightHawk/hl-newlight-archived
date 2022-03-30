@@ -1319,10 +1319,18 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 	if ((flags & STUDIO_RENDER) != 0)
 	{
+		Vector lightcol;
+
 		lighting.plightvec = dir;
+		
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
 		IEngineStudio.StudioEntityLight(&lighting);
+
+		VectorCopy(lighting.plightvec, lightpos);
+
+		lighting.ambientlight *= 0.9;
+		lighting.shadelight *= 0.9;
 
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
@@ -1331,7 +1339,6 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		m_nTopColor = m_pCurrentEntity->curstate.colormap & 0xFF;
 		m_nBottomColor = (m_pCurrentEntity->curstate.colormap & 0xFF00) >> 8;
-
 
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
@@ -1575,6 +1582,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		
 		if (!m_pRenderModel)
 			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+
+		if (v_angles[0] < 0)
+			return false;
 	}
 	else
 	{
@@ -1710,13 +1720,26 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			m_pCurrentEntity->curstate.body = 1; // force helmet
 		}
 
+		Vector lightcol;
+		Vector prev;
+		pmtrace_t tr;
+		Vector vecOrg = m_pCurrentEntity->origin;
+
+		gEngfuncs.pTriAPI->LightAtPoint(vecOrg, lightcol);
+
 		lighting.plightvec = dir;
+
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
 		IEngineStudio.StudioEntityLight(&lighting);
 
+		lighting.ambientlight *= 0.9;
+		lighting.shadelight *= 0.9;
+
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
+
+		VectorCopy(lighting.plightvec, lightpos);
 
 		m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
 
@@ -1828,6 +1851,7 @@ StudioRenderModel
 void CStudioModelRenderer::StudioRenderModel()
 {
 	IEngineStudio.SetChromeOrigin();
+
 	IEngineStudio.SetForceFaceFlags(0);
 
 	if (m_pCurrentEntity->curstate.renderfx == kRenderFxGlowShell)
