@@ -30,7 +30,7 @@
 #include "cl_dll.h"
 #include "ammo.h"
 #include "studio.h"
-
+#include "com_model.h"
 
 #define DHN_DRAWZERO 1
 #define DHN_2DIGITS 2
@@ -611,6 +611,8 @@ public:
 	void AddHudElem(CHudBase* p);
 
 	float GetSensitivity();
+
+	alight_s vmodel_lighting;
 };
 
 typedef struct viewinfo_s

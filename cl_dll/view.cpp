@@ -583,6 +583,28 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 
 void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
 {
+	if (cl_weaponlag->value > 1)
+	{
+		static float l_mx = 0.0f, l_my = 0.0f;
+		extern int g_mx, g_my;
+
+		// simplified magic nips viewlag
+		if (fabs(pparams->viewangles[0]) >= 86)
+		{
+			g_my = 0;
+		}
+
+		l_mx = lerp(l_mx, (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+		l_my = lerp(l_my, (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+
+		angles[0] += l_my - ((l_mx > 0) ? (l_mx * 0.5) : 0);
+		angles[1] -= l_mx;
+		angles[2] -= l_mx * 2.5;
+
+		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
+		return;
+	}
+
 	float flWeaponLag = cl_weaponlag->value;
 	static Vector m_vecLastFacing;
 	Vector vOriginalOrigin = origin;

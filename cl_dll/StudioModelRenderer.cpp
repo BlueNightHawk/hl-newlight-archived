@@ -1329,13 +1329,15 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		VectorCopy(lighting.plightvec, lightpos);
 
-		lighting.ambientlight *= 0.9;
-		lighting.shadelight *= 0.9;
-
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
 
 		// get remap colors
+
+		if (gEngfuncs.GetViewModel() == m_pCurrentEntity)
+		{
+			gHUD.vmodel_lighting = lighting;
+		}
 
 		m_nTopColor = m_pCurrentEntity->curstate.colormap & 0xFF;
 		m_nBottomColor = (m_pCurrentEntity->curstate.colormap & 0xFF00) >> 8;
@@ -1719,22 +1721,20 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		{
 			m_pCurrentEntity->curstate.body = 1; // force helmet
 		}
-
-		Vector lightcol;
-		Vector prev;
-		pmtrace_t tr;
-		Vector vecOrg = m_pCurrentEntity->origin;
-
-		gEngfuncs.pTriAPI->LightAtPoint(vecOrg, lightcol);
-
+		
 		lighting.plightvec = dir;
 
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
-		IEngineStudio.StudioEntityLight(&lighting);
+		// fixes pitch black model inside walls
+		// TODO : use a better solution
+		if (iShouldDrawLegs && !cam_thirdperson && gEngfuncs.GetViewModel()->model)
+		{
+			lighting = gHUD.vmodel_lighting;
+			lighting.plightvec = dir;
+		}
 
-		lighting.ambientlight *= 0.9;
-		lighting.shadelight *= 0.9;
+		IEngineStudio.StudioEntityLight(&lighting);
 
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
@@ -1793,6 +1793,45 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	}
 
 	return true;
+}
+
+void CStudioModelRenderer::StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir)
+{
+	if (m_pCurrentEntity == nullptr)
+		return;
+
+	alight_t lighting;
+	Vector rdir;
+
+	// setup a fake entity
+	static cl_entity_t temp;
+	VectorCopy(pos, temp.origin);
+	temp.model = IEngineStudio.Mod_ForName("models/v_9mmhandgun.mdl", 0);
+
+	m_pCurrentEntity = &temp;
+	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
+	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
+	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
+
+	m_pRenderModel = m_pCurrentEntity->model;
+	m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+	IEngineStudio.StudioSetHeader(m_pStudioHeader);
+	IEngineStudio.SetRenderModel(m_pRenderModel);
+
+
+	// setup lighting
+	lighting.plightvec = rdir;
+	IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
+	IEngineStudio.StudioEntityLight(&lighting);
+	IEngineStudio.StudioSetupLighting(&lighting);
+
+	// export light values
+	VectorCopy(lighting.color, color);
+	VectorCopy(lighting.plightvec, dir);
+	amblight = lighting.ambientlight;
+
+	// reset currententity
+	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
 }
 
 /*

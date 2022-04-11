@@ -484,6 +484,8 @@ void IN_ScaleMouse(float* x, float* y)
 	}
 }
 
+int g_mx = 0, g_my = 0;
+
 /*
 ===========
 IN_MouseMove
@@ -591,6 +593,9 @@ void IN_MouseMove(float frametime, usercmd_t* cmd)
 				cmd->forwardmove -= m_forward->value * mouse_y;
 			}
 		}
+
+		g_mx = mouse_x;
+		g_my = mouse_y;
 
 		// if the mouse has moved, force it to the center, so there's room to move
 		if (0 != pos.x || 0 != pos.y)

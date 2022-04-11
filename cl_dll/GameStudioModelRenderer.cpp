@@ -118,3 +118,8 @@ int DLLEXPORT HUD_GetStudioModelInterface(int version, struct r_studio_interface
 	// Success
 	return 1;
 }
+
+void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir)
+{
+	g_StudioRenderer.StudioLightAtPos(pos, color, amblight, dir);
+}

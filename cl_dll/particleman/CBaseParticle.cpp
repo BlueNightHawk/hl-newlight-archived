@@ -33,6 +33,9 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
+#include "StudioModelRenderer.h"
+#include "GameStudioModelRenderer.h"
+
 extern engine_studio_api_s IEngineStudio;
 
 void CBaseParticle::InitializeSprite(Vector org, Vector normal, model_s* sprite, float size, float brightness)
@@ -163,8 +166,15 @@ void CBaseParticle::Draw()
 	Vector vColor;
 	float intensity = 0.0;
 
-	gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin + Vector(0,0,12), vColor);
-	intensity = (vColor.x + vColor.y + vColor.z) / 3.0;
+//	gEngfuncs.pTriAPI->LightAtPoint(m_vOrigin + Vector(0,0,12), vColor);
+//	intensity = (vColor.x + vColor.y + vColor.z) / 3.0;
+
+	Vector dir;
+	int amblight;
+	StudioLightAtPos(m_vOrigin, vColor, amblight, dir);
+
+	intensity = (float)amblight / 48; //((col[0] + col[1] + col[2])) / 15;
+	intensity = std::clamp(intensity, 0.0f, 0.7f);
 
 	if ((m_iRenderFlags & (RENDER_FACEPLAYER | RENDER_FACEPLAYER_ROTATEZ)) != 0)
 	{
@@ -179,26 +189,36 @@ void CBaseParticle::Draw()
 
 	Vector resultColor;
 
+
+	// TODO : do lighting based on the flags
 	if ((m_iRenderFlags & LIGHT_NONE) != 0)
 	{
 		resultColor = m_vColor;
 	}
 	else if ((m_iRenderFlags & LIGHT_COLOR) != 0)
 	{
-		resultColor.x = vColor.x / (m_vColor.x * 255);
-		resultColor.y = vColor.y / (m_vColor.y * 255);
-		resultColor.z = vColor.z / (m_vColor.z * 255);
+//		resultColor.x = vColor.x / (m_vColor.x * 255);
+//		resultColor.y = vColor.y / (m_vColor.y * 255);
+//		resultColor.z = vColor.z / (m_vColor.z * 255);
+
+		resultColor.x = (byte)std::clamp((vColor[0] * 255) * intensity, 0.0f, 255.0f);
+		resultColor.y = (byte)std::clamp((vColor[1] * 255) * intensity, 0.0f, 255.0f);
+		resultColor.z = (byte)std::clamp((vColor[2] * 255) * intensity, 0.0f, 255.0f);
 	}
 	else if ((m_iRenderFlags & LIGHT_INTENSITY) != 0)
 	{
-		resultColor.x = intensity / (m_vColor.x * 255);
-		resultColor.y = intensity / (m_vColor.y * 255);
-		resultColor.z = intensity / (m_vColor.z * 255);
+//		resultColor.x = intensity / (m_vColor.x * 255);
+//		resultColor.y = intensity / (m_vColor.y * 255);
+//		resultColor.z = intensity / (m_vColor.z * 255);
+
+		resultColor.x = (byte)std::clamp((vColor[0] * 255) * intensity, 0.0f, 255.0f);
+		resultColor.y = (byte)std::clamp((vColor[1] * 255) * intensity, 0.0f, 255.0f);
+		resultColor.z = (byte)std::clamp((vColor[2] * 255) * intensity, 0.0f, 255.0f);
 	}
 
-	resultColor.x = std::clamp(resultColor.x * 50000, 0.f, 255.f);
-	resultColor.y = std::clamp(resultColor.y * 50000, 0.f, 255.f);
-	resultColor.z = std::clamp(resultColor.z * 50000, 0.f, 255.f);
+//	resultColor.x = std::clamp(resultColor.x * 50000, 0.f, 255.f);
+//	resultColor.y = std::clamp(resultColor.y * 50000, 0.f, 255.f);
+//	resultColor.z = std::clamp(resultColor.z * 50000, 0.f, 255.f);
 
 	Vector forward, right, up;
 	gEngfuncs.pfnAngleVectors(m_vAngles, forward, right, up);

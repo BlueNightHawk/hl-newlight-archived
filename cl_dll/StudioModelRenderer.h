@@ -287,4 +287,9 @@ public:
 
 public:
 	void GetShadowVector(myVector& vecOut);
+
+public:
+	void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);	
 };
+
+void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);
