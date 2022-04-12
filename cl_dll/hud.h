@@ -507,7 +507,7 @@ public:
 	Vector m_vecAngles;
 	int m_iKeyBits;
 	int m_iHideHUDDisplay;
-	int m_iFOV;
+	float m_iFOV;
 	bool m_Teamplay;
 	int m_iRes;
 	cvar_t* m_pCvarStealMouse;
@@ -613,6 +613,8 @@ public:
 	float GetSensitivity();
 
 	alight_s vmodel_lighting;
+
+	float m_flTargetFov;
 };
 
 typedef struct viewinfo_s

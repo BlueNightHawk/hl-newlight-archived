@@ -54,17 +54,21 @@ void CHud::Think()
 	newfov = HUD_GetFOV();
 	if (newfov == 0)
 	{
-		m_iFOV = default_fov->value;
+		m_flTargetFov = default_fov->value;
 	}
 	else
 	{
-		m_iFOV = newfov;
+		m_flTargetFov = newfov;
 	}
+
+	m_flTargetFov = clamp(m_flTargetFov, 60, 120);
+
+	m_iFOV = lerp(m_iFOV, m_flTargetFov, gHUD.m_flTimeDelta * m_flTargetFov * 0.1);
 
 	// the clients fov is actually set in the client data update section of the hud
 
 	// Set a new sensitivity
-	if (m_iFOV == default_fov->value)
+	if (m_flTargetFov == default_fov->value)
 	{
 		// reset to saved sensitivity
 		m_flMouseSensitivity = 0;
