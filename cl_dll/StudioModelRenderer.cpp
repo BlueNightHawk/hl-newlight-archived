@@ -1652,9 +1652,6 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		if (iShouldDrawLegs && !cam_thirdperson)
 		{
 			Vector origin, angles, forward;
-			Vector zorg = Vector(0, 0, g_pparams->simvel[2] * -0.9);
-
-			zorg[2] = clamp(zorg[2],-18, 15);
 
 			VectorCopy(m_pCurrentEntity->origin, origin);
 			gEngfuncs.GetViewAngles(v_angles);
@@ -1663,7 +1660,10 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			angles[PITCH] = angles[ROLL] = NULL;
 			AngleVectors(angles, forward, NULL, NULL);
 
-			origin = origin + zorg  - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			if (pplayer->sequence == 8 || pplayer->sequence == 9)
+				origin = origin - Vector(0,0,28) - (forward * 25) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			else
+				origin = origin  - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
 
 			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
 			VectorCopy(origin, m_pCurrentEntity->origin);

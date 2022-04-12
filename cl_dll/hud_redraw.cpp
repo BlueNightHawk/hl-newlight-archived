@@ -82,7 +82,7 @@ void CHud::Think()
 	// think about default fov
 	if (m_iFOV == 0)
 	{ // only let players adjust up in fov,  and only if they are not overriden by something else
-		m_iFOV = V_max(default_fov->value, 90);
+		m_flTargetFov = V_max(default_fov->value, 90);
 	}
 
 	if (0 != gEngfuncs.IsSpectateOnly())
