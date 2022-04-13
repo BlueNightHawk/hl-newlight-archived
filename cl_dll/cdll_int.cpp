@@ -54,6 +54,8 @@ int g_iDrawLegs = 0;
 
 extern cvar_s* r_drawlegs;
 
+extern model_s* TRI_pModel;
+
 /*
 ================================
 HUD_GetHullBounds
@@ -156,6 +158,8 @@ int DLLEXPORT HUD_VidInit()
 	gHUD.VidInit();
 
 	VGui_Startup();
+
+	TRI_pModel = NULL;
 
 	return 1;
 }

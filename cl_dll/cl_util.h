@@ -43,8 +43,21 @@ inline float CVAR_GET_FLOAT(const char* x) { return gEngfuncs.pfnGetCvarFloat((c
 inline const char* CVAR_GET_STRING(const char* x) { return gEngfuncs.pfnGetCvarString((char*)x); }
 inline struct cvar_s* CVAR_CREATE(const char* cv, const char* val, const int flags) { return gEngfuncs.pfnRegisterVariable((char*)cv, (char*)val, flags); }
 
+extern void TRI_SprSet(HSPRITE spr, int r, int g, int b);
+extern void TRI_SprDrawAdditive(int frame, int x, int y, Rect* prc);
+extern void TRI_FillRGBA(int x, int y, int width, int height, int r, int g, int b, int a);
+extern void TRI_SprAdjustSize(int* x, int* y, int* w, int* h);
+
+#define SPR_Set (*TRI_SprSet)
+#define SPR_DrawAdditive (*TRI_SprDrawAdditive)
+#define FillRGBA (*TRI_FillRGBA)
+
 #define SPR_Load (*gEngfuncs.pfnSPR_Load)
+
+#ifdef OLD_HUD
 #define SPR_Set (*gEngfuncs.pfnSPR_Set)
+#endif
+
 #define SPR_Frames (*gEngfuncs.pfnSPR_Frames)
 #define SPR_GetList (*gEngfuncs.pfnSPR_GetList)
 
@@ -53,15 +66,17 @@ inline struct cvar_s* CVAR_CREATE(const char* cv, const char* val, const int fla
 // SPR_DrawHoles  draws the current sprites,  with color index255 not drawn (transparent)
 #define SPR_DrawHoles (*gEngfuncs.pfnSPR_DrawHoles)
 // SPR_DrawAdditive  adds the sprites RGB values to the background  (additive transulency)
+#ifdef OLD_HUD
 #define SPR_DrawAdditive (*gEngfuncs.pfnSPR_DrawAdditive)
-
+#endif
 // SPR_EnableScissor  sets a clipping rect for HUD sprites.  (0,0) is the top-left hand corner of the screen.
 #define SPR_EnableScissor (*gEngfuncs.pfnSPR_EnableScissor)
 // SPR_DisableScissor  disables the clipping rect
 #define SPR_DisableScissor (*gEngfuncs.pfnSPR_DisableScissor)
 //
+#ifdef OLD_HUD
 #define FillRGBA (*gEngfuncs.pfnFillRGBA)
-
+#endif
 
 // ScreenHeight returns the height of the screen, in pixels
 #define ScreenHeight (gHUD.m_scrinfo.iHeight)
@@ -96,6 +111,9 @@ inline int TextMessageDrawChar(int x, int y, int number, int r, int g, int b)
 
 inline int DrawConsoleString(int x, int y, const char* string)
 {
+#ifndef OLD_HUD
+	TRI_SprAdjustSize(&x, &y, 0, 0);
+#endif
 	return gEngfuncs.pfnDrawConsoleString(x, y, (char*)string);
 }
 
@@ -108,6 +126,12 @@ inline int ConsoleStringLen(const char* string)
 {
 	int _width, _height;
 	GetConsoleStringSize(string, &_width, &_height);
+
+#ifndef OLD_HUD
+	int w = _width;
+	TRI_SprAdjustSize(0, 0, &w, 0);
+	_width = _width * _width / w;
+#endif
 	return _width;
 }
 

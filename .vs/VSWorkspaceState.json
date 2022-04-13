@@ -2,9 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\cl_dll",
+    "\\cl_dll\\particleman",
     "\\projects",
     "\\projects\\vs2019"
   ],
-  "SelectedNode": "\\cl_dll\\StudioModelRenderer.cpp",
+  "SelectedNode": "\\cl_dll\\particleman\\CBaseParticle.cpp",
   "PreviewInSolutionExplorer": false
 }

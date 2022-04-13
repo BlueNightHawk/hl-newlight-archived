@@ -226,6 +226,9 @@ int CHud::DrawHudNumberString(int xpos, int ypos, int iMinX, int iNumber, int r,
 {
 	char szString[32];
 	sprintf(szString, "%d", iNumber);
+#ifndef OLD_HUD
+	TRI_SprAdjustSize(&xpos, &ypos, 0, 0);
+#endif
 	return DrawHudStringReverse(xpos, ypos, iMinX, szString, r, g, b);
 }
 
