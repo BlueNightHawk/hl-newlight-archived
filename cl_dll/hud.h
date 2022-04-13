@@ -546,6 +546,7 @@ private:
 	char* m_rgszSpriteNames;					  /*[HUD_SPRITE_COUNT][MAX_SPRITE_NAME_LENGTH]*/
 
 	struct cvar_s* default_fov;
+	struct cvar_s* r_autofov;
 
 public:
 	HSPRITE GetSprite(int index)
