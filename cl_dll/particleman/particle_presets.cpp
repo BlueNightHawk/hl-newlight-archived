@@ -26,7 +26,7 @@ CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framer
 	return NULL;
 }
 
-CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float frame, float speed, Vector vel, float scale, float brightness)
+CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float speed, Vector vel, float scale, float brightness)
 {
 	model_s* spr = IEngineStudio.Mod_ForName(szModelName, 1);
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(pTrace->endpos + pTrace->plane.normal * 5, pTrace->plane.normal, spr, scale, brightness, "");
@@ -45,6 +45,27 @@ CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float
 	}
 	return NULL;
 }
+
+CBaseParticle* CreateGunSmoke(const Vector org, char* szModelName, float scale, float brightness)
+{
+	model_s* spr = IEngineStudio.Mod_ForName(szModelName, 1);
+	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(org, Vector(0,0,0), spr, scale, brightness, "");
+
+	if (pParticle)
+	{
+		pParticle->m_iRendermode = kRenderTransAdd;
+		pParticle->m_iFramerate = 50;
+		pParticle->SetLightFlag(LIGHT_INTENSITY);
+		pParticle->SetRenderFlag(RENDER_FACEPLAYER_ROTATEZ);
+		pParticle->SetCollisionFlags(TRI_ANIMATEDIE);
+		pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 5.5f;
+		pParticle->m_iNumFrames = spr->numframes;
+
+		return pParticle;
+	}
+	return NULL;
+}
+
 
 // Clusters
 void WallPuffCluster(pmtrace_t* pTrace, char mat)
@@ -149,7 +170,7 @@ void WallPuffCluster(pmtrace_t* pTrace, char mat)
 			}
 			break;
 		}
-		pParticle = CreateCollideParticle(pTrace, spr, 0, 100, Vector(gEngfuncs.pfnRandomFloat(-30, 30), gEngfuncs.pfnRandomFloat(-30, 30), 85), scale, brightness);
+		pParticle = CreateCollideParticle(pTrace, spr, 100, Vector(gEngfuncs.pfnRandomFloat(-30, 30), gEngfuncs.pfnRandomFloat(-30, 30), 85), scale, brightness);
 
 		if (pParticle)
 		{

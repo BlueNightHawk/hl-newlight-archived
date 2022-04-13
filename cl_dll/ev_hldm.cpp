@@ -413,6 +413,7 @@ void EV_HLDM_FireBullets(int idx, float* forward, float* right, float* up, int c
 	pmtrace_t tr;
 	int iShot;
 	bool tracer;
+	physent_t* pe;
 
 	for (iShot = 1; iShot <= cShots; iShot++)
 	{
@@ -456,11 +457,16 @@ void EV_HLDM_FireBullets(int idx, float* forward, float* right, float* up, int c
 		gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_STUDIO_BOX, -1, &tr);
 
+		pe = gEngfuncs.pEventAPI->EV_GetPhysent(tr.ent);
+
 		tracer = EV_HLDM_CheckTracer(idx, vecSrc, tr.endpos, forward, right, iBulletType, iTracerFreq, tracerCount);
 
 		// Particles
-		WallPuffCluster(&tr, GetTexType(idx, &tr, vecSrc, vecEnd));
-
+		if (pe)
+		{
+			if (pe->solid == SOLID_BSP)
+				WallPuffCluster(&tr, GetTexType(idx, &tr, vecSrc, vecEnd));
+		}
 		// do damage, paint decals
 		if (tr.fraction != 1.0)
 		{

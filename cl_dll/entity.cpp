@@ -23,6 +23,8 @@
 #include <gl/GLU.h>
 // SHADOWS END
 
+#include "particle_presets.h"
+
 extern IParticleMan* g_pParticleMan;
 
 void Game_AddObjects();
@@ -334,6 +336,19 @@ void DLLEXPORT HUD_CreateEntities()
 }
 
 
+void CL_Muzzleflash(const Vector org)
+{
+	static dlight_t* dl = nullptr;
+	dl = gEngfuncs.pEfxAPI->CL_AllocDlight(30);
+	if (dl)
+	{
+		dl->origin = org;
+		dl->color = {249, 207, 87};
+		dl->radius = gEngfuncs.pfnRandomFloat(100, 135);
+		dl->die = gEngfuncs.GetClientTime() + gHUD.m_flTimeDelta * 10;
+		dl->decay = 250;
+	}
+}
 /*
 =========================
 HUD_StudioEvent
@@ -346,26 +361,32 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 
-	bool iMuzzleFlash = true;
-
-
 	switch (event->event)
 	{
 	case 5001:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[0]);
+		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25,50), gEngfuncs.pfnRandomFloat(8,16));
+		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
 		break;
 	case 5011:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[1]);
+		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
+		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
 		break;
 	case 5021:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[2]);
+		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
+		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
+
 		break;
 	case 5031:
-		if (iMuzzleFlash)
-			gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[3]);
+		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
+		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(8, 16));
 		break;
 	case 5002:
 		gEngfuncs.pEfxAPI->R_SparkEffect((float*)&entity->attachment[0], atoi(event->options), -100, 100);
