@@ -608,7 +608,7 @@ bool CHudAmmo::MsgFunc_CurWeapon(const char* pszName, int iSize, void* pbuf)
 
 	m_pWeapon = pWeapon;
 
-	if (gHUD.m_iFOV >= 90)
+	if ((int)gHUD.m_flTargetFov >= (int)gHUD.default_fov->value-1)
 	{ // normal crosshairs
 		if (fOnTarget && 0 != m_pWeapon->hAutoaim)
 			SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, 255, 255, 255);

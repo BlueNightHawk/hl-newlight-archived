@@ -544,11 +544,10 @@ private:
 	HSPRITE* m_rghSprites; /*[HUD_SPRITE_COUNT]*/ // the sprites loaded from hud.txt
 	Rect* m_rgrcRects;							  /*[HUD_SPRITE_COUNT]*/
 	char* m_rgszSpriteNames;					  /*[HUD_SPRITE_COUNT][MAX_SPRITE_NAME_LENGTH]*/
-
+public:
 	struct cvar_s* default_fov;
 	struct cvar_s* r_autofov;
 
-public:
 	HSPRITE GetSprite(int index)
 	{
 		return (index < 0) ? 0 : m_rghSprites[index];
