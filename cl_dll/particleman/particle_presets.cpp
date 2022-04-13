@@ -58,6 +58,7 @@ CBaseParticle* CreateGunSmoke(const Vector org, char* szModelName, float scale, 
 		pParticle->SetLightFlag(LIGHT_INTENSITY);
 		pParticle->SetRenderFlag(RENDER_FACEPLAYER_ROTATEZ);
 		pParticle->SetCollisionFlags(TRI_ANIMATEDIE);
+		pParticle->m_flFadeSpeed = 1.274;
 		pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 5.5f;
 		pParticle->m_iNumFrames = spr->numframes;
 
