@@ -577,14 +577,6 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	// apply angles
 	VectorCopy(view->angles, view->curstate.angles);
 	VectorCopy(view->angles, view->prevstate.angles);
-
-	if (pparams->health <= 0 && (pparams->viewheight[2] != 0))
-	{
-		// only roll the view if the player is dead and the viewheight[2] is nonzero
-		// this is so deadcam in multiplayer will work.
-		pparams->viewangles[ROLL] = 80; // dead view angle
-		return;
-	}
 }
 
 void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
@@ -758,12 +750,16 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
     static double bobTimes[2] = {0, 0};
 	static float lastTimes[2] = {0, 0};
 
+	static Vector lastAngles;
+
 	int iShouldDrawLegs = (!g_iDrawLegs);
 
 	Vector camAngles, camForward, camRight, camUp;
 	cl_entity_t* pwater;
 
 	V_DriftPitch(pparams);
+
+	static float l_deadangle = 0;
 
 	if (0 != gEngfuncs.IsSpectateOnly())
 	{
@@ -789,6 +785,20 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// refresh position
 	VectorCopy(pparams->simorg, pparams->vieworg);
 	VectorAdd(pparams->vieworg, pparams->viewheight, pparams->vieworg);
+
+	if (pparams->health <= 0 && (pparams->viewheight[2] != 0))
+	{
+		// only roll the view if the player is dead and the viewheight[2] is nonzero
+		// this is so deadcam in multiplayer will work.
+		l_deadangle = lerp(l_deadangle, 80, pparams->frametime * 15.0f); // dead view angle
+		pparams->cl_viewangles[0] = lastAngles[0];
+		pparams->cl_viewangles[1] = lastAngles[1];
+		pparams->cl_viewangles[ROLL] = l_deadangle;
+	}
+	else
+	{
+		l_deadangle = 0;
+	}
 
 	VectorCopy(pparams->cl_viewangles, pparams->viewangles);
 
@@ -1092,6 +1102,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	lasttime = pparams->time;
 
+	lastAngles = pparams->viewangles;
 	v_origin = pparams->vieworg;
 }
 
