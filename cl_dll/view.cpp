@@ -610,6 +610,8 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		g_vLag[0] = l_mx;
 		g_vLag[1] = -l_my;
 
+		pparams->viewangles[2] += l_mx * 0.15;
+
 		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
 		return;
 	}
