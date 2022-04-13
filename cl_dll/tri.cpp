@@ -67,6 +67,8 @@ msprite_t;
 
 model_s* TRI_pModel;
 
+extern cvar_t* cl_hudlag;
+
 // buz start
 
 void ClearBuffer(void);
@@ -312,8 +314,16 @@ void TRI_SprAdjustSize(int* x, int* y, int* w, int* h)
 		*h *= yscale;
 }
 
+extern float g_vLag[2];
+
 void TRI_SprDrawStretchPic(model_t* pModel, int frame, float x, float y, float w, float h, float s1, float t1, float s2, float t2)
 {
+	if (cl_hudlag->value)
+	{
+		x += g_vLag[0];
+		y += g_vLag[1];
+	}
+
 	gEngfuncs.pTriAPI->SpriteTexture(pModel, frame);
 
 	gEngfuncs.pTriAPI->Begin(TRI_QUADS);
@@ -391,6 +401,12 @@ void TRI_SprSet(HSPRITE spr, int r, int g, int b)
 
 void TRI_FillRGBA(int x, int y, int width, int height, int r, int g, int b, int a)
 {
+	if (cl_hudlag->value)
+	{
+		x += g_vLag[0];
+		y += g_vLag[1];
+	}
+
 	TRI_SprAdjustSize(&x, &y, &width, &height);
 
 	gEngfuncs.pfnFillRGBA(x, y, width, height, r, g, b, a);

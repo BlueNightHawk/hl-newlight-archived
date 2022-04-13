@@ -99,6 +99,8 @@ cvar_t* cl_weaponlagspeed;
 cvar_t* cl_fwdangle;
 cvar_t* cl_fwdspeed;
 
+cvar_t* cl_hudlag;
+
 Vector v_jumppunch, v_jumpangle;
 
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
@@ -435,6 +437,7 @@ void V_AddIdle(struct ref_params_s* pparams)
 	pparams->viewangles[YAW] += v_idlescale * sin(pparams->time * v_iyaw_cycle.value) * v_iyaw_level.value;
 }
 
+float g_vLag[2] = {0, 0};
 
 void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 {
@@ -552,6 +555,9 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 		flFallVelocity = 0;
 	}
 
+	g_vLag[0] += l_side * 5 - ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
+	g_vLag[1] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
+
 	// Add in the punchangle, if any
 	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
 
@@ -600,6 +606,9 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		angles[0] += l_my - ((l_mx > 0) ? (l_mx * 0.5) : 0);
 		angles[1] -= l_mx;
 		angles[2] -= l_mx * 2.5;
+
+		g_vLag[0] = l_mx;
+		g_vLag[1] = -l_my;
 
 		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
 		return;
@@ -939,6 +948,8 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_CalcViewAngles(pparams, view);
 
+	g_vLag[0] += l_bobRight - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
+	g_vLag[1] -= l_bobUp - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
 
 	// smooth out stair step ups
 #if 1
@@ -2012,6 +2023,8 @@ void V_Init()
 
 	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("cl_fwdspeed", "200", FCVAR_ARCHIVE);
 	cl_fwdangle = gEngfuncs.pfnRegisterVariable("cl_fwdangle", "2", FCVAR_ARCHIVE);
+
+	cl_hudlag = gEngfuncs.pfnRegisterVariable("cl_hudlag", "1", FCVAR_ARCHIVE);
 }
 
 
