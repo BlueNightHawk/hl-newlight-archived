@@ -226,6 +226,15 @@ int CHud::DrawHudNumberString(int xpos, int ypos, int iMinX, int iNumber, int r,
 {
 	char szString[32];
 	sprintf(szString, "%d", iNumber);
+
+	extern float g_vLag[2];
+	extern cvar_s* cl_hudlag;
+	if (cl_hudlag->value)
+	{
+		xpos += g_vLag[0];
+		ypos += g_vLag[1];
+	}
+
 #ifndef OLD_HUD
 	TRI_SprAdjustSize(&xpos, &ypos, 0, 0);
 #endif
