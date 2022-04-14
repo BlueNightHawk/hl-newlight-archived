@@ -1350,6 +1350,34 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	if (m_pStudioHeader)
 		g_viewinfo.phdr = m_pStudioHeader;
 
+	// get bone angles and calculate base angles using fake entity
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
+		}
+		cl_entity_s temp = *gEngfuncs.GetViewModel();
+		temp.curstate.sequence = 0;
+		temp.curstate.frame = 0;
+		temp.latched.prevframe = 0;
+		m_pCurrentEntity = &temp;
+		m_pRenderModel = m_pCurrentEntity->model;
+		m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+		IEngineStudio.StudioSetHeader(m_pStudioHeader);
+		IEngineStudio.SetRenderModel(m_pRenderModel);
+
+		StudioSetUpTransform(false);
+		StudioSetupBones();
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
+		}
+
+	}
+
 	return true;
 }
 
@@ -2016,8 +2044,19 @@ void CStudioModelRenderer::StudioRenderFinal_Hardware()
 			}
 
 			IEngineStudio.GL_SetRenderMode(rendermode);
-
+			if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+			{
+				glDepthFunc(GL_LEQUAL);
+				glDepthRange(0.1f, 0.4f);
+			}
 			IEngineStudio.StudioDrawPoints();
+
+			if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+			{
+				glDepthFunc(GL_LEQUAL);
+				glDepthRange(0.0f, 1.0f);
+				glClearDepth(1.0f);
+			}
 
 			// SHADOWS START
 			StudioGetVerts();

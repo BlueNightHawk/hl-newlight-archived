@@ -419,8 +419,8 @@ void V_CalcGunAngle(struct ref_params_s* pparams)
 	if (!viewent)
 		return;
 
-	viewent->angles[YAW] = pparams->viewangles[YAW] + pparams->crosshairangle[YAW];
-	viewent->angles[PITCH] = -pparams->viewangles[PITCH] + pparams->crosshairangle[PITCH] * 0.25;
+	viewent->angles[YAW] = pparams->viewangles[YAW];
+	viewent->angles[PITCH] = -pparams->viewangles[PITCH];
 	viewent->angles[ROLL] -= v_idlescale * sin(pparams->time * v_iroll_cycle.value) * v_iroll_level.value;
 
 	// don't apply all of the v_ipitch to prevent normally unseen parts of viewmodel from coming into view.
@@ -700,6 +700,10 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 	}
 }
 
+void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	// TODO : iron sight stuff
+}
 
 /*
 ==================
@@ -994,6 +998,32 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	g_vLag[0] += (l_bobRight * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
 	g_vLag[1] -= (l_bobUp * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
+
+	// Adjusted for MTB models
+	view->origin = view->origin + Vector(pparams->forward) * 2.0f + Vector(pparams->up) * -1.2f;
+
+	// Temporary camera animations for 357
+	// Will make this more proper later
+	if (view->model && view->model->name && stricmp(view->model->name, "models/v_357.mdl") <= 0)
+	{
+		Vector result;
+		VectorSubtract(g_viewinfo.boneangles[0], g_viewinfo.prevboneangles[0], result);
+		NormalizeAngles((float*)&result);
+		static Vector l_camangles;
+
+		for (int i = 0; i < 3; i++)
+		{
+			l_camangles[i] = lerp(l_camangles[i], result[i] * 1.2, pparams->frametime * 17.0f);
+
+			pparams->viewangles[i] += l_camangles[i] / 20;
+		}
+		g_vLag[0] += l_camangles[1] / 3;
+		g_vLag[1] += l_camangles[0] / 3;
+
+		pparams->crosshairangle[0] = -l_camangles[1] / 20;
+		pparams->crosshairangle[1] = -l_camangles[0] / 20;
+	}
+
 
 	// smooth out stair step ups
 #if 1
