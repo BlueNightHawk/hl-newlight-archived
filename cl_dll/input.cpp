@@ -108,6 +108,7 @@ kbutton_t in_alt1;
 kbutton_t in_score;
 kbutton_t in_break;
 kbutton_t in_graph; // Display the netgraph
+kbutton_t in_run;
 
 typedef struct kblist_s
 {
@@ -478,6 +479,10 @@ void IN_ReloadDown() { KeyDown(&in_reload); }
 void IN_ReloadUp() { KeyUp(&in_reload); }
 void IN_Alt1Down() { KeyDown(&in_alt1); }
 void IN_Alt1Up() { KeyUp(&in_alt1); }
+
+void IN_RunDown() { KeyDown(&in_run); }
+void IN_RunUp() { KeyUp(&in_run); }
+
 void IN_GraphDown() { KeyDown(&in_graph); }
 void IN_GraphUp() { KeyUp(&in_graph); }
 
@@ -695,13 +700,14 @@ void DLLEXPORT CL_CreateMove(float frametime, struct usercmd_s* cmd, int active)
 			cmd->upmove *= cl_movespeedkey->value;
 		}
 
+		// scale the 3 speeds so that the total velocity is not > cl.maxspeed
+		float fmov = sqrt((cmd->forwardmove * cmd->forwardmove) + (cmd->sidemove * cmd->sidemove) + (cmd->upmove * cmd->upmove));
+
+
 		// clip to maxspeed
 		spd = gEngfuncs.GetClientMaxspeed();
 		if (spd != 0.0)
 		{
-			// scale the 3 speeds so that the total velocity is not > cl.maxspeed
-			float fmov = sqrt((cmd->forwardmove * cmd->forwardmove) + (cmd->sidemove * cmd->sidemove) + (cmd->upmove * cmd->upmove));
-
 			if (fmov > spd)
 			{
 				float fratio = spd / fmov;
@@ -709,6 +715,12 @@ void DLLEXPORT CL_CreateMove(float frametime, struct usercmd_s* cmd, int active)
 				cmd->sidemove *= fratio;
 				cmd->upmove *= fratio;
 			}
+		}
+		//gEngfuncs.Con_Printf("fmov : %f \n", fmov);
+		if ((in_run.state & 1) != 0 && fmov <= 0.0f)
+		{
+		//	KeyUp(&in_run);
+			in_run.state &= ~1;
 		}
 
 		// Allow mice and other controllers to add their inputs
@@ -850,6 +862,11 @@ int CL_ButtonBits(bool bResetState)
 		bits |= IN_ALT1;
 	}
 
+	if ((in_run.state & 3) != 0)
+	{
+		bits |= IN_RUN;
+	}
+
 	if ((in_score.state & 3) != 0)
 	{
 		bits |= IN_SCORE;
@@ -876,6 +893,7 @@ int CL_ButtonBits(bool bResetState)
 		in_attack2.state &= ~2;
 		in_reload.state &= ~2;
 		in_alt1.state &= ~2;
+		in_run.state &= ~2;
 		in_score.state &= ~2;
 	}
 
@@ -960,6 +978,8 @@ void InitInput()
 	gEngfuncs.pfnAddCommand("-reload", IN_ReloadUp);
 	gEngfuncs.pfnAddCommand("+alt1", IN_Alt1Down);
 	gEngfuncs.pfnAddCommand("-alt1", IN_Alt1Up);
+	gEngfuncs.pfnAddCommand("+run", IN_RunDown);
+	gEngfuncs.pfnAddCommand("-run", IN_RunUp);
 	gEngfuncs.pfnAddCommand("+score", IN_ScoreDown);
 	gEngfuncs.pfnAddCommand("-score", IN_ScoreUp);
 	gEngfuncs.pfnAddCommand("+showscores", IN_ScoreDown);

@@ -1119,6 +1119,18 @@ void PM_WalkMove()
 
 	pmtrace_t trace;
 
+    bool bIsSprinting = false;
+	if ((pmove->cmd.buttons & IN_RUN) != 0)
+	{
+		pmove->oldbuttons |= IN_RUN;
+		bIsSprinting = true;
+	}
+	else
+	{
+		pmove->oldbuttons &= ~IN_RUN;
+		bIsSprinting = false;
+	}
+
 	// Copy movement amounts
 	fmove = pmove->cmd.forwardmove;
 	smove = pmove->cmd.sidemove;
@@ -1130,8 +1142,20 @@ void PM_WalkMove()
 	VectorNormalize(pmove->forward); // Normalize remainder of vectors.
 	VectorNormalize(pmove->right);	 //
 
-	for (i = 0; i < 2; i++) // Determine x and y parts of velocity
-		wishvel[i] = pmove->forward[i] * fmove + pmove->right[i] * smove;
+	if (bIsSprinting && ((pmove->flags & FL_DUCKING) == 0))
+	{
+		pmove->fuser4 = lerp(pmove->fuser4, 1, pmove->frametime * 0.01f);
+	}
+	else
+	{
+		pmove->fuser4 = 0;
+	}
+
+	for (i = 0; i < 2; i++)
+	{ 
+		// Determine x and y parts of velocity
+		wishvel[i] = pmove->forward[i] * (fmove * ((pmove->fuser4*150)+1)) + pmove->right[i] * (smove * V_max(((pmove->fuser4*150)+1) / 2,1));
+	}
 
 	wishvel[2] = 0; // Zero out z part of velocity
 
@@ -1141,10 +1165,21 @@ void PM_WalkMove()
 	//
 	// Clamp to server defined max speed
 	//
-	if (wishspeed > pmove->maxspeed)
+	if (bIsSprinting && ((pmove->flags & FL_DUCKING) == 0))
 	{
-		VectorScale(wishvel, pmove->maxspeed / wishspeed, wishvel);
-		wishspeed = pmove->maxspeed;
+		if (wishspeed > pmove->maxspeed + 200)
+		{
+			VectorScale(wishvel, (pmove->maxspeed + 200) / wishspeed, wishvel);
+			wishspeed = pmove->maxspeed + 200;
+		}
+	}
+	else
+	{
+		if (wishspeed > pmove->maxspeed)
+		{
+			VectorScale(wishvel, pmove->maxspeed / wishspeed, wishvel);
+			wishspeed = pmove->maxspeed;
+		}
 	}
 
 	// Set pmove velocity

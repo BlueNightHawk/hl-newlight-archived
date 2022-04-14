@@ -192,6 +192,8 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 {
 	float cycle;
 	Vector vel;
+	float bobcycle = cl_bobcycle->value;
+	extern kbutton_s in_run;
 
 	if (!pparams->onground || pparams->waterlevel ||
 		pparams->time == lasttime)
@@ -202,9 +204,15 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 
 	lasttime = pparams->time;
 
+
+	if ((in_run.state & 1)!=0)
+	{
+		bobcycle -= 0.13; 
+	}
+
 	bobtime += pparams->frametime * freqmod;
-	cycle = bobtime - (int)(bobtime / cl_bobcycle->value) * cl_bobcycle->value;
-	cycle /= cl_bobcycle->value;
+	cycle = bobtime - (int)(bobtime / bobcycle) * bobcycle;
+	cycle /= bobcycle;
 
 	if (cycle < cl_bobup->value)
 	{
@@ -497,13 +505,14 @@ V_CalcViewAngles
 */
 void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 {
-	static float l_side = 0.0f, l_pitch = 0.0f, l_forward = 0.0f;
+	static float l_side = 0.0f, l_pitch = 0.0f, l_forward = 0.0f, l_sprintangle = 0.0f;
 	float side = 0.0f, pitch = 0.0f, forward = 0.0f;
 	Vector vforward;
 	cl_entity_t* viewentity;
 	static float flFallVelocity = 0.0f;
 
 	Vector c_angle;
+	extern kbutton_t in_run;
 
 	AngleVectors(Vector(-view->angles[0], view->angles[1], view->angles[2]), vforward, NULL, NULL);
 
@@ -515,6 +524,15 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	if (!pparams->onground)
 	{
 		flFallVelocity = -pparams->simvel[2];
+	}
+
+	if (in_run.state & 1)
+	{
+		l_sprintangle = lerp(l_sprintangle, 1, pparams->frametime * 8.0f);
+	}
+	else
+	{
+		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 6.0f);
 	}
 
 	// calculate the forward up and right values
@@ -533,8 +551,8 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	// apply the values
 	view->origin = view->origin - vforward * fabs(l_forward);
 
-	view->angles[0] -= (l_forward + (l_pitch * 0.85)) + (v_jumpangle[0] * 3.5);
-	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5);
+	view->angles[0] -= (l_forward + (l_pitch * 0.85)) + (v_jumpangle[0] * 3.5) + l_sprintangle*10;
+	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5) + l_sprintangle*10;
 
 	if (!pparams->onground)
 	{	
@@ -960,8 +978,10 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	V_CalcViewAngles(pparams, view);
 
-	g_vLag[0] += l_bobRight - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
-	g_vLag[1] -= l_bobUp - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
+	extern kbutton_s in_run;
+
+	g_vLag[0] += (l_bobRight * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
+	g_vLag[1] -= (l_bobUp * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
 
 	// smooth out stair step ups
 #if 1
@@ -2025,7 +2045,7 @@ void V_Init()
 	v_centerspeed = gEngfuncs.pfnRegisterVariable("v_centerspeed", "500", 0);
 
 	cl_bobcycle = gEngfuncs.pfnRegisterVariable("cl_bobcycle", "1.05", 0); // best default for my experimental gun wag (sjb)
-	cl_bob = gEngfuncs.pfnRegisterVariable("cl_bob", "0.01", 0);		  // best default for my experimental gun wag (sjb)
+	cl_bob = gEngfuncs.pfnRegisterVariable("cl_bob", "0.0075", 0);		  // best default for my experimental gun wag (sjb)
 	cl_bobup = gEngfuncs.pfnRegisterVariable("cl_bobup", "0.5", 0);
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);

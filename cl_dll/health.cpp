@@ -392,8 +392,8 @@ bool CHudHealth::DrawDamage(float flTime)
 		if ((m_bitsDamage & giDmgFlags[i]) != 0)
 		{
 			pdmg = &m_dmg[i];
-			SPR_Set(gHUD.GetSprite(m_HUD_dmg_bio + i), r, g, b);
-			SPR_DrawAdditive(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_HUD_dmg_bio + i));
+			(*gEngfuncs.pfnSPR_Set)(gHUD.GetSprite(m_HUD_dmg_bio + i), r, g, b);
+			(*gEngfuncs.pfnSPR_DrawAdditive)(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_HUD_dmg_bio + i));
 		}
 	}
 

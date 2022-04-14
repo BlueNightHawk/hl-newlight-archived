@@ -17,6 +17,8 @@
 //
 #include "hud.h"
 #include "cl_util.h"
+#include "kbutton.h"
+
 
 #include "vgui_TeamFortressViewport.h"
 
@@ -30,6 +32,8 @@ int grgLogoFrame[MAX_LOGO_FRAMES] =
 
 
 extern bool g_iVisibleMouse;
+
+extern kbutton_t in_run;
 
 float HUD_GetFOV();
 
@@ -78,6 +82,11 @@ void CHud::Think()
 	}
 
 	m_flTargetFov = clamp(m_flTargetFov, 60, 120);
+
+	if ((in_run.state & 1) != 0)
+	{
+		m_flTargetFov += 14;
+	}
 
 	m_iFOV = lerp(m_iFOV, m_flTargetFov, gHUD.m_flTimeDelta * m_flTargetFov * 0.1);
 
