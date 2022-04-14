@@ -58,8 +58,8 @@ void CHud::Think()
 	// fov based on aspect ratio
 	if (r_autofov->value != 0)
 	{
-		//gEngfuncs.Con_Printf("%f \n", ((float)ScreenWidth / (float)ScreenHeight));
-		if (((float)ScreenWidth / (float)ScreenHeight) == 1.333333f)
+	//	gEngfuncs.Con_Printf("%f \n", ((float)ScreenWidth / (float)ScreenHeight));
+		if (((float)ScreenWidth / (float)ScreenHeight) < 1.7f)
 		{
 			if (default_fov->value != 90)
 				gEngfuncs.Cvar_SetValue("default_fov", 90);
