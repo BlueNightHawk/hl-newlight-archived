@@ -521,24 +521,24 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 		return;
 
 	// store fall velocity
-	if (!pparams->onground)
+	if (pparams->onground <= 0)
 	{
 		flFallVelocity = -pparams->simvel[2];
 	}
 
-	if (in_run.state & 1)
+	if ((in_run.state & 1) != 0)
 	{
-		l_sprintangle = lerp(l_sprintangle, 1, pparams->frametime * 8.0f);
+		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
 	}
 	else
 	{
-		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 6.0f);
+		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
 	}
 
 	// calculate the forward up and right values
 	side = V_CalcAngle(viewentity->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value, YAW /*RIGHT*/);
 
-	if (!pparams->onground && pparams->waterlevel == 0)
+	if ((pparams->onground <= 0) && pparams->waterlevel == 0)
 		pitch = clamp(pparams->simvel[2], -500, 100);
 
 	forward = V_CalcAngle(viewentity->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
@@ -554,7 +554,7 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	view->angles[0] -= (l_forward + (l_pitch * 0.85)) + (v_jumpangle[0] * 3.5) + l_sprintangle*10;
 	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5) + l_sprintangle*10;
 
-	if (!pparams->onground)
+	if (pparams->onground <= 0)
 	{	
 		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
 		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);	
@@ -566,7 +566,7 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	pparams->viewangles[YAW] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
 	pparams->viewangles[ROLL] += l_side;
 
-	if (flFallVelocity != 0 && pparams->onground)
+	if (flFallVelocity != 0 && pparams->onground > 0)
 	{
 		v_jumppunch[0] = ev_punch[0] = (flFallVelocity * 0.013) * 6; // punch z axis
 		v_jumppunch[1] = ev_punch[1] = (flFallVelocity * 0.013) * 6; // punch z axis
@@ -1906,7 +1906,7 @@ void V_CalcSpectatorRefdef(struct ref_params_s* pparams)
 }
 extern void SetupBuffer();
 
-ref_params_s* g_pparams;
+ref_params_s g_pparams;
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
@@ -1925,7 +1925,7 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 		V_CalcNormalRefdef(pparams);
 	}
 
-	g_pparams = pparams;
+	g_pparams = *pparams;
 
 	// buz
 	if (CVAR_GET_FLOAT("r_shadows") > 1 )
@@ -2051,7 +2051,7 @@ void V_Init()
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
 
 	cl_weaponlag = gEngfuncs.pfnRegisterVariable("cl_weaponlag", "2.0", 0);
-	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("cl_weaponlagscale", "0.2", FCVAR_ARCHIVE);
+	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("cl_weaponlagscale", "1", FCVAR_ARCHIVE);
 	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("cl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
 
 	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("cl_fwdspeed", "200", FCVAR_ARCHIVE);

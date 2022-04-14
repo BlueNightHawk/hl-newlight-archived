@@ -480,7 +480,20 @@ void IN_ReloadUp() { KeyUp(&in_reload); }
 void IN_Alt1Down() { KeyDown(&in_alt1); }
 void IN_Alt1Up() { KeyUp(&in_alt1); }
 
-void IN_RunDown() { KeyDown(&in_run); }
+void IN_RunDown() 
+{
+	extern ref_params_s g_pparams;
+	if (((Length(g_pparams.simvel) <= 15.0f) || g_pparams.onground <= 0 || g_pparams.waterlevel > 1 ||
+		((in_forward.state & 1) == 0 &&
+		(in_back.state & 1) == 0 &&
+		(in_moveleft.state & 1) == 0 &&
+		(in_moveright.state & 1) == 0) ||
+		(g_pparams.viewheight[2] < VEC_VIEW[2])))
+		return;
+
+	KeyDown(&in_run); 
+
+}
 void IN_RunUp() { KeyUp(&in_run); }
 
 void IN_GraphDown() { KeyDown(&in_graph); }
@@ -661,6 +674,7 @@ void DLLEXPORT CL_CreateMove(float frametime, struct usercmd_s* cmd, int active)
 	float spd;
 	Vector viewangles;
 	static Vector oldangles;
+	extern ref_params_t g_pparams;
 
 	if (0 != active)
 	{
@@ -716,10 +730,15 @@ void DLLEXPORT CL_CreateMove(float frametime, struct usercmd_s* cmd, int active)
 				cmd->upmove *= fratio;
 			}
 		}
-		//gEngfuncs.Con_Printf("fmov : %f \n", fmov);
-		if ((in_run.state & 1) != 0 && fmov <= 0.0f)
+	
+		if (((in_run.state & 1) != 0) && 
+			((Length(g_pparams.simvel) <= 15.0f) || g_pparams.onground <= 0 || g_pparams.waterlevel > 1 || 
+			((in_forward.state & 1) == 0 &&
+			(in_back.state & 1) == 0 &&
+			(in_moveleft.state & 1) == 0 &&
+			(in_moveright.state & 1) == 0) || 
+			(g_pparams.viewheight[2] < VEC_VIEW[2])))
 		{
-		//	KeyUp(&in_run);
 			in_run.state &= ~1;
 		}
 

@@ -1361,7 +1361,7 @@ StudioEstimateGait
 */
 void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 {
-	extern ref_params_s* g_pparams;
+	extern ref_params_s g_pparams;
 	float dt;
 	Vector est_velocity;
 
@@ -1384,8 +1384,7 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 	{
 		if (iShouldDrawLegs && !cam_thirdperson)
 		{
-			if (g_pparams)
-				VectorCopy(g_pparams->simvel, est_velocity);
+			VectorCopy(g_pparams.simvel, est_velocity);
 			m_flGaitMovement = Length(est_velocity) * dt;
 		}
 		else		
@@ -1554,7 +1553,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	alight_t lighting;
 	Vector dir;
 
-	extern ref_params_s* g_pparams;
+	extern ref_params_s g_pparams;
 
 	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
@@ -1570,7 +1569,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 	if (iShouldDrawLegs && !cam_thirdperson)
 	{
-		if (g_pparams->waterlevel)
+		if (g_pparams.waterlevel > 1)
 			return false;
 
 		char modelname[256];
