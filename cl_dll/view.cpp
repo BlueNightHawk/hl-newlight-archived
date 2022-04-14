@@ -207,7 +207,7 @@ void V_CalcBob(struct ref_params_s* pparams, float freqmod, calcBobMode_t mode, 
 
 	if ((in_run.state & 1)!=0)
 	{
-		bobcycle -= 0.13; 
+		bobcycle -= 0.35; 
 	}
 
 	bobtime += pparams->frametime * freqmod;

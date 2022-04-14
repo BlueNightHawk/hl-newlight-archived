@@ -483,7 +483,7 @@ void IN_Alt1Up() { KeyUp(&in_alt1); }
 void IN_RunDown() 
 {
 	extern ref_params_s g_pparams;
-	if (((Length(g_pparams.simvel) <= 15.0f) || g_pparams.onground <= 0 || g_pparams.waterlevel > 1 ||
+	if (((Length(g_pparams.simvel) <= 15.0f) || (g_pparams.onground <= 0 && fabs(g_pparams.simvel[2]) > 50) || g_pparams.waterlevel > 1 ||
 		((in_forward.state & 1) == 0 &&
 		(in_back.state & 1) == 0 &&
 		(in_moveleft.state & 1) == 0 &&
@@ -732,7 +732,7 @@ void DLLEXPORT CL_CreateMove(float frametime, struct usercmd_s* cmd, int active)
 		}
 	
 		if (((in_run.state & 1) != 0) && 
-			((Length(g_pparams.simvel) <= 15.0f) || g_pparams.onground <= 0 || g_pparams.waterlevel > 1 || 
+			((Length(g_pparams.simvel) <= 15.0f) || (g_pparams.onground <= 0 && fabs(g_pparams.simvel[2]) > 50) || g_pparams.waterlevel > 1 || 
 			((in_forward.state & 1) == 0 &&
 			(in_back.state & 1) == 0 &&
 			(in_moveleft.state & 1) == 0 &&
