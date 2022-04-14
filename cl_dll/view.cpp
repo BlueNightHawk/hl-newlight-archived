@@ -601,7 +601,9 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 {
 	if (cl_weaponlag->value > 1)
 	{
+		Vector forward, right, up;
 		static float l_mx = 0.0f, l_my = 0.0f;
+		static float pitch = -original_angles[PITCH];
 		extern int g_mx, g_my;
 
 		// simplified magic nips viewlag
@@ -613,6 +615,9 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		l_mx = lerp(l_mx, (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
 		l_my = lerp(l_my, (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
 
+		l_mx = clamp(l_mx, -7.5, 7.5);
+		l_my = clamp(l_my, -7.5, 7.5);
+
 		angles[0] += l_my - ((l_mx > 0) ? (l_mx * 0.5) : 0);
 		angles[1] -= l_mx;
 		angles[2] -= l_mx * 2.5;
@@ -622,7 +627,14 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 
 		pparams->viewangles[2] += l_mx * 0.15;
 
+		AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
+		pitch = lerp(pitch, -original_angles[PITCH], pparams->frametime * 8.5f);
+
 		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
+
+		origin = origin + forward * (-pitch * 0.0175f);
+		origin = origin + right * (-pitch * 0.015f);
+		origin = origin + up * (-pitch * 0.01f);
 		return;
 	}
 
