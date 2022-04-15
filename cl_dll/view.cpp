@@ -793,6 +793,16 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 			pparams->crosshairangle[0] = l_camangles[0] / 25;
 			pparams->crosshairangle[1] = -l_camangles[1] / 25;
 		}
+		else
+		{
+			pparams->crosshairangle[0] = 0;
+			pparams->crosshairangle[1] = 0;
+		}
+	}
+	else
+	{
+		pparams->crosshairangle[0] = 0;
+		pparams->crosshairangle[1] = 0;
 	}
 }
 
