@@ -1624,14 +1624,32 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		}
 		else
 		{
-			m_pRenderModel = IEngineStudio.Mod_ForName("models/player_legs.mdl", 0);
+			if (gHUD.HasSuit() != 0)
+				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_legs.mdl", 0);
+			else
+			{
+				m_pCurrentEntity->model = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
+				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_sci_legs.mdl", 0);
+			}
 		}
 		if (v_angles[0] < 0)
 			return false;
 	}
 	else
 	{
-		m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+		if (gEngfuncs.GetMaxClients() > 1)
+		{
+			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+		}
+		else
+		{
+			if (gHUD.HasSuit())
+				m_pRenderModel = IEngineStudio.Mod_ForName("models/player.mdl", 0);
+			else
+			{
+				m_pCurrentEntity->model = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
+			}
+		}
 	}
 
 	if (m_pRenderModel == NULL)
@@ -1778,6 +1796,8 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
+
+		memcpy(&storedlight, &lighting, sizeof(alight_s));
 
 		if (iShouldDrawLegs && !cam_thirdperson)
 		{
@@ -2146,7 +2166,19 @@ void CStudioModelRenderer::StudioRenderPlayerShadow(int num)
 {
 	if (num == 0)
 	{
-		m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+		if (gEngfuncs.GetMaxClients() > 1)
+		{
+			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
+		}
+		else
+		{
+			if (gHUD.HasSuit())
+				m_pRenderModel = IEngineStudio.Mod_ForName("models/player.mdl", 0);
+			else
+			{
+				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
+			}
+		}
 		if (m_pRenderModel != NULL)
 		{
 			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
@@ -2343,12 +2375,9 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 			AngleVectors(Vector(0, v_angles[1], v_angles[2]), forward, NULL, NULL);
 
 			gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc + forward * 15, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
-			// gEngfuncs.Con_Printf("%f \n", tr.fraction);
 		}
 	}
 	gEngfuncs.pEventAPI->EV_PopPMStates();
-
-	//glGetIntegerv(GL_STENCIL_BITS, &hasStencil);
 
 	if ((m_pCurrentEntity->curstate.effects & EF_NOSHADOW) != 0)
 		return;
@@ -2412,26 +2441,27 @@ studio shadows with some asm tricks
 */
 void CStudioModelRenderer::StudioDrawShadow()
 {
-	Vector vColor;
+	int amblight = storedlight.ambientlight;
 	float intensity = 0.0;
 
-	gEngfuncs.pTriAPI->LightAtPoint(m_pCurrentEntity->origin + Vector(0,0,2), vColor);
-	intensity = m_pCurrentEntity->baseline.fuser4 = lerp(m_pCurrentEntity->baseline.fuser4, (vColor.x + vColor.y + vColor.z) / 3.0, gHUD.m_flTimeDelta * 17.9f);
+	intensity = m_pCurrentEntity->baseline.fuser4 = lerp(m_pCurrentEntity->baseline.fuser4, ((float)amblight / 128), gHUD.m_flTimeDelta * 17.9f);
 
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
-		glDepthMask(GL_FALSE);
-		float color = (intensity / 255);
+		float color = 1 - intensity;
+		gEngfuncs.Con_Printf("%f \n", color);
 		if (r_shadow_alpha->value < 1)
-			color = 1- r_shadow_alpha->value;
+			color = 1 - r_shadow_alpha->value;
+
+		glDepthMask(GL_FALSE);
 
 		glDisable(GL_TEXTURE_2D);
-		glBlendFunc(GL_ONE_MINUS_SRC1_ALPHA, GL_SRC0_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		glColor4f( 0, 0, 0, color);
 
-		glDepthFunc(GL_LEQUAL);
+		glDepthFunc(GL_LESS);
 		StudioDrawPointsShadow();
 		glDepthFunc(GL_LEQUAL);
 

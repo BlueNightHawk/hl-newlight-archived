@@ -262,6 +262,8 @@ public:
 	cvar_t* r_shadow_x;
 	cvar_t* r_shadow_y;
 	cvar_t* r_shadow_alpha;
+
+	alight_t storedlight;
 	// SHADOWS END
 
 	entity_state_t* m_pPlayer;
