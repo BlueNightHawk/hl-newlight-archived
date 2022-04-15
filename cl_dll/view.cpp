@@ -103,6 +103,8 @@ cvar_t* cl_hudlag;
 
 cvar_t* cl_animbone;
 
+cvar_t* cl_guessanimbone;
+
 Vector v_jumppunch, v_jumpangle;
 
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
@@ -722,13 +724,39 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 	
 	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
 	{
-		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + i);
-		if (!pbone)
+		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
+		
+		if (pbone == nullptr || pbone[i].name == nullptr)
 			break;
-		if (!stricmp(pbone->name, "camera"))
+		if (!stricmp(pbone[i].name, "camera"))
 		{
 			index = i;
 			break;
+		}
+		// try using common gun bone names to get bone index
+		else if (cl_guessanimbone->value != 0)
+		{
+			// add checks for more names if needed
+			if (!stricmp(pbone[i].name, "gun"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "weapon"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "glock"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "Bip01 R Wrist") || !stricmp(pbone[i].name, "Bip01 R Hand"))
+			{
+				index = i;
+				break;
+			}
 		}
 	}
 
@@ -2145,6 +2173,7 @@ void V_Init()
 	cl_hudlag = gEngfuncs.pfnRegisterVariable("cl_hudlag", "1", FCVAR_ARCHIVE);
 
 	cl_animbone = gEngfuncs.pfnRegisterVariable("cl_animbone", "0", FCVAR_ARCHIVE);
+	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("cl_guessanimbone", "0", FCVAR_ARCHIVE);
 }
 
 
