@@ -1631,6 +1631,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	if (m_pRenderModel == NULL)
 		return false;
 
+	Vector vecPrevOrg = m_pCurrentEntity->origin;
+	Vector vecAdjOrg = Vector(0, 0, 0);
+
 	m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
 	IEngineStudio.StudioSetHeader(m_pStudioHeader);
 	IEngineStudio.SetRenderModel(m_pRenderModel);
@@ -1655,7 +1658,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			angles[PITCH] = angles[ROLL] = NULL;
 			AngleVectors(angles, forward, NULL, NULL);
 
-			origin = origin - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			origin = origin - forward * 25 - ((m_pCurrentEntity->curstate.usehull != 0) ? Vector(0, 0, 6) : Vector(0, 0, 0));
 			
 			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
 			VectorCopy(origin, m_pCurrentEntity->origin);
@@ -1695,10 +1698,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			angles[PITCH] = angles[ROLL] = NULL;
 			AngleVectors(angles, forward, NULL, NULL);
 
-			if (pplayer->sequence == 8 || pplayer->sequence == 9)
-				origin = origin - Vector(0,0,28) - (forward * 25) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
-			else
-				origin = origin  - (forward * 20) - ((m_pCurrentEntity->curstate.usehull) ? Vector(0, 0, 6) : Vector(0, 0, 0));
+			origin = origin - forward * 25 - ((m_pCurrentEntity->curstate.usehull != 0) ? Vector(0, 0, 6) : Vector(0, 0, 0));
 
 			m_pCurrentEntity->angles[0] = m_pCurrentEntity->angles[2] = m_pCurrentEntity->curstate.angles[0] = m_pCurrentEntity->curstate.angles[2] = 0;
 			VectorCopy(origin, m_pCurrentEntity->origin);
@@ -1759,20 +1759,24 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		
 		lighting.plightvec = dir;
 
-		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
-
 		// fixes pitch black model inside walls
 		// TODO : use a better solution
-		if (iShouldDrawLegs && !cam_thirdperson && gEngfuncs.GetViewModel()->model)
+		if (iShouldDrawLegs && !cam_thirdperson)
 		{
-			lighting = gHUD.vmodel_lighting;
-			lighting.plightvec = dir;
+			vecAdjOrg = m_pCurrentEntity->origin;
+			m_pCurrentEntity->origin = vecPrevOrg;
 		}
+		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
 		IEngineStudio.StudioEntityLight(&lighting);
 
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
+
+		if (iShouldDrawLegs && !cam_thirdperson)
+		{
+			m_pCurrentEntity->origin = vecAdjOrg;
+		}
 
 		VectorCopy(lighting.plightvec, lightpos);
 
@@ -1781,7 +1785,6 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		// get remap colors
 		m_nTopColor = m_pPlayerInfo->topcolor;
 		m_nBottomColor = m_pPlayerInfo->bottomcolor;
-
 
 		// bounds check
 		if (m_nTopColor < 0)
