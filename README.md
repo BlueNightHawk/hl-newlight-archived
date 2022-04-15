@@ -5,24 +5,40 @@ I will add some random features in this repo.
 So far i have added:
 
 Xash shadows in client
-New viewbob
-Weapon sway
-Jumping animations
-Valve map intro ( can be disabled using -novid launch parameter )
-Weapon retracting near walls
-Cvars for enable bhop and autobhop ( sv_enablebhop and sv_enableautobhop )
-First person player body with shadows
-Viewmodel attachment angles
-Buzer shadows ( for non-nvidia, enabled by r_shadows 2 )
-Basic ParticleMan usage
-Camera animations
-Sprinting
-Automatic FOV based on aspect ratio
-Hud bobbing and swaying
-Smooth FOV changing / Smooth zooming
-Ku2zoff's triapi hud for better scaling
-And some minor additions.
 
+New viewbob
+
+Weapon sway
+
+Jumping animations
+
+Valve map intro ( can be disabled using -novid launch parameter )
+
+Weapon retracting near walls
+
+Cvars for enable bhop and autobhop ( sv_enablebhop and sv_enableautobhop )
+
+First person player body with shadows
+
+Viewmodel attachment angles
+
+Buzer shadows ( for non-nvidia, enabled by r_shadows 2 )
+
+Basic ParticleMan usage
+
+Camera animations
+
+Sprinting
+
+Automatic FOV based on aspect ratio
+
+Hud bobbing and swaying
+
+Smooth FOV changing / Smooth zooming
+
+Ku2zoff's triapi hud for better scaling
+
+And some minor additions.
 
 Builds in this repo:
 https://github.com/BlueNightHawk/hl_bfork
