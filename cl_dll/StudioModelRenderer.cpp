@@ -1600,18 +1600,25 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		if (g_pparams.waterlevel > 1)
 			return false;
 
+		void *pfile = nullptr;
 		char modelname[256];
 		strcpy(modelname, IEngineStudio.SetupPlayerModel(m_nPlayerIndex)->name);
 		modelname[strlen(modelname) - strlen(".mdl")] = 0;
 		strcat(modelname, "_legs.mdl");
 
-		m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
-		
+		if (pfile = gEngfuncs.COM_LoadFile(modelname, 5, nullptr))
+		{
+			m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
+			gEngfuncs.COM_FreeFile(pfile);
+		}
+		else
+			m_pRenderModel = NULL;
 		flags &= ~STUDIO_EVENTS;
 		
 		if (!m_pRenderModel)
-			m_pRenderModel = IEngineStudio.SetupPlayerModel(m_nPlayerIndex);
-
+		{
+			m_pRenderModel = IEngineStudio.Mod_ForName("models/player/gordon/gordon_legs.mdl", 0);
+		}
 		if (v_angles[0] < 0)
 			return false;
 	}
