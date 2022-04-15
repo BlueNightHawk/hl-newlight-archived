@@ -2183,7 +2183,7 @@ void V_Init()
 	cl_hudlag = gEngfuncs.pfnRegisterVariable("cl_hudlag", "1", FCVAR_ARCHIVE);
 
 	cl_animbone = gEngfuncs.pfnRegisterVariable("cl_animbone", "0", FCVAR_ARCHIVE);
-	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("cl_guessanimbone", "0", FCVAR_ARCHIVE);
+	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("cl_guessanimbone", "1", FCVAR_ARCHIVE);
 }
 
 

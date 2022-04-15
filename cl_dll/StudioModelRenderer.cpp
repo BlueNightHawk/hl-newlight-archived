@@ -1608,8 +1608,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 		if (pfile = gEngfuncs.COM_LoadFile(modelname, 5, nullptr))
 		{
-			m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
 			gEngfuncs.COM_FreeFile(pfile);
+			pfile = nullptr;
+			m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
 		}
 		else
 			m_pRenderModel = NULL;
