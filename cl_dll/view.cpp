@@ -834,12 +834,31 @@ int GetAnimBoneFromFile(char* name)
 
 void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 {
-	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL)
-		return;
-
+	static Vector l_camangles, l_campos;
 	mstudiobone_t* pbone = nullptr;
-	int index = GetAnimBoneFromFile(view->model->name + 7);
-	
+
+	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL || GetAnimBoneFromFile(view->model->name + 7) == -2)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			l_camangles[i] = lerp(l_camangles[i], 0, pparams->frametime * 17.0f);
+			l_campos[i] = lerp(l_campos[i], 0, pparams->frametime * 17.0f);
+			pparams->viewangles[i] += l_camangles[i] / 25;
+			pparams->vieworg[i] += l_campos[i] / 10;
+		}
+		g_vLag[0] += l_camangles[1] / 3;
+		g_vLag[1] -= l_camangles[0] / 3;
+
+		if (cl_hudlag->value != 0)
+		{
+			pparams->crosshairangle[0] = l_camangles[0] / 25;
+			pparams->crosshairangle[1] = -l_camangles[1] / 25;
+		}
+		return;
+	}
+
+	int index = GetAnimBoneFromFile(view->model->name + 7);		
+
 	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
 	{
 		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
@@ -894,7 +913,6 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		VectorSubtract(g_viewinfo.bonepos[index], g_viewinfo.prevbonepos[index], result2);
 
 		NormalizeAngles((float*)&result);
-		static Vector l_camangles, l_campos;
 
 		for (int i = 0; i < 3; i++)
 		{
