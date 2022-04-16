@@ -804,13 +804,41 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 	strcpy(pszPrevName, view->model->name);
 }
 
+int GetAnimBoneFromFile(char* name)
+{
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/animbonelist.txt", 5, NULL);
+	char token[500];
+	int index = -1;
+
+	if (pfile == nullptr)
+	{
+		return -1;
+	}
+
+	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	{
+		if (!stricmp(token, name))
+		{
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			index = atoi(token);
+			break;
+		}
+	}
+
+	gEngfuncs.COM_FreeFile(pfile2);
+	pfile = pfile2 = nullptr;
+
+	return index;
+}
+
 void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 {
 	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL)
 		return;
 
 	mstudiobone_t* pbone = nullptr;
-	int index = -1;
+	int index = GetAnimBoneFromFile(view->model->name + 7);
 	
 	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
 	{
@@ -818,13 +846,14 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		
 		if (pbone == nullptr || pbone[i].name == nullptr)
 			break;
+
 		if (!stricmp(pbone[i].name, "camera"))
 		{
 			index = i;
 			break;
 		}
 		// try using common gun bone names to get bone index
-		else if (cl_guessanimbone->value != 0)
+		else if (cl_guessanimbone->value != 0 && (index) == -1)
 		{
 			// add checks for more names if needed
 			if (!stricmp(pbone[i].name, "gun"))
