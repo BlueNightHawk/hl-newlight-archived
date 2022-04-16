@@ -80,7 +80,32 @@ bool CGlock::Deploy()
 
 void CGlock::SecondaryAttack()
 {
-	GlockFire(0.1, 0.2, false);
+//	GlockFire(0.1, 0.2, false);
+	if (m_pPlayer->m_iFOV != 0)
+	{
+		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+	}
+	else if (m_pPlayer->m_iFOV != 80)
+	{
+		m_pPlayer->m_iFOV = 80;
+		SendWeaponAnim(GLOCK_IDLE1);
+	}
+
+	pev->nextthink = UTIL_WeaponTimeBase() + 0.1;
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
+}
+
+void CGlock::Holster()
+{
+	m_fInReload = false; // cancel any reload in progress.
+
+	if (m_pPlayer->m_iFOV != 0)
+	{
+		SecondaryAttack();
+	}
+
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	SendWeaponAnim(GLOCK_HOLSTER);
 }
 
 void CGlock::PrimaryAttack()
@@ -206,7 +231,8 @@ void CGlock::WeaponIdle()
 			iAnim = GLOCK_IDLE2;
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
 		}
-		SendWeaponAnim(iAnim);
+		if (m_pPlayer->m_iFOV == 0)
+			SendWeaponAnim(iAnim);
 	}
 }
 

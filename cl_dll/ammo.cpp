@@ -293,6 +293,8 @@ bool CHudAmmo::Init()
 	gWR.Init();
 	gHR.Init();
 
+	m_flCrosshairColor = 0;
+
 	return true;
 };
 
@@ -364,6 +366,41 @@ void CHudAmmo::Think()
 		}
 	}
 
+	float color = 255 * (1 - m_flCrosshairColor);
+
+	if (m_pWeapon && m_pWeapon->szName && stricmp(m_pWeapon->szName,"weapon_crossbow"))
+	{
+		if ((int)gHUD.m_flTargetFov >= (int)gHUD.default_fov->value - 1)
+		{
+			m_flCrosshairColor = lerp(m_flCrosshairColor, 0, gHUD.m_flTimeDelta * 10.0f);
+			// normal crosshairs
+			if (m_fOnTarget && 0 != m_pWeapon->hAutoaim)
+				SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, color, color, color);
+			else if (m_pWeapon->hAutoaim != 0)
+				SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, color, color, color);
+		}
+		else
+		{
+			m_flCrosshairColor = lerp(m_flCrosshairColor, 1, gHUD.m_flTimeDelta * 6.0f);
+			if (m_flCrosshairColor > 0.5)
+			{
+				static Rect nullrc;
+				SetCrosshair(0, nullrc, color, color, color);
+			}
+			else
+			{
+				// zoomed crosshairs
+				if (m_fOnTarget && 0 != m_pWeapon->hZoomedAutoaim)
+					SetCrosshair(m_pWeapon->hZoomedAutoaim, m_pWeapon->rcZoomedAutoaim, color, color, color);
+				else if (m_pWeapon->hAutoaim != 0)
+					SetCrosshair(m_pWeapon->hZoomedCrosshair, m_pWeapon->rcZoomedCrosshair, color, color, color);
+			}
+		}
+	}
+	else
+	{
+
+	}
 	if (!gpActiveSel)
 		return;
 
@@ -573,6 +610,8 @@ bool CHudAmmo::MsgFunc_CurWeapon(const char* pszName, int iSize, void* pbuf)
 		fOnTarget = true;
 	}
 
+	m_fOnTarget = fOnTarget;
+
 	if (iId < 1)
 	{
 		SetCrosshair(0, nullrc, 0, 0, 0);
@@ -608,19 +647,21 @@ bool CHudAmmo::MsgFunc_CurWeapon(const char* pszName, int iSize, void* pbuf)
 
 	m_pWeapon = pWeapon;
 
+	float color = 255 * (1 -  m_flCrosshairColor);
+
 	if ((int)gHUD.m_flTargetFov >= (int)gHUD.default_fov->value-1)
 	{ // normal crosshairs
 		if (fOnTarget && 0 != m_pWeapon->hAutoaim)
-			SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, 255, 255, 255);
+			SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, color, color, color);
 		else
-			SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, 255, 255, 255);
+			SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, color, color, color);
 	}
 	else
 	{ // zoomed crosshairs
 		if (fOnTarget && 0 != m_pWeapon->hZoomedAutoaim)
-			SetCrosshair(m_pWeapon->hZoomedAutoaim, m_pWeapon->rcZoomedAutoaim, 255, 255, 255);
+			SetCrosshair(m_pWeapon->hZoomedAutoaim, m_pWeapon->rcZoomedAutoaim, color, color, color);
 		else
-			SetCrosshair(m_pWeapon->hZoomedCrosshair, m_pWeapon->rcZoomedCrosshair, 255, 255, 255);
+			SetCrosshair(m_pWeapon->hZoomedCrosshair, m_pWeapon->rcZoomedCrosshair, color, color, color);
 	}
 
 	m_fFade = 200.0f; //!!!

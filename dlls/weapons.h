@@ -492,6 +492,7 @@ public:
 	bool Deploy() override;
 	void Reload() override;
 	void WeaponIdle() override;
+	void Holster() override;
 
 	bool UseDecrement() override
 	{

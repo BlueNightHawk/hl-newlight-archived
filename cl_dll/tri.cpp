@@ -95,7 +95,7 @@ mleaf_t* Mod_PointInLeaf(Vector p, model_t* model) // quake's func
 model_t* g_pworld;
 int g_visframe;
 int g_framecount;
-myVector g_lightvec;
+myvec3_t g_lightvec;
 
 void RecursiveDrawWorld(mnode_t* node)
 {
@@ -181,15 +181,11 @@ void DLLEXPORT HUD_DrawNormalTriangles()
 
 	static	PFNGLACTIVETEXTUREARBPROC glActiveTextureARB = NULL;
 
-	ClearBuffer();
+	ClearBuffer(); // Buz
 
 	gHUD.m_Spectator.DrawOverview();
 
-	// buz start
-	// тут можно бюло просто нарисовать серый квадрат на весь экран, как это часто делают
-	// в стенсильных тенях такого рода, однако вместо этого я пробегаюсь по полигонам world'а,
-	// и рисую серым только те, которые обращены к "солнышку", чтобы тень не рисовалась
-	// на "обратных" стенках.
+	// Buz Start
 	if (g_bShadows && IEngineStudio.IsHardware())
 	{
 		if (NULL == glActiveTextureARB)
@@ -197,9 +193,8 @@ void DLLEXPORT HUD_DrawNormalTriangles()
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-		// buz: workaround half-life's bug, when multitexturing left enabled after
+		// BUzer: workaround half-life's bug, when multitexturing left enabled after
 		// rendering brush entities
-		
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glDisable(GL_TEXTURE_2D);
 		glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -213,7 +208,7 @@ void DLLEXPORT HUD_DrawNormalTriangles()
 
 		glStencilFunc(GL_NOTEQUAL, 0, ~0);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		//glEnable(GL_STENCIL_TEST);
+		glEnable(GL_STENCIL_TEST);
 
 		// get current visframe number
 		g_pworld = gEngfuncs.GetEntityByIndex(0)->model;
@@ -233,6 +228,7 @@ void DLLEXPORT HUD_DrawNormalTriangles()
 	}
 
 	g_bShadows = false;
+	// Buz End
 	// buz end
 }
 

@@ -107,6 +107,8 @@ cvar_t* cl_guessanimbone;
 
 Vector v_jumppunch, v_jumpangle;
 
+float g_flZoomMultiplier = 1.0f;
+
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t v_iyaw_cycle = {"v_iyaw_cycle", "2", 0, 2};
@@ -489,7 +491,7 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 
-	v_dist = lerp(v_dist, -(tr.fraction - 1) * 0.65, pparams->frametime * 15.5f);
+	v_dist = lerp(v_dist, -(tr.fraction - 1) * 0.65 * g_flZoomMultiplier, pparams->frametime * 15.5f);
 	
 	view->angles[0] += v_dist * 12.25;
 	view->angles[1] -= v_dist * 4.5;
@@ -548,9 +550,9 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	forward = V_CalcAngle(viewentity->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
 
 	// interpolate the values
-	l_side = lerp(l_side, side * 1.2, pparams->frametime * 17.0f);
-	l_pitch = lerp(l_pitch, pitch * 0.055, pparams->frametime * 9.0f);
-	l_forward = lerp(l_forward, forward * 0.8, pparams->frametime * 9.0f);
+	l_side = lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
+	l_pitch = lerp(l_pitch, pitch * 0.055 * g_flZoomMultiplier, pparams->frametime * 9.0f);
+	l_forward = lerp(l_forward, forward * 0.8 * g_flZoomMultiplier, pparams->frametime * 9.0f);
 
 	// apply the values
 	view->origin = view->origin - vforward * fabs(l_forward);
@@ -621,8 +623,8 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 			g_my = 0;
 		}
 
-		l_mx = lerp(l_mx, (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
-		l_my = lerp(l_my, (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+		l_mx = lerp(l_mx, V_max(g_flZoomMultiplier,0.25) * (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+		l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
 
 		l_mx = clamp(l_mx, -7.5, 7.5);
 		l_my = clamp(l_my, -7.5, 7.5);
@@ -637,7 +639,7 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		pparams->viewangles[2] += l_mx * 0.15;
 
 		AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
-		pitch = lerp(pitch, -original_angles[PITCH], pparams->frametime * 8.5f);
+		pitch = lerp(pitch, -original_angles[PITCH] * g_flZoomMultiplier, pparams->frametime * 8.5f);
 
 		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
 
@@ -709,9 +711,97 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 	}
 }
 
+// get offsets from text file
+bool GetOffsetFromFile(char* name, float* offset, float *aoffset)
+{
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/isight_offsets.txt", 5, NULL);
+	char token[500];
+	bool found = false;
+
+	if (pfile == nullptr)
+	{
+		return false;
+	}
+
+	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	{
+		if (!stricmp(token, name))
+		{
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[0] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[1] = -atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[2] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[0] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[1] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[2] = atof(token);
+			found = true;
+			break;
+		}
+	}
+
+	gEngfuncs.COM_FreeFile(pfile2);
+	pfile = pfile2 = nullptr;
+
+	return found;
+}
+
+Vector LerpVector(const float* start, const float* end, float frac)
+{
+	Vector out;
+	for (int i = 0; i < 3; i++)
+		out[i] = lerp(start[i], end[i], frac);
+
+	return out;
+}
+
 void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 {
-	// TODO : iron sight stuff
+	static Vector offset, aoffset;
+	static Vector vecLerpOrg, vecLerpAng;
+	static char pszPrevName[100] = {"\0"};
+
+	Vector forward, right, up;
+
+	//	if (stricmp(pszPrevName,view->model->name))
+
+	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
+	{
+		offset = aoffset = Vector(0, 0, 0);
+
+		vecLerpOrg = LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 17.0f);
+		vecLerpAng = LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 17.0f);
+		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
+
+		view->origin = view->origin + Vector(pparams->forward) * vecLerpOrg[0] + Vector(pparams->right) * vecLerpOrg[1] + Vector(pparams->up) * vecLerpOrg[2];
+		view->angles = view->angles + vecLerpAng;
+		return;
+	}
+
+
+	if (gHUD.m_flTargetFov < gHUD.default_fov->value)
+	{
+		vecLerpOrg = LerpVector(vecLerpOrg, offset, pparams->frametime * 8.0f);
+		vecLerpAng = LerpVector(vecLerpAng, aoffset, pparams->frametime * 8.0f);
+		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 0, pparams->frametime * 17.0f);
+	}
+	else
+	{
+		vecLerpOrg = LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 8.0f);
+		vecLerpAng = LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 8.0f);
+		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
+	}
+
+	AngleVectors(INVPITCH(view->angles), forward, right, up);
+	view->origin = view->origin + forward * vecLerpOrg[0] + right * vecLerpOrg[1] + up * vecLerpOrg[2];
+	view->angles = view->angles + vecLerpAng;
+	VectorCopy(view->angles, view->curstate.angles);
+	strcpy(pszPrevName, view->model->name);
 }
 
 void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
@@ -779,8 +869,8 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 
 		for (int i = 0; i < 3; i++)
 		{
-			l_camangles[i] = lerp(l_camangles[i], result[i] * 1.2, pparams->frametime * 17.0f);
-			l_campos[i] = lerp(l_campos[i], result2[i] * 1.2, pparams->frametime * 17.0f);
+			l_camangles[i] = lerp(l_camangles[i], result[i] * 1.2 * V_max(g_flZoomMultiplier, 0.5), pparams->frametime * 17.0f);
+			l_campos[i] = lerp(l_campos[i], result2[i] * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
 
 			pparams->viewangles[i] += l_camangles[i] / 25;
 			pparams->vieworg[i] += l_campos[i] / 10;
@@ -1061,16 +1151,16 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	for (i = 0; i < 3; i++)
 	{
-		view->origin[i] -= l_bobUp * 0.13f * pparams->up[i];
+		view->origin[i] -= l_bobUp * 0.13f * V_max(g_flZoomMultiplier, 0.15) * pparams->up[i];
 	}
 
-	view->angles[0] += l_bobUp * 0.66f;
-	view->angles[1] -= l_bobRight * 2.13f;
-	view->angles[2] += l_bobRight * 0.66f;
+	view->angles[0] += l_bobUp * 0.66f * V_max(g_flZoomMultiplier, 0.15);
+	view->angles[1] -= l_bobRight * 2.13f * V_max(g_flZoomMultiplier, 0.15);
+	view->angles[2] += l_bobRight * 0.66f * V_max(g_flZoomMultiplier, 0.15);
 
-	pparams->viewangles[0] += l_bobUp * 0.165f;
-	pparams->viewangles[1] += l_bobRight * 0.085f;
-	pparams->viewangles[2] += l_bobRight * 0.165f;
+	pparams->viewangles[0] += l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
+	pparams->viewangles[1] += l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
+	pparams->viewangles[2] += l_bobRight * 0.165f * V_max(g_flZoomMultiplier, 0.15);
 
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 
@@ -1092,14 +1182,14 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	{
 		view->origin[2] += 0.5;
 	}
-
+	
 	V_CamAnims(pparams, view);
 	V_CalcViewAngles(pparams, view);
-
+	V_ModifyOrigin(pparams, view);
 	if (cl_hudlag->value != 0)
 	{
-		pparams->crosshairangle[0] += l_bobUp * 0.165f;
-		pparams->crosshairangle[1] -= l_bobRight * 0.085f;
+		pparams->crosshairangle[0] -= l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
+		pparams->crosshairangle[1] -= l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
 	}
 	extern kbutton_s in_run;
 

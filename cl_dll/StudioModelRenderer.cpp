@@ -64,7 +64,6 @@ inline void LoadProcEXT(FuncType& pfn, const char* name)
 
 #define LOAD_PROC_EXT(x) LoadProcEXT(x, #x);
 
-
 class CArraysLocker
 {
 public:
@@ -95,13 +94,10 @@ private:
 };
 
 
-
 CArraysLocker g_Lock;
 
-myVector vertexdata[MaxShadowFaceCount * 5];
+myvec3_t vertexdata[MaxShadowFaceCount * 5];
 GLushort indexdata[MaxShadowFaceCount * 3 * 5];
-
-
 
 bool g_bShadows;
 
@@ -120,7 +116,6 @@ void ClearBuffer(void)
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
-
 // buz end
 
 cvar_s* r_drawlegs;
@@ -1321,7 +1316,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	{
 		Vector lightcol;
 
-		lighting.plightvec = dir;
+		lighting.plightvec = vecLightDir;
 		
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
@@ -1781,7 +1776,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			m_pCurrentEntity->curstate.body = 1; // force helmet
 		}
 		
-		lighting.plightvec = dir;
+		lighting.plightvec = vecLightDir;
 
 		// fixes pitch black model inside walls
 		// TODO : use a better solution
@@ -1884,7 +1879,7 @@ void CStudioModelRenderer::StudioLightAtPos(const float* pos, float* color, int&
 
 
 	// setup lighting
-	lighting.plightvec = rdir;
+	lighting.plightvec = dir;
 	IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 	IEngineStudio.StudioEntityLight(&lighting);
 	IEngineStudio.StudioSetupLighting(&lighting);
@@ -2387,10 +2382,15 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 		glEnable(GL_STENCIL_TEST);
 	}
 
+//	height = vecLightDir[2] + 1.0f;
+//	vec_x = -vecLightDir[0] * 8.0f;
+//	vec_y = -vecLightDir[1] * 8.0f;
+
 	// magic nipples - no more shadows from lightsources because it looks bad
 	height = r_shadow_height->value + 0.1f;
 	vec_y = r_shadow_y->value;
 	vec_x = r_shadow_x->value;
+
 
 	for (k = 0; k < m_pSubModel->nummesh; k++)
 	{
@@ -2450,7 +2450,6 @@ void CStudioModelRenderer::StudioDrawShadow()
 	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
 		float color = 1 - intensity;
-		gEngfuncs.Con_Printf("%f \n", color);
 		if (r_shadow_alpha->value < 1)
 			color = 1 - r_shadow_alpha->value;
 
@@ -2478,13 +2477,12 @@ void CStudioModelRenderer::StudioDrawShadow()
 
 
 //
-// =========== buz start =============
+// =========== // Buz start =============
 //
 
 /*
 ====================
 BuildFaces
-
 ====================
 */
 void CStudioModelRenderer::BuildFaces(SubModelData& dst, mstudiomodel_t* src)
@@ -2575,7 +2573,6 @@ void CStudioModelRenderer::BuildFaces(SubModelData& dst, mstudiomodel_t* src)
 /*
 ====================
 BuildEdges
-
 ====================
 */
 void CStudioModelRenderer::BuildEdges(SubModelData& dst, mstudiomodel_t* src)
@@ -2584,7 +2581,7 @@ void CStudioModelRenderer::BuildEdges(SubModelData& dst, mstudiomodel_t* src)
 		return;
 
 	dst.edges.reserve(dst.faces.size() * 3); // this is maximum
-	for (int i = 0; i < dst.faces.size(); i++)
+	for (unsigned int i = 0; i < dst.faces.size(); i++)
 	{
 		Face& f = dst.faces[i];
 		AddEdge(dst, i, f.vertex0, f.vertex1);
@@ -2598,13 +2595,12 @@ void CStudioModelRenderer::BuildEdges(SubModelData& dst, mstudiomodel_t* src)
 /*
 ====================
 AddEdge
-
 ====================
 */
 void CStudioModelRenderer::AddEdge(SubModelData& dst, int face, int v0, int v1)
 {
 	// first look for face's neighbour
-	for (int i = 0; i < dst.edges.size(); i++)
+	for (unsigned int i = 0; i < dst.edges.size(); i++)
 	{
 		Edge& e = dst.edges[i];
 		if ((e.vertex0 == v1) && (e.vertex1 == v0) && (e.face1 == -1))
@@ -2629,7 +2625,7 @@ void SpecialProcess(SubModelData& dst)
 	// все индексы вершин умножаютс€ на 2, так как в массиве вершин кажда€ вершина
 	// будет в двух экземпл€рах - оригинальна€, и смещЄнна€ на размер теневого объема
 
-	int i;
+	unsigned int i;
 	for (i = 0; i < dst.faces.size(); i++)
 	{
 		Face& f = dst.faces[i];
@@ -2649,7 +2645,6 @@ void SpecialProcess(SubModelData& dst)
 /*
 ====================
 SetupModelExtraData
-
 ====================
 */
 void CStudioModelRenderer::SetupModelExtraData(void)
@@ -2663,7 +2658,8 @@ void CStudioModelRenderer::SetupModelExtraData(void)
 	gEngfuncs.Con_Printf("Generating extra data for model %s\n", m_pRenderModel->name);
 
 	// get number of submodels
-	int i, n = 0;
+	signed int i;
+	unsigned int n = 0;
 	mstudiobodyparts_t* bp = (mstudiobodyparts_t*)((byte*)m_pStudioHeader + m_pStudioHeader->bodypartindex);
 	for (i = 0; i < m_pStudioHeader->numbodyparts; i++)
 		n += bp[i].nummodels;
@@ -2707,12 +2703,11 @@ void CStudioModelRenderer::SetupModelExtraData(void)
 /*
 ====================
 DrawShadowsForEnt
-
 ====================
 */
 void CStudioModelRenderer::DrawShadowsForEnt(void)
 {
-	/*	myVector tmp;
+	/*	myvec3_t tmp;
 		VectorSubtract(m_pCurrentEntity->origin, m_vRenderOrigin, tmp);
 		if (DotProduct(tmp, tmp) > (700 * 700))
 			return;*/
@@ -2751,7 +2746,6 @@ void CStudioModelRenderer::DrawShadowsForEnt(void)
 /*
 ====================
 DrawShadowVolume
-
 ====================
 */
 
@@ -2765,13 +2759,13 @@ void CStudioModelRenderer::DrawShadowVolume(SubModelData& data, mstudiomodel_t* 
 
 	GetShadowVector(m_ShadowDir);
 
-	myVector d;
+	myvec3_t d;
 	VectorScale(m_ShadowDir, 256, d);
 
 	// transform vertices by bone matrices
 
 	// get pointer to untransformed vertices
-	myVector* pstudioverts = (myVector*)((byte*)m_pStudioHeader + model->vertindex);
+	myvec3_t* pstudioverts = (myvec3_t*)((byte*)m_pStudioHeader + model->vertindex);
 
 	// get pointer to bone index for each vertex
 	byte* pvertbone = ((byte*)m_pStudioHeader + model->vertinfoindex);
@@ -2792,7 +2786,7 @@ void CStudioModelRenderer::DrawShadowVolume(SubModelData& data, mstudiomodel_t* 
 	std::vector<Face>::iterator f;
 	for (f = data.faces.begin(), i = 0; f < data.faces.end(); ++f, ++i)
 	{
-		myVector v1, v2, norm;
+		myvec3_t v1, v2, norm;
 		VectorSubtract(vertexdata[f->vertex1], vertexdata[f->vertex0], v1);
 		VectorSubtract(vertexdata[f->vertex2], vertexdata[f->vertex1], v2);
 		CrossProduct(v2, v1, norm);
@@ -2842,23 +2836,22 @@ void CStudioModelRenderer::DrawShadowVolume(SubModelData& data, mstudiomodel_t* 
 		facecount += 2;
 	}
 
-	//assert((facecount * 3) <= (MaxShadowFaceCount * 5));
+	//	assert((facecount * 3) <= (MaxShadowFaceCount * 5));
 
 	// use this block for z-pass method
 
 	// draw front faces incrementing stencil values
-	/*	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		glCullFace(GL_BACK);
-		glDrawElements(GL_TRIANGLES, facecount * 3, GL_UNSIGNED_SHORT, indexdata);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+	glCullFace(GL_BACK);
+	glDrawElements(GL_TRIANGLES, facecount * 3, GL_UNSIGNED_SHORT, indexdata);
 
-		// draw back faces decrementing stencil values
-		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		glCullFace(GL_FRONT);
-		glDrawElements(GL_TRIANGLES, facecount * 3, GL_UNSIGNED_SHORT, indexdata);
-	*/
+	// draw back faces decrementing stencil values
+	glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+	glCullFace(GL_FRONT);
+	glDrawElements(GL_TRIANGLES, facecount * 3, GL_UNSIGNED_SHORT, indexdata);
 
 	// use this block for z-fail method
-
+	/*
 	// draw back faces incrementing stencil values when z fails
 	glStencilOp(GL_KEEP, GL_INCR, GL_KEEP);
 	glCullFace(GL_FRONT);
@@ -2868,7 +2861,7 @@ void CStudioModelRenderer::DrawShadowVolume(SubModelData& data, mstudiomodel_t* 
 	glStencilOp(GL_KEEP, GL_DECR, GL_KEEP);
 	glCullFace(GL_BACK);
 	glDrawElements(GL_TRIANGLES, facecount * 3, GL_UNSIGNED_SHORT, indexdata);
-
+	*/
 
 	g_Lock.Unlock();
 
@@ -2878,10 +2871,9 @@ void CStudioModelRenderer::DrawShadowVolume(SubModelData& data, mstudiomodel_t* 
 /*
 ====================
 GetShadowVector
-
 ====================
 */
-void CStudioModelRenderer::GetShadowVector(myVector& vecOut)
+void CStudioModelRenderer::GetShadowVector(myvec3_t& vecOut)
 {
 	if ((sv_skyvec_x->value != 0) || (sv_skyvec_y->value != 0) || (sv_skyvec_z->value != 0))
 	{

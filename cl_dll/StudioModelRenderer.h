@@ -11,7 +11,7 @@
 
 // buz start
 
-typedef vec_t myVector[3];
+typedef vec_t myvec3_t[3];
 
 // disable "identifier was truncated to '255' characters in the browser information" messages
 #pragma warning(disable : 4786)
@@ -25,7 +25,7 @@ typedef vec_t myVector[3];
 #include <string>
 
 
-#define MaxShadowFaceCount 2000
+#define MaxShadowFaceCount 4000
 
 #define CONPRINT gEngfuncs.Con_Printf
 
@@ -60,6 +60,7 @@ struct ModelExtraData
 };
 
 typedef std::map<std::string, ModelExtraData> ExtraDataMap;
+
 
 // buz end
 /*
@@ -263,6 +264,7 @@ public:
 	cvar_t* r_shadow_y;
 	cvar_t* r_shadow_alpha;
 
+	Vector vecLightDir;
 	alight_t storedlight;
 	// SHADOWS END
 
@@ -273,7 +275,7 @@ public:
 	ExtraDataMap m_ExtraData;
 	ModelExtraData* m_pCurretExtraData;
 
-	myVector m_ShadowDir;
+	myvec3_t m_ShadowDir;
 
 	void SetupModelExtraData(void);
 	void BuildFaces(SubModelData& dst, mstudiomodel_t* src);
@@ -288,7 +290,7 @@ public:
 	cvar_t* sv_skyvec_z;
 
 public:
-	void GetShadowVector(myVector& vecOut);
+	void GetShadowVector(myvec3_t& vecOut);
 
 public:
 	void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);	
