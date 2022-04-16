@@ -38,6 +38,8 @@ Smooth FOV changing / Smooth zooming
 
 Ku2zoff's triapi hud for better scaling
 
+Iron sights
+
 And some minor additions.
 
 Builds in this repo:
