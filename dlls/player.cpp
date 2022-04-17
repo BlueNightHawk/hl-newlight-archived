@@ -864,9 +864,21 @@ void CBasePlayer::SetAnimation(PLAYER_ANIM playerAnim)
 
 	switch (playerAnim)
 	{
-	case PLAYER_JUMP:
-		m_IdealActivity = ACT_HOP;
+	case PLAYER_JUMP: // jump as in cs
+		switch (m_Activity)
+		{
+		case ACT_HOVER:
+		case ACT_SWIM:
+		case ACT_LEAP:
+		case ACT_DIESIMPLE:
+			m_IdealActivity = m_Activity;
+			break;
+		default:
+			m_IdealActivity = ACT_HOP;
+			break;
+		}
 		break;
+
 
 	case PLAYER_SUPERJUMP:
 		m_IdealActivity = ACT_LEAP;
@@ -914,10 +926,27 @@ void CBasePlayer::SetAnimation(PLAYER_ANIM playerAnim)
 
 	switch (m_IdealActivity)
 	{
+	case ACT_HOP: // jump as in cs
+		if (m_Activity == ACT_RANGE_ATTACK1)
+			strcpy(szAnim, "ref_shoot_");
+		else
+			strcpy(szAnim, "ref_aim_");
+		strcat(szAnim, m_szAnimExtention);
+		animDesired = LookupSequence(szAnim);
+		if (animDesired == -1)
+			animDesired = 0;
+		if (pev->sequence != animDesired || !m_fSequenceLoops)
+			pev->frame = 0;
+		if (!m_fSequenceLoops)
+			pev->effects |= EF_NOINTERP;
+
+		pev->gaitsequence = LookupActivity(ACT_HOP);
+		m_Activity = m_IdealActivity;
+		break;
+
 	case ACT_HOVER:
 	case ACT_LEAP:
 	case ACT_SWIM:
-	case ACT_HOP:
 	case ACT_DIESIMPLE:
 	default:
 		if (m_Activity == m_IdealActivity)
@@ -979,31 +1008,33 @@ void CBasePlayer::SetAnimation(PLAYER_ANIM playerAnim)
 			animDesired = pev->sequence;
 		}
 	}
-
-	if (FBitSet(pev->flags, FL_DUCKING))
+	if ((pev->gaitsequence != LookupActivity(ACT_HOP) || FBitSet(pev->flags, FL_ONGROUND)) && m_Activity != ACT_HOP)
 	{
-		if (speed == 0)
+		if (FBitSet(pev->flags, FL_DUCKING))
 		{
-			pev->gaitsequence = LookupActivity(ACT_CROUCHIDLE);
-			// pev->gaitsequence	= LookupActivity( ACT_CROUCH );
+			if (speed == 0)
+			{
+				pev->gaitsequence = LookupActivity(ACT_CROUCHIDLE);
+				// pev->gaitsequence	= LookupActivity( ACT_CROUCH );
+			}
+			else
+			{
+				pev->gaitsequence = LookupActivity(ACT_CROUCH);
+			}
+		}
+		else if (speed > 220)
+		{
+			pev->gaitsequence = LookupActivity(ACT_RUN);
+		}
+		else if (speed > 0)
+		{
+			pev->gaitsequence = LookupActivity(ACT_WALK);
 		}
 		else
 		{
-			pev->gaitsequence = LookupActivity(ACT_CROUCH);
+			// pev->gaitsequence	= LookupActivity( ACT_WALK );
+			pev->gaitsequence = LookupSequence("deep_idle");
 		}
-	}
-	else if (speed > 220)
-	{
-		pev->gaitsequence = LookupActivity(ACT_RUN);
-	}
-	else if (speed > 0)
-	{
-		pev->gaitsequence = LookupActivity(ACT_WALK);
-	}
-	else
-	{
-		// pev->gaitsequence	= LookupActivity( ACT_WALK );
-		pev->gaitsequence = LookupSequence("deep_idle");
 	}
 
 
@@ -1455,6 +1486,19 @@ void CBasePlayer::PlayerUse()
 
 	UTIL_MakeVectors(pev->v_angle); // so we know which way we are facing
 
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin + pev->view_ofs, pev->origin + pev->view_ofs + (gpGlobals->v_forward * PLAYER_SEARCH_RADIUS), dont_ignore_monsters, ENT(pev), &tr);
+
+	if (tr.pHit)
+	{
+		pObject = CBaseEntity::Instance(tr.pHit);
+		if (!pObject || !(pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)))
+		{
+			pObject = NULL;
+		}
+	}
+
+
 	while ((pObject = UTIL_FindEntityInSphere(pObject, pev->origin, PLAYER_SEARCH_RADIUS)) != NULL)
 	{
 
@@ -1481,6 +1525,14 @@ void CBasePlayer::PlayerUse()
 	}
 	pObject = pClosest;
 
+	if (pObject) // don't go through walls
+	{
+		UTIL_TraceLine(pObject->Center(), pev->origin, dont_ignore_monsters, ENT(pev), &tr);
+
+		if (tr.flFraction < 1.0)
+			pObject = NULL;
+	}
+	
 	// Found an object
 	if (pObject)
 	{
