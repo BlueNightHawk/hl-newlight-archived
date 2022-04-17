@@ -108,6 +108,7 @@ cvar_t* cl_guessanimbone;
 Vector v_jumppunch, v_jumpangle;
 
 float g_flZoomMultiplier = 1.0f;
+float g_vLag[2] = {0, 0};
 
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
@@ -124,66 +125,168 @@ float v_idlescale; // used by TFC for concussion grenade effect
 // currently the system will overshoot, with larger damping values it won't
 #define PUNCH_SPRING_CONSTANT 100.0f // bigger number increases the speed at which the view corrects
 
-
-
-//=============================================================================
-/*
-void V_NormalizeAngles( Vector& angles )
+// for viewmodel only
+int GetBoneIndexByName(char* name)
 {
-	int i;
-	// Normalize angles
-	for ( i = 0; i < 3; i++ )
+	mstudiobone_t* pbone = nullptr;
+	int index = -1;
+
+	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
 	{
-		if ( angles[i] > 180.0 )
+		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
+		if (!stricmp(name,pbone[i].name))
 		{
-			angles[i] -= 360.0;
-		}
-		else if ( angles[i] < -180.0 )
-		{
-			angles[i] += 360.0;
+			index = i;
+			break;
 		}
 	}
+	return index;
 }
 
-/*
-===================
-V_InterpolateAngles
-
-Interpolate Euler angles.
-FIXME:  Use Quaternions to avoid discontinuities
-Frac is 0.0 to 1.0 ( i.e., should probably be clamped, but doesn't have to be )
-===================
-
-void V_InterpolateAngles( float *start, float *end, float *output, float frac )
+// get camanim bone index from file
+int GetAnimBoneFromFile(char* name)
 {
-	int i;
-	float ang1, ang2;
-	float d;
-	
-	V_NormalizeAngles( start );
-	V_NormalizeAngles( end );
+	static int prevboneindex = -1;
+	static char pszPrevName[100] = {"\0"};
 
-	for ( i = 0 ; i < 3 ; i++ )
+	if (!stricmp(pszPrevName, name))
+		return prevboneindex;
+
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/animbonelist.txt", 5, NULL);
+	char token[500];
+	int index = -1;
+
+	if (pfile == nullptr)
 	{
-		ang1 = start[i];
-		ang2 = end[i];
-
-		d = ang2 - ang1;
-		if ( d > 180 )
-		{
-			d -= 360;
-		}
-		else if ( d < -180 )
-		{	
-			d += 360;
-		}
-
-		output[i] = ang1 + d * frac;
+		return -1;
 	}
 
-	V_NormalizeAngles( output );
-} */
+	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	{
+		if (!stricmp(token, name))
+		{
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			if (!stricmp("bone",token))
+			{
+				pfile = gEngfuncs.COM_ParseFile(pfile, token);
+				index = GetBoneIndexByName(token);
+			}
+			else
+				index = atoi(token);
+			break;
+		}
+	}
 
+	gEngfuncs.COM_FreeFile(pfile2);
+	pfile = pfile2 = nullptr;
+
+	strcpy(pszPrevName, name);
+	
+	prevboneindex = index;
+	return index;
+}
+
+int GetCamBoneIndex(cl_entity_s *view)
+{
+	int index = -1;
+
+	// if it finds the bone index in the text file, bone guessing will not be done
+	index = GetAnimBoneFromFile(view->model->name + 7);
+
+	mstudiobone_t* pbone = nullptr;
+
+	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
+	{
+		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
+
+		if (pbone == nullptr || pbone[i].name == nullptr)
+			break;
+
+		if (!stricmp(pbone[i].name, "camera"))
+		{
+			index = i;
+			break;
+		}
+		// try using common gun bone names to get bone index
+		else if (cl_guessanimbone->value != 0 && (index) == -1)
+		{
+			// add checks for more names if needed
+			if (!stricmp(pbone[i].name, "gun"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "weapon"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "glock"))
+			{
+				index = i;
+				break;
+			}
+			else if (!stricmp(pbone[i].name, "Bip01 R Wrist") || !stricmp(pbone[i].name, "Bip01 R Hand"))
+			{
+				index = i;
+				break;
+			}
+		}
+	}
+
+	if ((int)cl_animbone->value > 0)
+		index = (int)cl_animbone->value - 1;
+
+	return index;
+}
+
+// get offsets from text file
+bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
+{
+	static char pszPrevName[100] = {"\0"};
+
+	if (!stricmp(pszPrevName, name))
+		return true;
+
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/isight_offsets.txt", 5, NULL);
+	char token[500];
+	bool found = false;
+
+	if (pfile == nullptr)
+	{
+		return false;
+	}
+
+	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	{
+		if (!stricmp(token, name))
+		{
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[0] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[1] = -atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			offset[2] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[0] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[1] = atof(token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			aoffset[2] = atof(token);
+			found = true;
+			break;
+		}
+	}
+
+	gEngfuncs.COM_FreeFile(pfile2);
+	pfile = pfile2 = nullptr;
+
+	strcpy(pszPrevName, name);
+
+	return found;
+}
 
 enum calcBobMode_t
 {
@@ -451,8 +554,6 @@ void V_AddIdle(struct ref_params_s* pparams)
 	pparams->viewangles[YAW] += v_idlescale * sin(pparams->time * v_iyaw_cycle.value) * v_iyaw_level.value;
 }
 
-float g_vLag[2] = {0, 0};
-
 void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 {
 	// TODO : Use weapon attachment
@@ -502,273 +603,12 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 	}
 }
 
-
-/*
-==============
-V_CalcViewAngles
-
-==============
-*/
-void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
-{
-	static float l_side = 0.0f, l_pitch = 0.0f, l_forward = 0.0f, l_sprintangle = 0.0f;
-	float side = 0.0f, pitch = 0.0f, forward = 0.0f;
-	Vector vforward;
-	cl_entity_t* viewentity;
-	static float flFallVelocity = 0.0f;
-
-	Vector c_angle;
-	extern kbutton_t in_run;
-
-	AngleVectors(Vector(-view->angles[0], view->angles[1], view->angles[2]), vforward, NULL, NULL);
-
-	viewentity = gEngfuncs.GetEntityByIndex(pparams->viewentity);
-	if (!viewentity)
-		return;
-
-	// store fall velocity
-	if (pparams->onground <= 0)
-	{
-		flFallVelocity = -pparams->simvel[2];
-	}
-
-	if ((in_run.state & 1) != 0)
-	{
-		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
-	}
-	else
-	{
-		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
-	}
-
-	// calculate the forward up and right values
-	side = V_CalcAngle(viewentity->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value, YAW /*RIGHT*/);
-
-	if ((pparams->onground <= 0) && pparams->waterlevel == 0)
-		pitch = clamp(pparams->simvel[2], -500, 100);
-
-	forward = V_CalcAngle(viewentity->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
-
-	// interpolate the values
-	l_side = lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
-	l_pitch = lerp(l_pitch, pitch * 0.055 * g_flZoomMultiplier, pparams->frametime * 9.0f);
-	l_forward = lerp(l_forward, forward * 0.8 * g_flZoomMultiplier, pparams->frametime * 9.0f);
-
-	// apply the values
-	view->origin = view->origin - vforward * fabs(l_forward);
-
-	view->angles[0] -= (l_forward + (l_pitch * 0.85)) + (v_jumpangle[0] * 3.5) + l_sprintangle*10;
-	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5) + l_sprintangle*10;
-
-	if (pparams->onground <= 0)
-	{	
-		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
-		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);	
-
-		view->angles[0] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
-		view->angles[1] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);	
-	}
-	pparams->viewangles[PITCH] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
-	pparams->viewangles[YAW] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
-	pparams->viewangles[ROLL] += l_side;
-
-	if (flFallVelocity != 0 && pparams->onground > 0)
-	{
-		v_jumppunch[0] = ev_punch[0] = (flFallVelocity * 0.013) * 6; // punch z axis
-		v_jumppunch[1] = ev_punch[1] = (flFallVelocity * 0.013) * 6; // punch z axis
-		flFallVelocity = 0;
-	}
-
-	g_vLag[0] += l_side * 5 - ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
-	g_vLag[1] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
-
-	// Add in the punchangle, if any
-	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
-
-	// Include client side punch, too
-	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
-	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
-
-	VectorAdd(view->angles, (float*)&INVPITCH((ev_punchangle * 0.5f)), view->angles);
-	VectorAdd(view->angles, (float*)&INVPITCH((ev_oldpunchangle * 0.5f)), view->angles);
-
-	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
-	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
-	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);
-
-	V_RetractWeapon(pparams, view);
-
-	if (cl_hudlag->value != 0)
-	{
-		pparams->crosshairangle[0] += (ev_punchangle[0] + ev_oldpunchangle[0]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
-		pparams->crosshairangle[1] -= (ev_punchangle[1] + ev_oldpunchangle[1]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
-	}
-	// apply angles
-	VectorCopy(view->angles, view->curstate.angles);
-	VectorCopy(view->angles, view->prevstate.angles);
-}
-
-void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
-{
-	if (cl_weaponlag->value > 1)
-	{
-		Vector forward, right, up;
-		static float l_mx = 0.0f, l_my = 0.0f;
-		static float pitch = -original_angles[PITCH];
-		extern int g_mx, g_my;
-
-		// simplified magic nips viewlag
-		if (fabs(pparams->viewangles[0]) >= 86)
-		{
-			g_my = 0;
-		}
-
-		l_mx = lerp(l_mx, V_max(g_flZoomMultiplier,0.25) * (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
-		l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
-
-		l_mx = clamp(l_mx, -7.5, 7.5);
-		l_my = clamp(l_my, -7.5, 7.5);
-
-		angles[0] += l_my - ((l_mx > 0) ? (l_mx * 0.5) : 0);
-		angles[1] -= l_mx;
-		angles[2] -= l_mx * 2.5;
-
-		g_vLag[0] = l_mx;
-		g_vLag[1] = -l_my;
-
-		pparams->viewangles[2] += l_mx * 0.15;
-
-		AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
-		pitch = lerp(pitch, -original_angles[PITCH] * g_flZoomMultiplier, pparams->frametime * 8.5f);
-
-		origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
-
-		origin = origin + forward * (-pitch * 0.0175f);
-		origin = origin + right * (-pitch * 0.015f);
-		origin = origin + up * (-pitch * 0.01f);
-		return;
-	}
-
-	float flWeaponLag = cl_weaponlag->value;
-	static Vector m_vecLastFacing;
-	Vector vOriginalOrigin = origin;
-	Vector vOriginalAngles = angles;
-	vOriginalAngles[0] *= -1;
-
-	// Calculate our drift
-	Vector forward, right, up;
-	AngleVectors(vOriginalAngles, forward, right, up);
-
-	if (pparams->frametime != 0.0f) // not in paused
-	{
-		Vector vDifference;
-
-		vDifference = forward - m_vecLastFacing;
-
-		float flSpeed = cl_weaponlagspeed->value;
-
-		// If we start to lag too far behind, we'll increase the "catch up" speed.
-		// Solves the problem with fast cl_yawspeed, m_yaw or joysticks rotating quickly.
-		// The old code would slam lastfacing with origin causing the viewmodel to pop to a new position
-		float flDiff = vDifference.Length();
-		if ((flDiff > flWeaponLag) && (flWeaponLag > 0.0f))
-		{
-			float flScale = flDiff / flWeaponLag;
-			flSpeed *= flScale;
-		}
-
-		// FIXME:  Needs to be predictable?
-		m_vecLastFacing = m_vecLastFacing + vDifference * (flSpeed * pparams->frametime);
-		// Make sure it doesn't grow out of control!!!
-		m_vecLastFacing = m_vecLastFacing.Normalize();
-		origin = origin + (vDifference * -cl_weaponlagscale->value) * 5.0f;
-	}
-
-	AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
-
-	float pitch = -original_angles[PITCH];
-
-	if (pitch > 180.0f)
-	{
-		pitch -= 360.0f;
-	}
-	else if (pitch < -180.0f)
-	{
-		pitch += 360.0f;
-	}
-
-	if (flWeaponLag <= 0.0f)
-	{
-		origin = vOriginalOrigin;
-		angles = vOriginalAngles;
-	}
-	else
-	{
-		// FIXME: These are the old settings that caused too many exposed polys on some models
-		origin = origin + forward * (-pitch * 0.0175f);
-		origin = origin + right * (-pitch * 0.015f);
-		origin = origin + up * (-pitch * 0.01f);
-	}
-}
-
-// get offsets from text file
-bool GetOffsetFromFile(char* name, float* offset, float *aoffset)
-{
-	char *pfile, *pfile2;
-	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/isight_offsets.txt", 5, NULL);
-	char token[500];
-	bool found = false;
-
-	if (pfile == nullptr)
-	{
-		return false;
-	}
-
-	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
-	{
-		if (!stricmp(token, name))
-		{
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[0] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[1] = -atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[2] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[0] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[1] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[2] = atof(token);
-			found = true;
-			break;
-		}
-	}
-
-	gEngfuncs.COM_FreeFile(pfile2);
-	pfile = pfile2 = nullptr;
-
-	return found;
-}
-
-Vector LerpVector(const float* start, const float* end, float frac)
-{
-	Vector out;
-	for (int i = 0; i < 3; i++)
-		out[i] = lerp(start[i], end[i], frac);
-
-	return out;
-}
-
 void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 {
 	static Vector offset, aoffset;
 	static Vector vecLerpOrg, vecLerpAng;
-	static char pszPrevName[100] = {"\0"};
 
 	Vector forward, right, up;
-
-	//	if (stricmp(pszPrevName,view->model->name))
 
 	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
 	{
@@ -782,7 +622,6 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 		view->angles = view->angles + vecLerpAng;
 		return;
 	}
-
 
 	if (gHUD.m_flTargetFov < gHUD.default_fov->value)
 	{
@@ -800,45 +639,137 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 	AngleVectors(INVPITCH(view->angles), forward, right, up);
 	view->origin = view->origin + forward * vecLerpOrg[0] + right * vecLerpOrg[1] + up * vecLerpOrg[2];
 	view->angles = view->angles + vecLerpAng;
-	VectorCopy(view->angles, view->curstate.angles);
-	strcpy(pszPrevName, view->model->name);
 }
 
-int GetAnimBoneFromFile(char* name)
+void V_DoSprinting(struct ref_params_s* pparams, cl_entity_s* view)
 {
-	char *pfile, *pfile2;
-	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/animbonelist.txt", 5, NULL);
-	char token[500];
-	int index = -1;
+	static float l_sprintangle = 0.0f;
+	extern kbutton_t in_run;
 
-	if (pfile == nullptr)
+	if ((in_run.state & 1) != 0)
 	{
-		return -1;
+		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
+	}
+	else
+	{
+		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
 	}
 
-	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	view->angles[0] -= l_sprintangle * 10;
+	view->angles[1] += l_sprintangle * 10;
+}
+
+void V_DoJumping(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	static float flFallVelocity = 0.0f;
+	float pitch = 0.0f;
+	static float l_pitch = 0.0f;
+
+	// store fall velocity
+	if (pparams->onground <= 0)
 	{
-		if (!stricmp(token, name))
-		{
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			index = atoi(token);
-			break;
-		}
+		flFallVelocity = -pparams->simvel[2];
 	}
 
-	gEngfuncs.COM_FreeFile(pfile2);
-	pfile = pfile2 = nullptr;
+	if ((pparams->onground <= 0) && pparams->waterlevel == 0)
+		pitch = clamp(pparams->simvel[2], -500, 100);
 
-	return index;
+	l_pitch = lerp(l_pitch, pitch * 0.055 * g_flZoomMultiplier, pparams->frametime * 9.0f);
+
+	// camera shake
+	if (pparams->onground <= 0)
+	{
+		pparams->viewangles[0] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+		pparams->viewangles[1] += gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+
+		view->angles[0] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+		view->angles[1] -= gEngfuncs.pfnRandomFloat(-0.011, 0.011) * -(l_pitch);
+	}
+
+	if (flFallVelocity != 0 && pparams->onground > 0)
+	{
+		v_jumppunch[0] = ev_punch[0] = (flFallVelocity * 0.013) * 6; // punch z axis
+		v_jumppunch[1] = ev_punch[1] = (flFallVelocity * 0.013) * 6; // punch z axis
+		flFallVelocity = 0;
+	}
+
+	view->angles[0] -= ((l_pitch * 0.85)) + (v_jumpangle[0] * 3.5);
+	view->angles[1] += ((l_pitch > 0) ? l_pitch * 0.85 : l_pitch * 0.75) + (v_jumpangle[1] * 3.5);
+
+	pparams->viewangles[PITCH] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
+	pparams->viewangles[YAW] += (l_pitch > 0) ? l_pitch * 0.1 : 0;
+
+	g_vLag[0] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
+	g_vLag[1] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
+
+	if (cl_hudlag->value != 0)
+	{
+		pparams->crosshairangle[0] += (ev_punchangle[0] + ev_oldpunchangle[0]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
+		pparams->crosshairangle[1] -= (ev_punchangle[1] + ev_oldpunchangle[1]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
+	}
+}
+
+void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
+{
+	if (cl_weaponlag->value <= 0)
+		return;
+
+	Vector forward, right, up;
+	static float l_mx = 0.0f, l_my = 0.0f;
+	static float pitch = -original_angles[PITCH];
+	extern int g_mx, g_my;
+
+	// simplified magic nips viewlag
+	if (fabs(pparams->viewangles[0]) >= 86)
+	{
+		g_my = 0;
+	}
+
+	l_mx = lerp(l_mx, V_max(g_flZoomMultiplier, 0.25) * (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+	l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+
+	l_mx = clamp(l_mx, -7.5, 7.5);
+	l_my = clamp(l_my, -7.5, 7.5);
+
+	// apply to viewmodel angles
+	angles[0] += l_my - ((l_mx > 0) ? (l_mx * 0.5) : 0);
+	angles[1] -= l_mx;
+	angles[2] -= l_mx * 2.5;
+
+	// apply to hud position
+	g_vLag[0] += l_mx;
+	g_vLag[1] -= l_my;
+
+	// apply some to viewroll
+	pparams->viewangles[2] += l_mx * 0.15;
+
+	AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
+	pitch = lerp(pitch, -original_angles[PITCH] * g_flZoomMultiplier, pparams->frametime * 8.5f);
+
+	origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
+
+	origin = origin + forward * (-pitch * 0.0175f);
+	origin = origin + right * (-pitch * 0.015f);
+	origin = origin + up * (-pitch * 0.01f);
 }
 
 void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 {
 	static Vector l_camangles, l_campos;
-	mstudiobone_t* pbone = nullptr;
+	int index = -1;
 
-	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL || GetAnimBoneFromFile(view->model->name + 7) == -2)
+	if (view->model != nullptr && view->model->name != nullptr && g_viewinfo.phdr != NULL && (fabs(pparams->viewangles[0]) < 75))
 	{
+		index = GetCamBoneIndex(view);
+		if (index < 0)
+		{
+			goto end;
+		}
+	}	
+	else
+	end:
+	{
+		// smoothly reset to 0
 		for (int i = 0; i < 3; i++)
 		{
 			l_camangles[i] = lerp(l_camangles[i], 0, pparams->frametime * 17.0f);
@@ -857,59 +788,10 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		return;
 	}
 
-	int index = GetAnimBoneFromFile(view->model->name + 7);		
-
-	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
-	{
-		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
-		
-		if (pbone == nullptr || pbone[i].name == nullptr)
-			break;
-
-		if (!stricmp(pbone[i].name, "camera"))
-		{
-			index = i;
-			break;
-		}
-		// try using common gun bone names to get bone index
-		else if (cl_guessanimbone->value != 0 && (index) == -1)
-		{
-			// add checks for more names if needed
-			if (!stricmp(pbone[i].name, "gun"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "weapon"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "glock"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "Bip01 R Wrist") || !stricmp(pbone[i].name, "Bip01 R Hand"))
-			{
-				index = i;
-				break;
-			}
-		}
-	}
-
-	if ((int)cl_animbone->value > 0)
-		index = (int)cl_animbone->value-1;
-
-	if (index != -1 && index < g_viewinfo.phdr->numbones)
+	if (index > -1 && index < g_viewinfo.phdr->numbones)
 	{
 		Vector result, result2;
-		if (fabs(pparams->viewangles[0]) > 86)
-			result = Vector(0, 0, 0);
-		else
-		{
-			VectorSubtract(g_viewinfo.boneangles[index], g_viewinfo.prevboneangles[index], result);
-		}
+		VectorSubtract(g_viewinfo.boneangles[index], g_viewinfo.prevboneangles[index], result);		
 		VectorSubtract(g_viewinfo.bonepos[index], g_viewinfo.prevbonepos[index], result2);
 
 		NormalizeAngles((float*)&result);
@@ -941,6 +823,124 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		pparams->crosshairangle[0] = 0;
 		pparams->crosshairangle[1] = 0;
 	}
+}
+
+void V_ApplyBob(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	float bobRight = 0, bobUp = 0;
+
+	static float l_bobRight = 0.0f, l_bobUp = 0.0f;
+	static double bobTimes[2] = {0, 0};
+	static float lastTimes[2] = {0, 0};
+
+	// transform the view offset by the model's matrix to get the offset from
+	// model origin for the view
+	V_CalcBob(pparams, 1.0f, VB_SIN, bobTimes[0], bobRight, lastTimes[0]);
+	V_CalcBob(pparams, 2.0f, VB_COS, bobTimes[1], bobUp, lastTimes[1]);
+
+	l_bobRight = lerp(l_bobRight, bobRight * 1.2f, pparams->frametime * 17.0f);
+	l_bobUp = lerp(l_bobUp, bobUp * 1.2f, pparams->frametime * 17.0f);
+
+	for (int i = 0; i < 3; i++)
+	{
+		view->origin[i] -= l_bobUp * 0.13f * V_max(g_flZoomMultiplier, 0.15) * pparams->up[i];
+	}
+
+	view->angles[0] += l_bobUp * 0.66f * V_max(g_flZoomMultiplier, 0.15);
+	view->angles[1] -= l_bobRight * 2.13f * V_max(g_flZoomMultiplier, 0.15);
+	view->angles[2] += l_bobRight * 0.66f * V_max(g_flZoomMultiplier, 0.15);
+
+	pparams->viewangles[0] += l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
+	pparams->viewangles[1] += l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
+	pparams->viewangles[2] += l_bobRight * 0.165f * V_max(g_flZoomMultiplier, 0.15);
+
+	if (cl_hudlag->value != 0)
+	{
+		pparams->crosshairangle[0] -= l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
+		pparams->crosshairangle[1] -= l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
+	}
+	extern kbutton_s in_run;
+
+	g_vLag[0] += (l_bobRight * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
+	g_vLag[1] += (l_bobUp * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
+}
+
+void V_ApplyVelAngles(struct ref_params_s* pparams, cl_entity_s* view, cl_entity_s *viewent)
+{
+	static float l_side = 0.0f, l_forward = 0.0f;
+	float side = 0.0f, forward = 0.0f;
+
+	Vector vforward;
+
+	AngleVectors(Vector(-view->angles[0], view->angles[1], view->angles[2]), vforward, NULL, NULL);
+
+	// calculate the forward up and right values
+	side = V_CalcAngle(viewent->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value, YAW /*RIGHT*/);
+	forward = V_CalcAngle(viewent->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
+
+	// interpolate the values
+	l_side = lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
+	l_forward = lerp(l_forward, forward * 0.8 * g_flZoomMultiplier, pparams->frametime * 9.0f);
+
+	// apply the values
+	view->origin = view->origin - vforward * fabs(l_forward);
+	view->angles[0] -= (l_forward);
+	pparams->viewangles[ROLL] += l_side;
+
+	g_vLag[0] += l_side * 5;
+}
+
+void V_ApplyPunchAngles(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	g_vLag[0] = (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
+	g_vLag[1] = (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
+
+	// calculate punchangles
+	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
+	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
+	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);
+
+	// Add in the punchangle, if any
+	VectorAdd(pparams->viewangles, pparams->punchangle, pparams->viewangles);
+
+	// Include client side punch, too
+	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
+	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
+
+	// Add half of punchangles to viewmodel angles
+	VectorAdd(view->angles, INVPITCH((ev_punchangle * 0.5f)), view->angles);
+	VectorAdd(view->angles, INVPITCH((ev_oldpunchangle * 0.5f)), view->angles);
+}
+
+/*
+==============
+V_CalcViewAngles
+
+==============
+*/
+void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
+{
+	cl_entity_t* viewentity;
+
+	Vector c_angle;
+
+	viewentity = gEngfuncs.GetEntityByIndex(pparams->viewentity);
+	if (!viewentity)
+		return;
+
+	V_ApplyPunchAngles(pparams, view);
+	V_ApplyVelAngles(pparams, view, viewentity);
+	V_DoSprinting(pparams, view);
+	V_DoJumping(pparams, view);
+	V_RetractWeapon(pparams, view);
+	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
+	V_ApplyBob(pparams, view);
+	V_CamAnims(pparams, view);
+	V_ModifyOrigin(pparams, view);
+
+	// apply angles
+	VectorCopy(view->angles, view->curstate.angles);
+	VectorCopy(view->angles, view->prevstate.angles);
 }
 
 /*
@@ -1011,20 +1011,14 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	cl_entity_t *ent, *view;
 	int i;
 	Vector angles;
-	float bobRight = 0, bobUp = 0, waterOffset;
-	static float l_bobRight = 0.0f, l_bobUp = 0.0f;
+	float waterOffset;
 
 	static viewinterp_t ViewInterp;
 
 	static float oldz = 0;
 	static float lasttime;
 
-    static double bobTimes[2] = {0, 0};
-	static float lastTimes[2] = {0, 0};
-
 	static Vector lastAngles;
-
-	int iShouldDrawLegs = (!g_iDrawLegs);
 
 	Vector camAngles, camForward, camRight, camUp;
 	cl_entity_t* pwater;
@@ -1045,14 +1039,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 
 	// view is the weapon model (only visible from inside body )
 	view = gEngfuncs.GetViewModel();
-
-	// transform the view offset by the model's matrix to get the offset from
-	// model origin for the view
-	V_CalcBob(pparams, 1.0f, VB_SIN, bobTimes[0], bobRight, lastTimes[0]);
-	V_CalcBob(pparams, 2.0f, VB_COS, bobTimes[1], bobUp, lastTimes[1]);
-
-	l_bobRight = lerp(l_bobRight, bobRight * 1.2f, pparams->frametime * 17.0f);
-	l_bobUp = lerp(l_bobUp, bobUp * 1.2f, pparams->frametime * 17.0f);
 
 	// refresh position
 	VectorCopy(pparams->simorg, pparams->vieworg);
@@ -1196,21 +1182,6 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	// Let the viewmodel shake at about 10% of the amplitude
 	gEngfuncs.V_ApplyShake(view->origin, view->angles, 0.9);
 
-	for (i = 0; i < 3; i++)
-	{
-		view->origin[i] -= l_bobUp * 0.13f * V_max(g_flZoomMultiplier, 0.15) * pparams->up[i];
-	}
-
-	view->angles[0] += l_bobUp * 0.66f * V_max(g_flZoomMultiplier, 0.15);
-	view->angles[1] -= l_bobRight * 2.13f * V_max(g_flZoomMultiplier, 0.15);
-	view->angles[2] += l_bobRight * 0.66f * V_max(g_flZoomMultiplier, 0.15);
-
-	pparams->viewangles[0] += l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
-	pparams->viewangles[1] += l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
-	pparams->viewangles[2] += l_bobRight * 0.165f * V_max(g_flZoomMultiplier, 0.15);
-
-	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
-
 	// fudge position around to keep amount of weapon visible
 	// roughly equal with different FOV
 	if (pparams->viewsize == 110)
@@ -1230,18 +1201,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 		view->origin[2] += 0.5;
 	}
 	
-	V_CamAnims(pparams, view);
 	V_CalcViewAngles(pparams, view);
-	V_ModifyOrigin(pparams, view);
-	if (cl_hudlag->value != 0)
-	{
-		pparams->crosshairangle[0] -= l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
-		pparams->crosshairangle[1] -= l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
-	}
-	extern kbutton_s in_run;
-
-	g_vLag[0] += (l_bobRight * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[1] - ev_oldpunchangle[1]) * 2;
-	g_vLag[1] += (l_bobUp * (((in_run.state & 1) != 0) ? 2 : 1)) - (ev_punchangle[0] - ev_oldpunchangle[0]) * 2;
 
 	// smooth out stair step ups
 #if 1

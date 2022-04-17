@@ -150,6 +150,15 @@ void inline SinCos(float radians, float* sine, float* cosine)
 	*cosine = cos(radians);
 }
 
+inline Vector LerpVector(const float* start, const float* end, float frac)
+{
+	Vector out;
+	for (int i = 0; i < 3; i++)
+		out[i] = lerp(start[i], end[i], frac);
+
+	return out;
+}
+
 #define INVPITCH(x) Vector(-x[0], x[1], x[2])
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)                                                                 \
