@@ -655,8 +655,9 @@ void V_DoSprinting(struct ref_params_s* pparams, cl_entity_s* view)
 		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
 	}
 
-	view->angles[0] -= l_sprintangle * 10;
-	view->angles[1] += l_sprintangle * 10;
+	view->angles[0] -= l_sprintangle * 10 * g_flZoomMultiplier;
+	view->angles[1] += l_sprintangle * 10 * g_flZoomMultiplier;
+	view->origin = view->origin - Vector(pparams->up) * (l_sprintangle * (0.5 - g_flZoomMultiplier));
 }
 
 void V_DoJumping(struct ref_params_s* pparams, cl_entity_s* view)
@@ -929,13 +930,13 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 		return;
 
 	V_ApplyPunchAngles(pparams, view);
+	V_CamAnims(pparams, view);
 	V_ApplyVelAngles(pparams, view, viewentity);
 	V_DoSprinting(pparams, view);
-	V_DoJumping(pparams, view);
 	V_RetractWeapon(pparams, view);
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 	V_ApplyBob(pparams, view);
-	V_CamAnims(pparams, view);
+	V_DoJumping(pparams, view);
 	V_ModifyOrigin(pparams, view);
 
 	// apply angles

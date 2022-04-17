@@ -367,6 +367,10 @@ bool CFuncTank::StartControl(CBasePlayer* pController)
 	if (m_pController->m_pActiveItem)
 	{
 		m_pController->m_pActiveItem->Holster();
+		if (m_pController->m_iFOV != 0)
+		{
+			m_pController->m_iFOV = 0; // 0 means reset to default fov
+		}
 		m_pController->pev->weaponmodel = 0;
 		m_pController->pev->viewmodel = 0;
 	}

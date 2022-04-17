@@ -322,6 +322,7 @@ public:
 	// called by CBasePlayerWeapons ItemPostFrame()
 	virtual void PrimaryAttack() {}						  // do "+ATTACK"
 	virtual void SecondaryAttack() {}					  // do "+ATTACK2"
+	virtual void ThirdAttack();							  // do "+ATTACK"
 	virtual void Reload() {}							  // do "+RELOAD"
 	virtual void WeaponIdle() {}						  // called when no buttons pressed
 	bool UpdateClientData(CBasePlayer* pPlayer) override; // sends hud info to client dll, if things have changed

@@ -80,19 +80,7 @@ bool CGlock::Deploy()
 
 void CGlock::SecondaryAttack()
 {
-//	GlockFire(0.1, 0.2, false);
-	if (m_pPlayer->m_iFOV != 0)
-	{
-		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
-	}
-	else if (m_pPlayer->m_iFOV != 80)
-	{
-		m_pPlayer->m_iFOV = 80;
-		SendWeaponAnim(GLOCK_IDLE1);
-	}
-
-	pev->nextthink = UTIL_WeaponTimeBase() + 0.1;
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
+	GlockFire(0.1, 0.2, false);
 }
 
 void CGlock::Holster()

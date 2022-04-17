@@ -281,8 +281,13 @@ void CBasePlayer::SelectItem(const char* pstr)
 		return;
 
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	m_pLastItem = m_pActiveItem;
 	m_pActiveItem = pItem;
 
@@ -302,8 +307,13 @@ void CBasePlayer::Killed(entvars_t* pevAttacker, int iGib)
 {
 	// Holster weapon immediately, to allow it to cleanup
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	g_irunninggausspred = false;
 }
 
@@ -727,8 +737,13 @@ void HUD_WeaponsPostThink(local_state_s* from, local_state_s* to, usercmd_t* cmd
 			{
 				// Put away old weapon
 				if (player.m_pActiveItem)
+				{
 					player.m_pActiveItem->Holster();
-
+					if (player.m_iFOV != 0)
+					{
+						player.m_iFOV = 0; // 0 means reset to default fov
+					}
+				}
 				player.m_pLastItem = player.m_pActiveItem;
 				player.m_pActiveItem = pNew;
 

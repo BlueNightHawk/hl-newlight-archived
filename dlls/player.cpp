@@ -710,6 +710,10 @@ void CBasePlayer::RemoveAllItems(bool removeSuit)
 	{
 		ResetAutoaim();
 		m_pActiveItem->Holster();
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
 		m_pActiveItem = NULL;
 	}
 
@@ -762,8 +766,13 @@ void CBasePlayer::Killed(entvars_t* pevAttacker, int iGib)
 
 	// Holster weapon immediately, to allow it to cleanup
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	g_pGameRules->PlayerKilled(this, pevAttacker, g_pevLastInflictor);
 
 	if (m_pTank != NULL)
@@ -1325,8 +1334,13 @@ void CBasePlayer::StartObserver(Vector vecPosition, Vector vecViewAngle)
 
 	// Holster weapon immediately, to allow it to cleanup
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	if (m_pTank != NULL)
 	{
 		m_pTank->Use(this, this, USE_OFF, 0);
@@ -3025,6 +3039,10 @@ void CBasePlayer::SelectNextItem(int iItem)
 	if (m_pActiveItem)
 	{
 		m_pActiveItem->Holster();
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
 	}
 
 	m_pActiveItem = pItem;
@@ -3072,8 +3090,13 @@ void CBasePlayer::SelectItem(const char* pstr)
 
 	// FIX, this needs to queue them up and delay
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	m_pLastItem = m_pActiveItem;
 	m_pActiveItem = pItem;
 
@@ -3630,6 +3653,10 @@ bool CBasePlayer::RemovePlayerItem(CBasePlayerItem* pItem)
 	{
 		ResetAutoaim();
 		pItem->Holster();
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
 		pItem->pev->nextthink = 0; // crowbar may be trying to swing again, etc.
 		pItem->SetThink(NULL);
 		m_pActiveItem = NULL;
@@ -4596,6 +4623,10 @@ bool CBasePlayer::SwitchWeapon(CBasePlayerItem* pWeapon)
 	if (m_pActiveItem)
 	{
 		m_pActiveItem->Holster();
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
 	}
 
 	m_pActiveItem = pWeapon;

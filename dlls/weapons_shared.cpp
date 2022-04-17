@@ -114,6 +114,20 @@ bool CanAttack(float attack_time, float curtime, bool isPredicted)
 	}
 }
 
+void CBasePlayerWeapon::ThirdAttack()
+{
+	if (m_pPlayer->m_iFOV != 0)
+	{
+		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+	}
+	else if (m_pPlayer->m_iFOV != 80)
+	{
+		m_pPlayer->m_iFOV = 80;
+	}
+
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.2;
+}
+
 void CBasePlayerWeapon::ItemPostFrame()
 {
 	if ((m_fInReload) && (m_pPlayer->m_flNextAttack <= UTIL_WeaponTimeBase()))
@@ -155,6 +169,10 @@ void CBasePlayerWeapon::ItemPostFrame()
 
 		m_pPlayer->TabulateAmmo();
 		PrimaryAttack();
+	}
+	else if ((m_pPlayer->pev->button & IN_ALT1) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
+	{
+		ThirdAttack();
 	}
 	else if ((m_pPlayer->pev->button & IN_RELOAD) != 0 && iMaxClip() != WEAPON_NOCLIP && !m_fInReload)
 	{
@@ -215,8 +233,13 @@ void CBasePlayer::SelectLastItem()
 
 	// FIX, this needs to queue them up and delay
 	if (m_pActiveItem)
+	{
 		m_pActiveItem->Holster();
-
+		if (m_iFOV != 0)
+		{
+			m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
 	CBasePlayerItem* pTemp = m_pActiveItem;
 	m_pActiveItem = m_pLastItem;
 	m_pLastItem = pTemp;
