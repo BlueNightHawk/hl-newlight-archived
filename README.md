@@ -1,6 +1,6 @@
-﻿MY FORK OF THE HALF LIFE SDK
+﻿Half Life : New Light SDK
 ============================
-I will add some random features in this repo.
+Repository for the New Light project
 
 So far i have added:
 
