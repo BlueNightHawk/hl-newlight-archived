@@ -87,6 +87,8 @@ extern cvar_t* sensitivity;
 cvar_t* cl_lw = NULL;
 cvar_t* cl_rollangle = nullptr;
 cvar_t* cl_rollspeed = nullptr;
+cvar_t* cl_toggleisight = nullptr;
+cvar_t* cl_autowepswitch = nullptr;
 
 void ShutdownInput();
 
@@ -329,7 +331,8 @@ void CHud::Init()
 	m_iFOV = 0;
 
 	CVAR_CREATE("zoom_sensitivity_ratio", "1.2", 0);
-	CVAR_CREATE("cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
+	cl_autowepswitch = CVAR_CREATE("cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
+	cl_toggleisight = CVAR_CREATE("cl_toggleisight", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
 	default_fov = CVAR_CREATE("default_fov", "90", FCVAR_ARCHIVE);
 	r_autofov = CVAR_CREATE("r_autofov", "1", FCVAR_ARCHIVE);
 	m_pCvarStealMouse = CVAR_CREATE("hud_capturemouse", "1", FCVAR_ARCHIVE);

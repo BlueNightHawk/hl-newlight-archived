@@ -2528,6 +2528,22 @@ void CBasePlayer::PostThink()
 	// do weapon stuff
 	ItemPostFrame();
 
+	if ((pev->button & IN_ALT1) != 0 && m_pActiveItem)
+	{
+		m_iISightDown = 1;
+	}
+	else
+	{
+		if (m_iToggleISight <= 0)
+		{
+			if (m_iFOV != 0)
+			{
+				m_iFOV = 0; // 0 means reset to default fov
+			}
+		}
+		m_iISightDown = 0;
+	}
+
 	// check to see if player landed hard enough to make a sound
 	// falling farther than half of the maximum safe distance, but not as far a max safe distance will
 	// play a bootscrape sound, and no damage will be inflicted. Fallling a distance shorter than half
@@ -4663,6 +4679,7 @@ void CBasePlayer::EquipWeapon()
 void CBasePlayer::SetPrefsFromUserinfo(char* infobuffer)
 {
 	const char* value = g_engfuncs.pfnInfoKeyValue(infobuffer, "cl_autowepswitch");
+	const char* value2 = g_engfuncs.pfnInfoKeyValue(infobuffer, "cl_toggleisight");
 
 	if ('\0' != *value)
 	{
@@ -4672,6 +4689,17 @@ void CBasePlayer::SetPrefsFromUserinfo(char* infobuffer)
 	{
 		m_iAutoWepSwitch = 1;
 	}
+
+	if ('\0' != *value2)
+	{
+		m_iToggleISight = atoi(value2);
+	}
+	else
+	{
+		m_iToggleISight = 1;
+	}
+
+	//ALERT(at_console, "%i\n", m_iISightToggle);
 }
 
 //=========================================================

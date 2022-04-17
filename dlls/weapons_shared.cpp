@@ -116,16 +116,26 @@ bool CanAttack(float attack_time, float curtime, bool isPredicted)
 
 void CBasePlayerWeapon::ThirdAttack()
 {
-	if (m_pPlayer->m_iFOV != 0)
+	if (m_pPlayer->m_iToggleISight != 0)
 	{
-		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
-	}
-	else if (m_pPlayer->m_iFOV != 80)
-	{
-		m_pPlayer->m_iFOV = 80;
-	}
+		if (m_pPlayer->m_iFOV != 0)
+		{
+			m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+		}
+		else if (m_pPlayer->m_iFOV != 80)
+		{
+			m_pPlayer->m_iFOV = 80;
+		}
 
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.2;
+		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.2;
+	}
+	else
+	{
+		if (m_pPlayer->m_iFOV != 80)
+		{
+			m_pPlayer->m_iFOV = 80;
+		}
+	}
 }
 
 void CBasePlayerWeapon::ItemPostFrame()
@@ -149,6 +159,17 @@ void CBasePlayerWeapon::ItemPostFrame()
 		m_flLastFireTime = 0.0f;
 	}
 
+	if (m_pPlayer->m_iISightDown != 0)
+	{
+		if (m_pPlayer->m_iToggleISight != 0)
+		{
+			if (CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
+				ThirdAttack();
+		}
+		else
+			ThirdAttack();
+	}
+
 	if ((m_pPlayer->pev->button & IN_ATTACK2) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
 	{
 		if (pszAmmo2() && 0 == m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()])
@@ -169,10 +190,6 @@ void CBasePlayerWeapon::ItemPostFrame()
 
 		m_pPlayer->TabulateAmmo();
 		PrimaryAttack();
-	}
-	else if ((m_pPlayer->pev->button & IN_ALT1) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
-	{
-		ThirdAttack();
 	}
 	else if ((m_pPlayer->pev->button & IN_RELOAD) != 0 && iMaxClip() != WEAPON_NOCLIP && !m_fInReload)
 	{

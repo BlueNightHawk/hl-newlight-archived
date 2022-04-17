@@ -96,7 +96,7 @@ public:
 
 	virtual bool AllowAutoTargetCrosshair() { return true; }
 	virtual bool ClientCommand(CBasePlayer* pPlayer, const char* pcmd) { return false; } // handles the user commands;  returns true if command handled properly
-	virtual void ClientUserInfoChanged(CBasePlayer* pPlayer, char* infobuffer) {}		 // the player has changed userinfo;  can change it now
+	virtual void ClientUserInfoChanged(CBasePlayer* pPlayer, char* infobuffer);			 // the player has changed userinfo;  can change it now
 
 	// Client kills/scoring
 	virtual int IPointsForKill(CBasePlayer* pAttacker, CBasePlayer* pKilled) = 0;					// how many points do I award whoever kills this player?
@@ -251,6 +251,8 @@ public:
 	// Teamplay stuff
 	const char* GetTeamID(CBaseEntity* pEntity) override { return ""; }
 	int PlayerRelationship(CBaseEntity* pPlayer, CBaseEntity* pTarget) override;
+
+	void ClientUserInfoChanged(CBasePlayer* pPlayer, char* infobuffer) override;
 };
 
 //=========================================================

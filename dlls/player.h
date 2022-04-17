@@ -348,8 +348,11 @@ public:
 	void SetPrefsFromUserinfo(char* infobuffer);
 
 	int m_iAutoWepSwitch;
+	int m_iToggleISight;
 
 	bool m_bRestored;
+
+	int m_iISightDown;
 
 	//True if the player is currently spawning.
 	bool m_bIsSpawning = false;

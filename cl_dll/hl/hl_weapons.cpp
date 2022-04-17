@@ -66,6 +66,9 @@ CTripmine g_Tripmine;
 CSqueak g_Snark;
 
 
+extern cvar_t* cl_toggleisight;
+extern cvar_t* cl_autowepswitch;
+
 /*
 ======================
 AlertMessage
@@ -515,7 +518,7 @@ void HUD_SetLastOrg()
 	}
 }
 
-/*
+	/*
 =====================
 HUD_WeaponsPostThink
 
@@ -778,6 +781,25 @@ void HUD_WeaponsPostThink(local_state_s* from, local_state_s* to, usercmd_t* cmd
 	to->client.ammo_cells = player.ammo_uranium;
 	to->client.vuser2[0] = player.ammo_hornets;
 	to->client.ammo_rockets = player.ammo_rockets;
+
+	player.m_iToggleISight = cl_toggleisight->value;
+	player.m_iAutoWepSwitch = cl_autowepswitch->value;
+
+	if ((player.pev->button & IN_ALT1) != 0 && player.m_pActiveItem)
+	{
+		player.m_iISightDown = 1;
+	}
+	else
+	{
+		if (player.m_iToggleISight <= 0)
+		{
+			if (player.m_iFOV != 0)
+			{
+				player.m_iFOV = 0; // 0 means reset to default fov
+			}
+		}
+		player.m_iISightDown = 0;
+	}
 
 	if (player.m_pActiveItem->m_iId == WEAPON_RPG)
 	{

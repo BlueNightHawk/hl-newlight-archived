@@ -89,6 +89,11 @@ CBasePlayerItem* CGameRules::FindNextBestWeapon(CBasePlayer* pPlayer, CBasePlaye
 	return pBest;
 }
 
+void CGameRules::ClientUserInfoChanged(CBasePlayer* pPlayer, char* infobuffer)
+{
+	pPlayer->SetPrefsFromUserinfo(infobuffer);
+}
+
 bool CGameRules::GetNextBestWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pCurrentWeapon, bool alwaysSearch)
 {
 	if (auto pBest = FindNextBestWeapon(pPlayer, pCurrentWeapon); pBest != nullptr)
