@@ -110,6 +110,9 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_iHideHUD, FIELD_INTEGER),
 		DEFINE_FIELD(CBasePlayer, m_iFOV, FIELD_INTEGER),
 
+		DEFINE_FIELD(CBasePlayer, m_flIdleTime, FIELD_TIME),
+		
+
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_flStopExtraSoundTime, FIELD_TIME ),
@@ -904,7 +907,16 @@ void CBasePlayer::SetAnimation(PLAYER_ANIM playerAnim)
 			break;
 		}
 		break;
-	case PLAYER_IDLE:
+
+		case PLAYER_IDLE : // idle animations
+		if (!FBitSet(pev->flags, FL_ONGROUND) && (m_Activity == ACT_HOP || m_Activity == ACT_LEAP))
+			m_IdealActivity = m_Activity;
+		else if (FBitSet(pev->flags, FL_DUCKING))
+			m_IdealActivity = ACT_WALK;
+		else
+			m_IdealActivity = ACT_IDLE;
+		break;
+
 	case PLAYER_WALK:
 		if (!FBitSet(pev->flags, FL_ONGROUND) && (m_Activity == ACT_HOP || m_Activity == ACT_LEAP)) // Still jumping
 		{
@@ -926,6 +938,34 @@ void CBasePlayer::SetAnimation(PLAYER_ANIM playerAnim)
 
 	switch (m_IdealActivity)
 	{
+	case ACT_IDLE: // idle animations
+		if (m_Activity != ACT_RANGE_ATTACK1 || m_fSequenceFinished)
+		{
+			if (m_flIdleTime <= gpGlobals->time)
+			{
+				animDesired = LookupActivity(ACT_IDLE);
+				m_flIdleTime = gpGlobals->time + 25.0; // change animation every 25 seconds
+			}
+			else
+			{
+				if (!m_fSequenceFinished)
+					animDesired = pev->sequence;
+				else
+				{
+					strcpy(szAnim, "ref_aim_");
+					strcat(szAnim, m_szAnimExtention);
+					animDesired = LookupSequence(szAnim);
+				}
+			}
+
+			if (animDesired == -1)
+				animDesired = 0;
+
+			m_Activity = ACT_IDLE;
+		}
+		else
+			animDesired = pev->sequence;
+		break;
 	case ACT_HOP: // jump as in cs
 		if (m_Activity == ACT_RANGE_ATTACK1)
 			strcpy(szAnim, "ref_shoot_");
@@ -2953,6 +2993,10 @@ void CBasePlayer::Spawn()
 	m_flNextChatTime = gpGlobals->time;
 
 	g_pGameRules->PlayerSpawn(this);
+
+	// idle animations
+	m_flIdleTime = gpGlobals->time + 20.0; // first animation after 20 seconds
+	m_fSequenceFinished = true;			   // animation is over, first just hold the weapon
 }
 
 

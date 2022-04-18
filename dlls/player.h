@@ -356,6 +356,8 @@ public:
 
 	//True if the player is currently spawning.
 	bool m_bIsSpawning = false;
+
+	float m_flIdleTime;
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)
