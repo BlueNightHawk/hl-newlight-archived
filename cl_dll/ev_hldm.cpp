@@ -44,6 +44,8 @@
 #include "particleman.h"
 #include "particle_presets.h"
 
+extern int LookupActivityWeight(int activity, int weight);
+
 extern IParticleMan* g_pParticleMan;
 
 extern engine_studio_api_t IEngineStudio;
@@ -535,7 +537,7 @@ void EV_FireGlock1(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		EV_MuzzleFlash();
-		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? GLOCK_SHOOT_EMPTY : GLOCK_SHOOT, 2);
+		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? LookupActivityWeight(ACT_RANGE_ATTACK1, 2) : LookupActivityWeight(ACT_RANGE_ATTACK1, 1), 2);
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);
@@ -582,7 +584,7 @@ void EV_FireGlock2(event_args_t* args)
 	{
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? GLOCK_SHOOT_EMPTY : GLOCK_SHOOT, 2);
+		gEngfuncs.pEventAPI->EV_WeaponAnimation(empty ? LookupActivityWeight(ACT_RANGE_ATTACK1, 2) : LookupActivityWeight(ACT_RANGE_ATTACK1, 1), 2);
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);

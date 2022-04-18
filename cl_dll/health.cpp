@@ -168,7 +168,8 @@ void CHudHealth::GetPainColor(int& r, int& g, int& b)
 bool CHudHealth::Draw(float flTime)
 {
 	int r, g, b;
-	int a = 0, x, y;
+	int x, y;
+	static float a = 0.0f;
 	int HealthWidth;
 
 	if ((gHUD.m_iHideHUDDisplay & HIDEHUD_HEALTH) != 0 || 0 != gEngfuncs.IsSpectateOnly())
@@ -178,7 +179,7 @@ bool CHudHealth::Draw(float flTime)
 		m_hSprite = LoadSprite(PAIN_NAME);
 
 	// Has health changed? Flash the health #
-	if (0 != m_fFade)
+	if (0 != m_fFade || (0 != gHUD.m_Battery.m_fFade))
 	{
 		m_fFade -= (gHUD.m_flTimeDelta * 20);
 		if (m_fFade <= 0)
@@ -189,13 +190,14 @@ bool CHudHealth::Draw(float flTime)
 
 		// Fade the health number back to dim
 
-		a = MIN_ALPHA + (m_fFade / FADE_TIME) * 128;
+		a = MIN_ALPHA + ((m_fFade + gHUD.m_Battery.m_fFade)/ FADE_TIME) * 128;
 	}
 	else
+	{
 		a = MIN_ALPHA;
-
+	}
 	// If health is getting low, make it bright red
-	if (m_iHealth <= 15)
+	if (m_iHealth <= 30)
 		a = 255;
 
 	GetPainColor(r, g, b);
@@ -221,13 +223,14 @@ bool CHudHealth::Draw(float flTime)
 		gHUD.DrawHudNumberReverse(x, y, m_iHealth, DHN_DRAWZERO, r, g, b);
 
 		//x = gHUD.DrawHudNumber(x, y, DHN_3DIGITS | DHN_DRAWZERO, m_iHealth, r, g, b);
-
+		/*
 		x += HealthWidth / 2;
 
 		int iHeight = gHUD.m_iFontHeight;
 		int iWidth = HealthWidth / 10;
 		UnpackRGB(r, g, b, RGB_YELLOWISH);
-		//FillRGBA(x, y, iWidth, iHeight, r, g, b, a);
+		FillRGBA(x, y, iWidth, iHeight, r, g, b, a);
+		*/
 	}
 
 	DrawDamage(flTime);

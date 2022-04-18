@@ -272,6 +272,9 @@ public:
 	int iWeight() { return ItemInfoArray[m_iId].iWeight; }
 	int iFlags() { return ItemInfoArray[m_iId].iFlags; }
 
+	int LookupActivityWeight(int activity, int weight = 1) override;
+	float GetSeqLength(int sequence) override;
+
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 };
@@ -358,6 +361,16 @@ public:
 	float m_flLastFireTime;
 };
 
+// server side viewmodel entity
+class CViewModel : public CBaseAnimating
+{
+public:
+	void Precache() override;
+	void Spawn() override;
+	void EXPORT UpdateThink();
+
+	CBasePlayer* m_pPlayer;
+};
 
 class CBasePlayerAmmo : public CBaseEntity
 {

@@ -17,6 +17,7 @@
 
 #include "pm_materials.h"
 
+class CViewModel;
 
 #define PLAYER_FATAL_FALL_SPEED 1024															  // approx 60 feet
 #define PLAYER_MAX_SAFE_FALL_SPEED 580															  // approx 20 feet
@@ -182,6 +183,7 @@ public:
 	CBasePlayerItem* m_pActiveItem;
 	CBasePlayerItem* m_pClientActiveItem; // client version of the active item
 	CBasePlayerItem* m_pLastItem;
+	CViewModel* m_pViewModel;
 
 	std::uint64_t m_WeaponBits;
 

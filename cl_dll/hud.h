@@ -31,11 +31,14 @@
 #include "ammo.h"
 #include "studio.h"
 #include "com_model.h"
+#include "cvardef.h"
+
+extern cvar_t* hud_fade;
 
 #define DHN_DRAWZERO 1
 #define DHN_2DIGITS 2
 #define DHN_3DIGITS 4
-#define MIN_ALPHA 100
+#define MIN_ALPHA ((hud_fade->value) ? 0 : 100)
 
 #define HUDELEM_ACTIVE 1
 
@@ -335,6 +338,7 @@ public:
 	bool Draw(float flTime) override;
 	bool MsgFunc_Battery(const char* pszName, int iSize, void* pbuf);
 
+	float m_fFade;
 private:
 	HSPRITE m_hSprite1;
 	HSPRITE m_hSprite2;
@@ -342,7 +346,6 @@ private:
 	Rect* m_prc2;
 	int m_iBat;
 	int m_iBatMax;
-	float m_fFade;
 	int m_iHeight; // width of the battery innards
 };
 

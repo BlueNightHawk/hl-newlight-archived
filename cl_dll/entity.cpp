@@ -361,6 +361,11 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 
+	int iShouldDrawLegs = (!g_iDrawLegs && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
+
+	if (iShouldDrawLegs && !cam_thirdperson)
+		return;
+
 	switch (event->event)
 	{
 	case 5001:

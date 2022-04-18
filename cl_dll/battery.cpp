@@ -89,7 +89,7 @@ bool CHudBattery::Draw(float flTime)
 		return true;
 
 	// Has health changed? Flash the health #
-	if (0 != m_fFade)
+	if (0 != m_fFade || (0 != gHUD.m_Health.m_fFade))
 	{
 		if (m_fFade > FADE_TIME)
 			m_fFade = FADE_TIME;
@@ -103,7 +103,7 @@ bool CHudBattery::Draw(float flTime)
 
 		// Fade the health number back to dim
 
-		a = MIN_ALPHA + (m_fFade / FADE_TIME) * 128;
+		a = MIN_ALPHA + ((m_fFade + gHUD.m_Health.m_fFade) / FADE_TIME) * 128;
 	}
 	else
 		a = MIN_ALPHA;

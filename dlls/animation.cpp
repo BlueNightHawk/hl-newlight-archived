@@ -107,6 +107,51 @@ int LookupActivityHeaviest(void* pmodel, entvars_t* pev, int activity)
 	return seq;
 }
 
+int LookupActivityWeight(void* pmodel, entvars_t* pev, int activity, int weight)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)pmodel;
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int seq = ACTIVITY_NOT_AVAILABLE;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			if (pseqdesc[i].actweight == weight)
+			{
+				seq = i;
+			}
+		}
+	}
+
+	return seq;
+}
+
+float GetSeqLength(void* pmodel, entvars_t* pev, int sequence)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)pmodel;
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	if (pseqdesc == nullptr)
+		return 0;
+
+	return pseqdesc[sequence].numframes / pseqdesc[sequence].fps;
+}
+
 void GetEyePosition(void* pmodel, float* vecEyePosition)
 {
 	studiohdr_t* pstudiohdr;

@@ -123,3 +123,42 @@ void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir)
 {
 	g_StudioRenderer.StudioLightAtPos(pos, color, amblight, dir);
 }
+
+//=========================================================
+// LookupActivityWeight
+//
+// Get activity with 'weight'
+//
+//=========================================================
+
+int LookupActivityWeight(int activity, int weight)
+{
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	if (view == nullptr)
+		return 0;
+
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int seq = -1;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			if (pseqdesc[i].actweight == weight)
+			{
+				seq = i;
+			}
+		}
+	}
+
+	return seq;
+}

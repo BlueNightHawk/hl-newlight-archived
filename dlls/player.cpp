@@ -1868,6 +1868,17 @@ void CBasePlayer::PreThink()
 
 	UTIL_MakeVectors(pev->v_angle); // is this still used?
 
+
+	if (m_pViewModel == nullptr)
+	{
+		m_pViewModel = (CViewModel*)CBaseEntity::Create("sv_viewmodel", GetGunPosition(), pev->v_angle, ENT(pev));
+	}
+	if (m_pViewModel != nullptr)
+	{
+		m_pViewModel->m_pPlayer = this;
+		m_pViewModel->UpdateThink();
+	}
+
 	ItemPreFrame();
 	WaterMove();
 
@@ -2615,6 +2626,16 @@ void CBasePlayer::PostThink()
 			m_pTank->Use(this, this, USE_OFF, 0);
 			m_pTank = NULL;
 		}
+	}
+
+	if (m_pViewModel == nullptr)
+	{
+		m_pViewModel = (CViewModel*)CBaseEntity::Create("sv_viewmodel", GetGunPosition(), pev->v_angle, ENT(pev));
+	}
+	if (m_pViewModel != nullptr)
+	{
+		m_pViewModel->m_pPlayer = this;
+		m_pViewModel->UpdateThink();
 	}
 
 	// do weapon stuff

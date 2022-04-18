@@ -505,6 +505,8 @@ public:
 	int GetSequenceFlags();
 	int LookupActivity(int activity);
 	int LookupActivityHeaviest(int activity);
+	virtual float GetSeqLength(int sequence);
+	virtual int LookupActivityWeight(int activity, int weight);
 	int LookupSequence(const char* label);
 	void ResetSequenceInfo();
 	void DispatchAnimEvents(float flFutureInterval = 0.1); // Handle events that have happend since last time called up until X seconds into the future

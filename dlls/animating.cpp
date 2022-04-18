@@ -96,6 +96,32 @@ int CBaseAnimating::LookupActivityHeaviest(int activity)
 }
 
 //=========================================================
+// LookupActivityWeight
+//
+// Get activity by 'weight'
+//
+//=========================================================
+int CBaseAnimating::LookupActivityWeight(int activity, int weight)
+{
+	void* pmodel = GET_MODEL_PTR(ENT(pev));
+
+	return ::LookupActivityWeight(pmodel, pev, activity,weight);
+}
+
+//=========================================================
+// GetSeqLength
+//
+// Get total length of a sequence
+//
+//=========================================================
+float CBaseAnimating::GetSeqLength(int sequence)
+{
+	void* pmodel = GET_MODEL_PTR(ENT(pev));
+
+	return ::GetSeqLength(pmodel, pev, sequence);
+}
+
+//=========================================================
 //=========================================================
 int CBaseAnimating::LookupSequence(const char* label)
 {

@@ -89,6 +89,7 @@ cvar_t* cl_rollangle = nullptr;
 cvar_t* cl_rollspeed = nullptr;
 cvar_t* cl_toggleisight = nullptr;
 cvar_t* cl_autowepswitch = nullptr;
+cvar_t* hud_fade = nullptr;
 
 void ShutdownInput();
 
@@ -340,6 +341,7 @@ void CHud::Init()
 	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
 	cl_rollangle = CVAR_CREATE("cl_rollangle", "2.0", FCVAR_ARCHIVE);
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
+	hud_fade = CVAR_CREATE("hud_fade", "1", FCVAR_ARCHIVE);
 
 	m_pSpriteList = NULL;
 

@@ -335,3 +335,5 @@ bool CBasePlayerWeapon::ExtractClipAmmo(CBasePlayerWeapon* pWeapon) { return fal
 void CBasePlayerWeapon::RetireWeapon() {}
 void CSoundEnt::InsertSound(int iType, const Vector& vecOrigin, int iVolume, float flDuration) {}
 void RadiusDamage(Vector vecSrc, entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, float flRadius, int iClassIgnore, int bitsDamageType) {}
+int CBaseAnimating::LookupActivityWeight(int activity, int weight) { return 0; }
+float CBaseAnimating::GetSeqLength(int sequence) { return 0.0f; }

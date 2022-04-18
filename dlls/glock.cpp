@@ -75,7 +75,7 @@ bool CGlock::GetItemInfo(ItemInfo* p)
 bool CGlock::Deploy()
 {
 	// pev->body = 1;
-	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", GLOCK_DRAW, "onehanded");
+	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", 1, "onehanded");
 }
 
 void CGlock::SecondaryAttack()
@@ -93,7 +93,7 @@ void CGlock::Holster()
 	}
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	SendWeaponAnim(GLOCK_HOLSTER);
+	SendWeaponAnim(LookupActivityWeight(ACT_DISARM));
 }
 
 void CGlock::PrimaryAttack()
@@ -177,9 +177,9 @@ void CGlock::Reload()
 	bool iResult;
 
 	if (m_iClip == 0)
-		iResult = DefaultReload(17, GLOCK_RELOAD, 1.5);
+		iResult = DefaultReload(17, LookupActivityWeight(ACT_RELOAD, 1), 1.5);
 	else
-		iResult = DefaultReload(17, GLOCK_RELOAD_NOT_EMPTY, 1.5);
+		iResult = DefaultReload(17, LookupActivityWeight(ACT_RELOAD, 2), 1.5);
 
 	if (iResult)
 	{
@@ -201,26 +201,13 @@ void CGlock::WeaponIdle()
 	// only idle if the slid isn't back
 	if (m_iClip != 0)
 	{
-		int iAnim;
-		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0.0, 1.0);
-
-		if (flRand <= 0.3 + 0 * 0.75)
-		{
-			iAnim = GLOCK_IDLE3;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 49.0 / 16;
-		}
-		else if (flRand <= 0.6 + 0 * 0.875)
-		{
-			iAnim = GLOCK_IDLE1;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 60.0 / 16.0;
-		}
-		else
-		{
-			iAnim = GLOCK_IDLE2;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
-		}
+		int iAnim = 0;
 		if (m_pPlayer->m_iFOV == 0)
+		{
+			iAnim = LookupActivityWeight(ACT_IDLE, RANDOM_LONG(1,3));
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * RANDOM_FLOAT(1.2,3.0);
 			SendWeaponAnim(iAnim);
+		}
 	}
 }
 

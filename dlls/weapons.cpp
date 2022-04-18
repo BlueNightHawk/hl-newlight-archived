@@ -262,6 +262,7 @@ void W_Precache()
 	giAmmoIndex = 0;
 
 	// custom items...
+	UTIL_PrecacheOther("sv_viewmodel");
 
 	// common world objects
 	UTIL_PrecacheOther("item_suit");
@@ -389,6 +390,23 @@ TYPEDESCRIPTION CBasePlayerWeapon::m_SaveData[] =
 };
 
 IMPLEMENT_SAVERESTORE(CBasePlayerWeapon, CBasePlayerItem);
+
+int CBasePlayerItem::LookupActivityWeight(int activity, int weight)
+{
+	if (m_pPlayer == nullptr || m_pPlayer->m_pViewModel == nullptr)
+		return 0;
+
+	return m_pPlayer->m_pViewModel->LookupActivityWeight(activity, weight);
+}
+
+
+float CBasePlayerItem::GetSeqLength(int sequence)
+{
+	if (m_pPlayer == nullptr || m_pPlayer->m_pViewModel == nullptr)
+		return 0;
+
+	return m_pPlayer->m_pViewModel->GetSeqLength(sequence);
+}
 
 
 void CBasePlayerItem::SetObjectCollisionBox()
@@ -856,6 +874,13 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 	m_pPlayer->pev->weaponmodel = MAKE_STRING(szWeaponModel);
 	strcpy(m_pPlayer->m_szAnimExtention, szAnimExt);
 	SendWeaponAnim(iAnim, body);
+
+	if (m_pPlayer->m_pViewModel)
+		m_pPlayer->m_pViewModel->UpdateThink();
+	if (!stricmp("models/v_9mmhandgun.mdl", szViewModel))
+	{
+		SendWeaponAnim(LookupActivityWeight(ACT_ARM, iAnim));
+	}
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0;
