@@ -137,6 +137,11 @@ int __MsgFunc_GameMode(const char* pszName, int iSize, void* pbuf)
 	return static_cast<int>(gHUD.MsgFunc_GameMode(pszName, iSize, pbuf));
 }
 
+int __MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_WAnim(pszName, iSize, pbuf));
+}
+
 // TFFree Command Menu
 void __CmdFunc_OpenCommandMenu()
 {
@@ -284,6 +289,7 @@ int __MsgFunc_AllowSpec(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
+
 // This is called every time the DLL is loaded
 void CHud::Init()
 {
@@ -322,6 +328,11 @@ void CHud::Init()
 
 	// VGUI Menus
 	HOOK_MESSAGE(VGUIMenu);
+
+	HOOK_MESSAGE(WAnim);
+
+	m_prevstate = { };
+	m_prevstate.sequence = -1;
 
 	CVAR_CREATE("hud_classautokill", "1", FCVAR_ARCHIVE | FCVAR_USERINFO); // controls whether or not to suicide immediately on TF class switch
 	CVAR_CREATE("hud_takesshots", "0", FCVAR_ARCHIVE);					   // controls whether or not to automatically take screenshots at the end of a round
@@ -419,6 +430,8 @@ int CHud::GetSpriteIndex(const char* SpriteName)
 	return -1; // invalid sprite
 }
 
+int g_iRestoreViewent = 0;
+
 void CHud::VidInit()
 {
 	// TODO: needs to be called on every map change, not just when starting a new game
@@ -508,6 +521,8 @@ void CHud::VidInit()
 	m_HUD_number_0 = GetSpriteIndex("number_0");
 
 	m_iFontHeight = m_rgrcRects[m_HUD_number_0].bottom - m_rgrcRects[m_HUD_number_0].top;
+
+	g_iRestoreViewent = 1;
 
 	m_Ammo.VidInit();
 	m_Health.VidInit();

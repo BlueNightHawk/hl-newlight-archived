@@ -399,6 +399,14 @@ int CBasePlayerItem::LookupActivityWeight(int activity, int weight)
 	return m_pPlayer->m_pViewModel->LookupActivityWeight(activity, weight);
 }
 
+int CBasePlayerItem::LookupActivity(int activity)
+{
+	if (m_pPlayer == nullptr || m_pPlayer->m_pViewModel == nullptr)
+		return 0;
+
+	return m_pPlayer->m_pViewModel->LookupActivity(activity);
+}
+
 
 float CBasePlayerItem::GetSeqLength(int sequence)
 {
@@ -407,6 +415,15 @@ float CBasePlayerItem::GetSeqLength(int sequence)
 
 	return m_pPlayer->m_pViewModel->GetSeqLength(sequence);
 }
+
+int CBasePlayerItem::GetActivityHeaviest(int activity)
+{
+	if (m_pPlayer == nullptr || m_pPlayer->m_pViewModel == nullptr)
+		return 0;
+
+	return m_pPlayer->m_pViewModel->GetActivityHeaviest(activity);
+}
+
 
 
 void CBasePlayerItem::SetObjectCollisionBox()
@@ -762,9 +779,9 @@ void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
 		return;
 #endif
 
-	MESSAGE_BEGIN(MSG_ONE, SVC_WEAPONANIM, NULL, m_pPlayer->pev);
-	WRITE_BYTE(iAnim);	   // sequence number
-	WRITE_BYTE(pev->body); // weaponmodel bodygroup.
+	MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, m_pPlayer->pev);
+	WRITE_SHORT(iAnim);	   // sequence number
+	WRITE_SHORT(pev->body); // weaponmodel bodygroup.
 	MESSAGE_END();
 }
 
@@ -873,17 +890,26 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 	m_pPlayer->pev->viewmodel = MAKE_STRING(szViewModel);
 	m_pPlayer->pev->weaponmodel = MAKE_STRING(szWeaponModel);
 	strcpy(m_pPlayer->m_szAnimExtention, szAnimExt);
-	SendWeaponAnim(iAnim, body);
 
 	if (m_pPlayer->m_pViewModel)
 		m_pPlayer->m_pViewModel->UpdateThink();
-	if (!stricmp("models/v_9mmhandgun.mdl", szViewModel))
+
+	if (iAnim < 1)
 	{
-		SendWeaponAnim(LookupActivityWeight(ACT_ARM, iAnim));
+		if (GetActivityHeaviest(ACT_ARM) > 1)
+			iAnim = (m_pPlayer->m_bNotFirstDraw[m_iId]) ? 1 : 2;
+		else
+			iAnim = 1;
 	}
+	int iCurAnim = LookupActivityWeight(ACT_ARM, iAnim);
+	if (iCurAnim < 0)
+		iCurAnim = iAnim;
+
+	SendWeaponAnim(iCurAnim, body);
+	
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iCurAnim);
 	m_flLastFireTime = 0.0;
 
 	return true;

@@ -144,3 +144,18 @@ bool CHud::MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf)
 
 	return true;
 }
+
+void CL_SendWeaponAnim(int iAnim, int iBody);
+
+bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	const int iAnim = READ_SHORT();
+	const int iBody = READ_SHORT();
+
+	m_flAnimTime = m_flCurTime;
+	gEngfuncs.pfnWeaponAnim(iAnim, iBody);
+
+	return true;
+}

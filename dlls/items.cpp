@@ -189,8 +189,18 @@ class CItemSuit : public CItem
 			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_A0"); // short version of suit logon,
 		else
 			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_AAx"); // long version of suit logon
-
+		
 		pPlayer->SetHasSuit(true);
+
+		pPlayer->pev->viewmodel = MAKE_STRING("models/v_hands.mdl");
+
+		if (pPlayer->m_pViewModel)
+			pPlayer->m_pViewModel->UpdateThink();
+
+		MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, pPlayer->pev);
+		WRITE_SHORT(0); // sequence number
+		WRITE_SHORT(0); // weaponmodel bodygroup.
+		MESSAGE_END();
 		return true;
 	}
 };

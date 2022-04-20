@@ -96,6 +96,19 @@ int CBaseAnimating::LookupActivityHeaviest(int activity)
 }
 
 //=========================================================
+// GetActivityHeaviest
+//
+// Get highest 'weight' of an activity
+//
+//=========================================================
+int CBaseAnimating::GetActivityHeaviest(int activity)
+{
+	void* pmodel = GET_MODEL_PTR(ENT(pev));
+
+	return ::GetActivityHeaviest(pmodel, pev, activity);
+}
+
+//=========================================================
 // LookupActivityWeight
 //
 // Get activity by 'weight'
@@ -172,12 +185,24 @@ void CBaseAnimating::DispatchAnimEvents(float flInterval)
 	}
 
 	// FIXME: I have to do this or some events get missed, and this is probably causing the problem below
-	flInterval = 0.1;
+	flInterval = V_max(flInterval,0.1);
 
+	if (m_flPrevFrame == pev->frame)
+		return;
+	
 	// FIX: this still sometimes hits events twice
 	float flStart = pev->frame + (m_flLastEventCheck - pev->animtime) * m_flFrameRate * pev->framerate;
 	float flEnd = pev->frame + flInterval * m_flFrameRate * pev->framerate;
 	m_flLastEventCheck = pev->animtime + flInterval;
+	m_flPrevFrame = pev->frame;
+	/*	
+	for (int i = 0; i < 512; i++)
+	{
+		if (ENTINDEX(edict()) == i && (pev->flags & FL_MONSTER) != 0)
+//		ALERT(at_console, "%f %f %f %f %f %f\n", flStart, flEnd, pev->animtime, pev->framerate, m_flFrameRate, gpGlobals->time);
+		ALERT(at_console, "%f %f %f \n", gpGlobals->frametime, flInterval, flInterval + 0.1);
+	}
+	*/
 
 	m_fSequenceFinished = false;
 	if (flEnd >= 256 || flEnd <= 0.0)
@@ -190,7 +215,6 @@ void CBaseAnimating::DispatchAnimEvents(float flInterval)
 		HandleAnimEvent(&event);
 	}
 }
-
 
 //=========================================================
 //=========================================================

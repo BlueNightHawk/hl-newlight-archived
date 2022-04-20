@@ -360,6 +360,8 @@ public:
 	bool m_bIsSpawning = false;
 
 	float m_flIdleTime;
+
+	bool m_bNotFirstDraw[64];
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

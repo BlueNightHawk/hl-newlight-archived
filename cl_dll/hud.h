@@ -601,6 +601,8 @@ public:
 	bool MsgFunc_SetFOV(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf);
+	
 
 	// Screen information
 	SCREENINFO m_scrinfo;
@@ -620,6 +622,13 @@ public:
 	alight_s vmodel_lighting;
 
 	float m_flTargetFov;
+
+	// stuff specifically for viewmodel
+	double	m_flCurTime;
+	double m_flAnimTime;
+	double m_flCurFrame;
+
+	entity_state_t m_prevstate;
 };
 
 typedef struct viewinfo_s

@@ -15,6 +15,7 @@
 
 #include "extdll.h"
 #include "util.h"
+#include "cbase.h"
 
 #include "studio.h"
 #include "activity.h"
@@ -105,6 +106,35 @@ int LookupActivityHeaviest(void* pmodel, entvars_t* pev, int activity)
 	}
 
 	return seq;
+}
+
+int GetActivityHeaviest(void* pmodel, entvars_t* pev, int activity)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)pmodel;
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int weight = 0;
+	int seq = ACTIVITY_NOT_AVAILABLE;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			if (pseqdesc[i].actweight > weight)
+			{
+				weight = pseqdesc[i].actweight;
+				seq = i;
+			}
+		}
+	}
+
+	return weight;
 }
 
 int LookupActivityWeight(void* pmodel, entvars_t* pev, int activity, int weight)
@@ -321,7 +351,7 @@ int GetAnimationEvent(void* pmodel, entvars_t* pev, MonsterEvent_t* pMonsterEven
 		if (pevent[index].event >= EVENT_CLIENT)
 			continue;
 
-		if ((pevent[index].frame >= flStart && pevent[index].frame < flEnd) ||
+		if (((float)pevent[index].frame >= flStart && pevent[index].frame < flEnd) ||
 			((pseqdesc->flags & STUDIO_LOOPING) != 0 && flEnd >= pseqdesc->numframes - 1 && pevent[index].frame < flEnd - pseqdesc->numframes + 1))
 		{
 			pMonsterEvent->event = pevent[index].event;
@@ -543,4 +573,61 @@ int GetBodygroup(void* pmodel, entvars_t* pev, int iGroup)
 	int iCurrent = (pev->body / pbodypart->base) % pbodypart->nummodels;
 
 	return iCurrent;
+}
+
+float StudioEstimateFrame(entvars_s *pev, mstudioseqdesc_t* pseqdesc)
+{
+	double dfdt, f;
+
+	if (1)
+	{
+		if (gpGlobals->time < pev->animtime)
+		{
+			dfdt = 0;
+		}
+		else
+		{
+			dfdt = (gpGlobals->time - pev->animtime) * pev->framerate * pseqdesc->fps;
+		}		
+	}
+	else
+	{
+		dfdt = 0;
+	}
+
+	if (pseqdesc->numframes <= 1)
+	{
+		f = 0;
+	}
+	else
+	{
+		f = (pev->frame * (pseqdesc->numframes - 1)) / 256.0;
+	}
+
+	f += dfdt;
+
+	if ((pseqdesc->flags & STUDIO_LOOPING) != 0)
+	{
+		if (pseqdesc->numframes > 1)
+		{
+			f -= (int)(f / (pseqdesc->numframes - 1)) * (pseqdesc->numframes - 1);
+		}
+		if (f < 0)
+		{
+			f += (pseqdesc->numframes - 1);
+		}
+	}
+	else
+	{
+		if (f >= pseqdesc->numframes - 1.001)
+		{
+			f = pseqdesc->numframes - 1.001;
+		}
+		if (f < 0.0)
+		{
+			f = 0.0;
+		}
+	}
+
+	return f;
 }

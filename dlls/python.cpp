@@ -88,7 +88,7 @@ bool CPython::Deploy()
 		pev->body = 0;
 	}
 
-	return DefaultDeploy("models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python", pev->body);
+	return DefaultDeploy("models/v_357.mdl", "models/p_357.mdl", 0, "python", pev->body);
 }
 
 
@@ -103,7 +103,7 @@ void CPython::Holster()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.0;
 	m_flTimeWeaponIdle = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
-	SendWeaponAnim(PYTHON_HOLSTER);
+	SendWeaponAnim(LookupActivityWeight(ACT_DISARM,1));
 }
 
 void CPython::SecondaryAttack()
@@ -190,11 +190,14 @@ void CPython::PrimaryAttack()
 void CPython::Reload()
 {
 	if (m_pPlayer->ammo_357 <= 0)
-		return;
-
-	if (m_pPlayer->m_iFOV != 0)
 	{
-		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+		if ((m_pPlayer->m_afButtonPressed & IN_RELOAD) != 0)
+		{
+			int iAnim = LookupActivity(ACT_USE);
+			SendWeaponAnim(iAnim, 0);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		}
+		return;
 	}
 
 	bool bUseScope = false;
@@ -204,7 +207,22 @@ void CPython::Reload()
 	bUseScope = g_pGameRules->IsMultiplayer();
 #endif
 
-	DefaultReload(6, PYTHON_RELOAD, 2.0, bUseScope ? 1 : 0);
+	if (DefaultReload(6, LookupActivity(ACT_RELOAD), 2.0, bUseScope ? 1 : 0))
+	{
+		if (m_pPlayer->m_iFOV != 0)
+		{
+			m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+		}
+	}
+	else
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			int iAnim = LookupActivity(ACT_USE);
+			SendWeaponAnim(iAnim, 0);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		}
+	}
 }
 
 
@@ -217,29 +235,6 @@ void CPython::WeaponIdle()
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
-	int iAnim;
-	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-	if (flRand <= 0.5)
-	{
-		iAnim = PYTHON_IDLE1;
-		m_flTimeWeaponIdle = (70.0 / 30.0);
-	}
-	else if (flRand <= 0.7)
-	{
-		iAnim = PYTHON_IDLE2;
-		m_flTimeWeaponIdle = (60.0 / 30.0);
-	}
-	else if (flRand <= 0.9)
-	{
-		iAnim = PYTHON_IDLE3;
-		m_flTimeWeaponIdle = (88.0 / 30.0);
-	}
-	else
-	{
-		iAnim = PYTHON_FIDGET;
-		m_flTimeWeaponIdle = (170.0 / 30.0);
-	}
-
 	bool bUseScope = false;
 #ifdef CLIENT_DLL
 	bUseScope = bIsMultiplayer();
@@ -247,7 +242,13 @@ void CPython::WeaponIdle()
 	bUseScope = g_pGameRules->IsMultiplayer();
 #endif
 
-	SendWeaponAnim(iAnim, bUseScope ? 1 : 0);
+	int iAnim = 0;
+	if (m_pPlayer->m_iFOV == 0)
+	{
+		iAnim = LookupActivity(ACT_IDLE);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 5, 12);
+		SendWeaponAnim(iAnim, bUseScope ? 1 : 0);
+	}
 }
 
 

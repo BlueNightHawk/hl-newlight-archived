@@ -24,6 +24,7 @@ extern bool IsSoundEvent(int eventNumber);
 int LookupActivity(void* pmodel, entvars_t* pev, int activity);
 int LookupActivityHeaviest(void* pmodel, entvars_t* pev, int activity);
 int LookupActivityWeight(void* pmodel, entvars_t* pev, int activity, int weight);
+int GetActivityHeaviest(void* pmodel, entvars_t* pev, int activity);
 float GetSeqLength(void* pmodel, entvars_t* pev, int sequence);
 int LookupSequence(void* pmodel, const char* label);
 void GetSequenceInfo(void* pmodel, entvars_t* pev, float* pflFrameRate, float* pflGroundSpeed);

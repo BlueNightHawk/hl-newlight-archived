@@ -204,7 +204,7 @@ void CGlock::WeaponIdle()
 		int iAnim = 0;
 		if (m_pPlayer->m_iFOV == 0)
 		{
-			iAnim = LookupActivityWeight(ACT_IDLE, RANDOM_LONG(1,3));
+			iAnim = LookupActivity(ACT_IDLE);
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * RANDOM_FLOAT(1.2,3.0);
 			SendWeaponAnim(iAnim);
 		}

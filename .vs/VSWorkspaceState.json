@@ -3,9 +3,10 @@
     "",
     "\\cl_dll",
     "\\cl_dll\\particleman",
+    "\\dlls",
     "\\projects",
     "\\projects\\vs2019"
   ],
-  "SelectedNode": "\\cl_dll\\StudioModelRenderer.cpp",
+  "SelectedNode": "\\cl_dll\\view.cpp",
   "PreviewInSolutionExplorer": false
 }

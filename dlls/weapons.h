@@ -274,7 +274,8 @@ public:
 
 	int LookupActivityWeight(int activity, int weight = 1) override;
 	float GetSeqLength(int sequence) override;
-
+	int GetActivityHeaviest(int activity) override;
+	int LookupActivity(int activity) override;
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 };

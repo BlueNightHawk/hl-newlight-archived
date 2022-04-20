@@ -759,10 +759,12 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 	static Vector l_camangles, l_campos;
 	int index = -1;
 
-	if (view->model != nullptr && view->model->name != nullptr && g_viewinfo.phdr != NULL && (fabs(pparams->viewangles[0]) < 75))
+	if (view->model != nullptr && view->model->name != nullptr && g_viewinfo.phdr != NULL)//&& (fabs(pparams->viewangles[0]) < 65))
 	{
 		index = GetCamBoneIndex(view);
-		if (index < 0)
+		mstudioseqdesc_t* pseqdesc = (mstudioseqdesc_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->seqindex) + view->curstate.sequence;
+
+		if (index < 0 || (pseqdesc && (gHUD.m_flCurFrame >= pseqdesc->numframes - 1.001)))
 		{
 			goto end;
 		}
@@ -789,6 +791,9 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		return;
 	}
 
+	NormalizeAngles((float*)&pparams->viewangles);
+
+
 	if (index > -1 && index < g_viewinfo.phdr->numbones)
 	{
 		Vector result, result2;
@@ -805,6 +810,7 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 			pparams->viewangles[i] += l_camangles[i] / 25;
 			pparams->vieworg[i] += l_campos[i] / 10;
 		}
+
 		g_vLag[0] += l_camangles[1] / 3;
 		g_vLag[1] -= l_camangles[0] / 3;
 
@@ -824,6 +830,8 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		pparams->crosshairangle[0] = 0;
 		pparams->crosshairangle[1] = 0;
 	}
+
+	NormalizeAngles((float*)&pparams->viewangles);
 }
 
 void V_ApplyBob(struct ref_params_s* pparams, cl_entity_s* view)
@@ -2128,6 +2136,7 @@ void V_CalcSpectatorRefdef(struct ref_params_s* pparams)
 extern void SetupBuffer();
 
 ref_params_s g_pparams;
+
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
@@ -2147,6 +2156,15 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	}
 
 	g_pparams = *pparams;
+
+	if (pparams->paused == 0 )//&& gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
+	{
+		gHUD.m_flCurTime = V_max(gHUD.m_flCurTime, 1) + pparams->frametime;
+
+		gHUD.m_flAnimTime = V_max(gHUD.m_flAnimTime, 1);
+	}
+
+	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 
 	// buz
 	if (CVAR_GET_FLOAT("r_shadows") > 1 )

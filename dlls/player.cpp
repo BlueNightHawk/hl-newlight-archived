@@ -111,6 +111,8 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_iFOV, FIELD_INTEGER),
 
 		DEFINE_FIELD(CBasePlayer, m_flIdleTime, FIELD_TIME),
+
+		DEFINE_ARRAY(CBasePlayer, m_bNotFirstDraw, FIELD_BOOLEAN, MAX_WEAPONS),
 		
 
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
@@ -2322,6 +2324,10 @@ void CBasePlayer::CheckSuitUpdate()
 	if (!HasSuit())
 		return;
 
+	if (!m_bNotFirstDraw[WEAPON_SUIT])
+	{
+		m_bNotFirstDraw[WEAPON_SUIT] = true;
+	}
 	// if in range of radiation source, ping geiger counter
 	UpdateGeigerCounter();
 
@@ -3018,6 +3024,8 @@ void CBasePlayer::Spawn()
 	// idle animations
 	m_flIdleTime = gpGlobals->time + 20.0; // first animation after 20 seconds
 	m_fSequenceFinished = true;			   // animation is over, first just hold the weapon
+
+	memset(&m_bNotFirstDraw, false, MAX_WEAPONS);
 }
 
 

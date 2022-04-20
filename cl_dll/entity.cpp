@@ -361,6 +361,8 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 
+	if (entity == gEngfuncs.GetViewModel())
+		return;
 	int iShouldDrawLegs = (!g_iDrawLegs && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
 	if (iShouldDrawLegs && !cam_thirdperson)
@@ -372,6 +374,48 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
 		CL_Muzzleflash((float*)&entity->attachment[0]);
 		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25,50), gEngfuncs.pfnRandomFloat(16, 32));
+		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		break;
+	case 5011:
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[1]);
+		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		break;
+	case 5021:
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[2]);
+		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		break;
+	case 5031:
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[3]);
+		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		break;
+	case 5002:
+		gEngfuncs.pEfxAPI->R_SparkEffect((float*)&entity->attachment[0], atoi(event->options), -100, 100);
+		break;
+	// Client side sound
+	case 5004:
+		gEngfuncs.pfnPlaySoundByNameAtLocation((char*)event->options, 1.0, (float*)&entity->attachment[0]);
+		break;
+	default:
+		break;
+	}
+}
+
+void HandleAnimEvent(mstudioevent_s* event, cl_entity_s *entity)
+{
+	gEngfuncs.Con_Printf("%i \n", event->event);
+
+	switch (event->event)
+	{
+	case 5001:
+		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
+		CL_Muzzleflash((float*)&entity->attachment[0]);
+		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
 		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
 		break;
 	case 5011:

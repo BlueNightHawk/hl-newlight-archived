@@ -503,9 +503,10 @@ public:
 	// Basic Monster Animation functions
 	float StudioFrameAdvance(float flInterval = 0.0); // accumulate animation frame time from last time called until now
 	int GetSequenceFlags();
-	int LookupActivity(int activity);
+	virtual int LookupActivity(int activity);
 	int LookupActivityHeaviest(int activity);
 	virtual float GetSeqLength(int sequence);
+	virtual int GetActivityHeaviest(int activity);
 	virtual int LookupActivityWeight(int activity, int weight);
 	int LookupSequence(const char* label);
 	void ResetSequenceInfo();
@@ -529,6 +530,8 @@ public:
 	float m_flLastEventCheck; // last time the event list was checked
 	bool m_fSequenceFinished; // flag set when StudioAdvanceFrame moves across a frame boundry
 	bool m_fSequenceLoops;	  // true if the sequence loops
+
+	float m_flPrevFrame;
 };
 
 

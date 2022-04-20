@@ -180,11 +180,30 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 
 	gEngfuncs.CL_LoadModel(szViewModel, &m_pPlayer->pev->viewmodel);
 
-	SendWeaponAnim(iAnim, body);
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	if (view == nullptr)
+		return false;
+
+	view->model = gEngfuncs.CL_LoadModel(szViewModel, NULL);
+
+	if (iAnim < 1)
+	{
+		if (GetActivityHeaviest(ACT_ARM) > 1)
+			iAnim = (m_pPlayer->m_bNotFirstDraw[m_iId]) ? 1 : 2;
+		else
+			iAnim = 1;
+	}
+//	view->latched.prevfra
+	int iCurAnim = LookupActivityWeight(ACT_ARM, iAnim);
+	if (iCurAnim < 0)
+		iCurAnim = iAnim;
+
+	SendWeaponAnim(iCurAnim, body);
 
 	g_irunninggausspred = false;
 	m_pPlayer->m_flNextAttack = 0.5;
-	m_flTimeWeaponIdle = 1.0;
+	m_flTimeWeaponIdle = GetSeqLength(iCurAnim);
 	return true;
 }
 
@@ -226,11 +245,12 @@ CBasePlayerWeapon::SendWeaponAnim
 Animate weapon model
 =====================
 */
+void CL_SendWeaponAnim(int iAnim, int body); 
 void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
 {
 	m_pPlayer->pev->weaponanim = iAnim;
 
-	HUD_SendWeaponAnim(iAnim, body, false);
+	CL_SendWeaponAnim(iAnim, body);
 }
 
 /*
@@ -1031,6 +1051,74 @@ int CBasePlayerItem::LookupActivityWeight(int activity, int weight)
 			{
 				seq = i;
 			}
+		}
+	}
+
+	return seq;
+}
+
+
+int CBasePlayerItem::GetActivityHeaviest(int activity)
+{
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	if (view == nullptr)
+		return 0;
+
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int weight = 0;
+	int seq = -1;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			if (pseqdesc[i].actweight > weight)
+			{
+				weight = pseqdesc[i].actweight;
+				seq = i;
+			}
+		}
+	}
+
+	return weight;
+}
+
+
+int CBasePlayerItem::LookupActivity(int activity)
+{
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	if (view == nullptr)
+		return 0;
+
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int weighttotal = 0;
+	int seq = -1;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			weighttotal += pseqdesc[i].actweight;
+			if (0 == weighttotal || RANDOM_LONG(0, weighttotal - 1) < pseqdesc[i].actweight)
+				seq = i;
 		}
 	}
 

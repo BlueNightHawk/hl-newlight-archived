@@ -159,6 +159,8 @@ void CBasePlayerWeapon::ItemPostFrame()
 		m_flLastFireTime = 0.0f;
 	}
 
+	m_pPlayer->m_bNotFirstDraw[m_iId] = true;
+
 	if (m_pPlayer->m_iISightDown != 0)
 	{
 		if (m_pPlayer->m_iToggleISight != 0)

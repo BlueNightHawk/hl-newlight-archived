@@ -115,8 +115,8 @@ void CHud::Think()
 		m_iFOV = gHUD.m_Spectator.GetFOV(); // default_fov->value;
 	}
 }
-
-// Redraw
+void DispatchAnimEvents(float flInterval);
+	// Redraw
 // step through the local data,  placing the appropriate graphics & text as appropriate
 // returns 1 if they've changed, 0 otherwise
 bool CHud::Redraw(float flTime, bool intermission)
@@ -129,6 +129,11 @@ bool CHud::Redraw(float flTime, bool intermission)
 	// Clock was reset, reset delta
 	if (m_flTimeDelta < 0)
 		m_flTimeDelta = 0;
+
+	if (gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
+	{
+		DispatchAnimEvents(m_flTimeDelta);
+	}
 
 	// Bring up the scoreboard during intermission
 	if (gViewPort)
@@ -159,6 +164,14 @@ bool CHud::Redraw(float flTime, bool intermission)
 	{
 		gEngfuncs.pfnClientCmd("snapshot\n");
 		m_flShotTime = 0;
+	}
+
+	if (gHUD.HasSuit())
+	{
+		if (gEngfuncs.GetViewModel()->model == nullptr)
+		{
+		//	gEngfuncs.GetViewModel()->model = gEngfuncs.CL_LoadModel("models/v_hands.mdl", &gEngfuncs.GetViewModel()->index);
+		}
 	}
 
 	m_iIntermission = intermission;

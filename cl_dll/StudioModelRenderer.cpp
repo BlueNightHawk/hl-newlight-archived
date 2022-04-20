@@ -52,6 +52,9 @@ int m_nPlayerGaitSequences[MAX_PLAYERS];
 // Global engine <-> studio model rendering code interface
 engine_studio_api_t IEngineStudio;
 
+
+extern int g_iRestoreViewent;
+
 // buz start
 
 int g_shadowpolycounter;
@@ -819,30 +822,50 @@ StudioEstimateFrame
 float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f;
+	float clTime = m_clTime;
 
 	if (m_fDoInterp)
 	{
-		if (m_clTime < m_pCurrentEntity->curstate.animtime)
+		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 		{
-			dfdt = 0;
+			if (gHUD.m_flCurTime < gHUD.m_flAnimTime)
+			{
+				dfdt = 0;
+			}
+			else
+			{
+				dfdt = (gHUD.m_flCurTime - gHUD.m_flAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+				//		gEngfuncs.Con_Printf("%f %f %f\n", (m_clTime - m_pCurrentEntity->curstate.animtime), m_clTime, m_pCurrentEntity->curstate.animtime);
+			}
+		//	gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 		}
 		else
 		{
-			dfdt = (m_clTime - m_pCurrentEntity->curstate.animtime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+			if (m_clTime < m_pCurrentEntity->curstate.animtime)
+			{
+				dfdt = 0;
+			}
+			else
+			{
+				dfdt = (m_clTime - m_pCurrentEntity->curstate.animtime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+			}
 		}
 	}
 	else
 	{
 		dfdt = 0;
 	}
-
+	
 	if (pseqdesc->numframes <= 1)
 	{
 		f = 0;
 	}
 	else
 	{
-		f = (m_pCurrentEntity->curstate.frame * (pseqdesc->numframes - 1)) / 256.0;
+		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+			f = 0;
+		else
+			f = (m_pCurrentEntity->curstate.frame * (pseqdesc->numframes - 1)) / 256.0;
 	}
 
 	f += dfdt;
@@ -868,6 +891,12 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 		{
 			f = 0.0;
 		}
+	}
+
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		m_clTime = clTime;
+		gHUD.m_flCurFrame = f;
 	}
 	return f;
 }
@@ -921,8 +950,16 @@ void CStudioModelRenderer::StudioSetupBones()
 //		gEngfuncs.Con_Printf( "index: %d     gaitsequence: %d\n",playerNum, m_pPlayerInfo->gaitsequence);
 	}
 */
-	f = StudioEstimateFrame(pseqdesc);
 
+	if (m_pCurrentEntity->index != -999)
+		f = StudioEstimateFrame(pseqdesc);
+	else
+	{
+		if (stricmp(m_pCurrentEntity->model->name, "models/v_hands.mdl"))
+			f = 0;
+		else
+			f = 70;
+	}
 	if (m_pCurrentEntity->latched.prevframe > f)
 	{
 		//Con_DPrintf("%f %f\n", m_pCurrentEntity->prevframe, f );
@@ -1220,7 +1257,6 @@ void CStudioModelRenderer::StudioMergeBones(model_t* m_pSubModel)
 	}
 }
 
-
 /*
 ====================
 StudioDrawModel
@@ -1236,6 +1272,15 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
 	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
+
+	if (g_iRestoreViewent != 0 && m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{		
+		if (gHUD.m_prevstate.sequence != -1)
+		{
+			gEngfuncs.pfnWeaponAnim(gHUD.m_prevstate.sequence, m_pCurrentEntity->curstate.body);
+		}
+		g_iRestoreViewent = 0;
+	}
 
 	if (m_pCurrentEntity->curstate.renderfx == kRenderFxDeadPlayer)
 	{
@@ -1299,6 +1344,9 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	}
 	StudioSaveBones();
 
+	//if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	//	gEngfuncs.Con_Printf("%f\n", m_pCurrentEntity->curstate.animtime);
+
 	if ((flags & STUDIO_EVENTS) != 0)
 	{
 		StudioCalcAttachments();
@@ -1348,20 +1396,30 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	// get bone angles and calculate base angles using fake entity
 	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 	{
-		for (int i = 0; i < m_pStudioHeader->numbones; i++)
-		{
-			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
-			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
-		}
+		gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
 		cl_entity_s temp = *gEngfuncs.GetViewModel();
-		temp.curstate.sequence = 0;
-		temp.curstate.frame = 0;
-		temp.latched.prevframe = 0;
+		temp.angles = temp.curstate.angles = temp.origin = temp.curstate.origin = Vector(0, 0, 0);
 		m_pCurrentEntity = &temp;
 		m_pRenderModel = m_pCurrentEntity->model;
 		m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
 		IEngineStudio.StudioSetHeader(m_pStudioHeader);
 		IEngineStudio.SetRenderModel(m_pRenderModel);
+
+		StudioSetUpTransform(false);
+		StudioSetupBones();
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
+		}
+		temp = *gEngfuncs.GetViewModel();
+		temp.index = -999;
+		temp.angles = temp.curstate.angles = temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+		temp.curstate.sequence = 0;
+		temp.curstate.frame = 0;
+		temp.curstate.animtime = 0;
+		temp.latched.prevframe = 0;
+		m_pCurrentEntity = &temp;
 
 		StudioSetUpTransform(false);
 		StudioSetupBones();

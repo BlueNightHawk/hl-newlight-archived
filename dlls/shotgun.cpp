@@ -87,7 +87,7 @@ bool CShotgun::GetItemInfo(ItemInfo* p)
 
 bool CShotgun::Deploy()
 {
-	return DefaultDeploy("models/v_shotgun.mdl", "models/p_shotgun.mdl", SHOTGUN_DRAW, "shotgun");
+	return DefaultDeploy("models/v_shotgun.mdl", "models/p_shotgun.mdl", 0, "shotgun");
 }
 
 void CShotgun::PrimaryAttack()
@@ -240,8 +240,15 @@ void CShotgun::SecondaryAttack()
 void CShotgun::Reload()
 {
 	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 || m_iClip == SHOTGUN_MAX_CLIP)
+	{
+		if ((m_pPlayer->m_afButtonPressed & IN_RELOAD) != 0)
+		{
+			int iAnim = LookupActivity(ACT_USE);
+			SendWeaponAnim(iAnim, 0);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		}
 		return;
-
+	}
 	// don't reload until recoil is done
 	if (m_flNextPrimaryAttack > UTIL_WeaponTimeBase())
 		return;
@@ -249,12 +256,13 @@ void CShotgun::Reload()
 	// check to see if we're ready to reload
 	if (m_fInSpecialReload == 0)
 	{
-		SendWeaponAnim(SHOTGUN_START_RELOAD);
+		int iAnim = LookupActivityWeight(ACT_RELOAD, 3);
+		SendWeaponAnim(iAnim);
 		m_fInSpecialReload = 1;
-		m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.6;
-		m_flNextPrimaryAttack = GetNextAttackDelay(1.0);
-		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
+		m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		m_flNextPrimaryAttack = GetNextAttackDelay(GetSeqLength(iAnim));
+		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 		return;
 	}
 	else if (m_fInSpecialReload == 1)
@@ -269,7 +277,7 @@ void CShotgun::Reload()
 		else
 			EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/reload3.wav", 1, ATTN_NORM, 0, 85 + RANDOM_LONG(0, 0x1f));
 
-		SendWeaponAnim(SHOTGUN_RELOAD);
+		SendWeaponAnim(LookupActivityWeight(ACT_RELOAD, 2));
 
 		m_flNextReload = UTIL_WeaponTimeBase() + 0.5;
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
@@ -315,7 +323,7 @@ void CShotgun::WeaponIdle()
 			else
 			{
 				// reload debounce has timed out
-				SendWeaponAnim(SHOTGUN_PUMP);
+				SendWeaponAnim(LookupActivityWeight(ACT_RELOAD, 1));
 
 				// play cocking sound
 				EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/scock1.wav", 1, ATTN_NORM, 0, 95 + RANDOM_LONG(0, 0x1f));
@@ -325,24 +333,9 @@ void CShotgun::WeaponIdle()
 		}
 		else
 		{
-			int iAnim;
-			float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-			if (flRand <= 0.8)
-			{
-				iAnim = SHOTGUN_IDLE_DEEP;
-				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + (60.0 / 12.0); // * RANDOM_LONG(2, 5);
-			}
-			else if (flRand <= 0.95)
-			{
-				iAnim = SHOTGUN_IDLE;
-				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + (20.0 / 9.0);
-			}
-			else
-			{
-				iAnim = SHOTGUN_IDLE4;
-				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + (20.0 / 9.0);
-			}
+			int iAnim = LookupActivity(ACT_IDLE);
 			SendWeaponAnim(iAnim);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 5, 10);
 		}
 	}
 }
