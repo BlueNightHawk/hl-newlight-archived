@@ -955,10 +955,7 @@ void CStudioModelRenderer::StudioSetupBones()
 		f = StudioEstimateFrame(pseqdesc);
 	else
 	{
-		if (stricmp(m_pCurrentEntity->model->name, "models/v_hands.mdl"))
-			f = 0;
-		else
-			f = 70;
+		f = 0;
 	}
 	if (m_pCurrentEntity->latched.prevframe > f)
 	{
@@ -1413,7 +1410,6 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
 		}
 		temp = *gEngfuncs.GetViewModel();
-		temp.index = -999;
 		temp.angles = temp.curstate.angles = temp.origin = temp.curstate.origin = Vector(0, 0, 0);
 		temp.curstate.sequence = 0;
 		temp.curstate.frame = 0;

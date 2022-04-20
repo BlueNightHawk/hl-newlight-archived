@@ -149,7 +149,7 @@ int GetAnimBoneFromFile(char* name)
 	static int prevboneindex = -1;
 	static char pszPrevName[100] = {"\0"};
 
-	if (!stricmp(pszPrevName, name))
+	if (strlen(pszPrevName) > 1 && !stricmp(pszPrevName, name))
 		return prevboneindex;
 
 	char *pfile, *pfile2;
@@ -164,6 +164,9 @@ int GetAnimBoneFromFile(char* name)
 
 	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
 	{
+		if(strlen(token) <= 0)
+			break;
+
 		if (!stricmp(token, name))
 		{
 			pfile = gEngfuncs.COM_ParseFile(pfile, token);
@@ -203,13 +206,13 @@ int GetCamBoneIndex(cl_entity_s *view)
 		if (pbone == nullptr || pbone[i].name == nullptr)
 			break;
 
-		if (!stricmp(pbone[i].name, "camera"))
+		if (strlen(pbone[i].name) > 1  && !stricmp(pbone[i].name, "camera"))
 		{
 			index = i;
 			break;
 		}
 		// try using common gun bone names to get bone index
-		else if (cl_guessanimbone->value != 0 && (index) == -1)
+		else if (cl_guessanimbone->value != 0 && (index) == -1 && strlen(pbone[i].name) > 1)
 		{
 			// add checks for more names if needed
 			if (!stricmp(pbone[i].name, "gun"))
@@ -246,7 +249,7 @@ bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
 {
 	static char pszPrevName[100] = {"\0"};
 
-	if (!stricmp(pszPrevName, name))
+	if (strlen(pszPrevName) > 1 && !stricmp(pszPrevName, name))
 		return true;
 
 	char *pfile, *pfile2;
@@ -261,6 +264,8 @@ bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
 
 	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
 	{
+		if (strlen(token) <= 0)
+			break;
 		if (!stricmp(token, name))
 		{
 			pfile = gEngfuncs.COM_ParseFile(pfile, token);
@@ -610,7 +615,7 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 
 	Vector forward, right, up;
 
-	if (view->model == nullptr || view->model->name == nullptr || g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
+	if (view->model == nullptr || strlen(view->model->name) <= 0|| g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
 	{
 		offset = aoffset = Vector(0, 0, 0);
 
@@ -759,12 +764,11 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 	static Vector l_camangles, l_campos;
 	int index = -1;
 
-	if (view->model != nullptr && view->model->name != nullptr && g_viewinfo.phdr != NULL)//&& (fabs(pparams->viewangles[0]) < 65))
+	if (view->model != nullptr && strlen(view->model->name) != 0 && g_viewinfo.phdr != NULL)
 	{
 		index = GetCamBoneIndex(view);
-		mstudioseqdesc_t* pseqdesc = (mstudioseqdesc_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->seqindex) + view->curstate.sequence;
 
-		if (index < 0 || (pseqdesc && (gHUD.m_flCurFrame >= pseqdesc->numframes - 1.001)))
+		if (index < 0)
 		{
 			goto end;
 		}

@@ -368,7 +368,7 @@ void CHudAmmo::Think()
 
 	float color = 255 * (1 - m_flCrosshairColor);
 
-	if (m_pWeapon && m_pWeapon->szName && stricmp(m_pWeapon->szName,"weapon_crossbow"))
+	if (m_pWeapon && strlen(m_pWeapon->szName) > 1 && stricmp(m_pWeapon->szName,"weapon_crossbow"))
 	{
 		if ((int)gHUD.m_flTargetFov >= (int)gHUD.default_fov->value - 1)
 		{
