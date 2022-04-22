@@ -18,9 +18,12 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "kbutton.h"
+#include "cl_animating.h"
 
 
 #include "vgui_TeamFortressViewport.h"
+
+extern ref_params_t g_pparams;
 
 #define MAX_LOGO_FRAMES 56
 
@@ -115,12 +118,13 @@ void CHud::Think()
 		m_iFOV = gHUD.m_Spectator.GetFOV(); // default_fov->value;
 	}
 }
-void DispatchAnimEvents(float flInterval);
 	// Redraw
 // step through the local data,  placing the appropriate graphics & text as appropriate
 // returns 1 if they've changed, 0 otherwise
 bool CHud::Redraw(float flTime, bool intermission)
 {
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
 	m_fOldTime = m_flTime; // save time of previous redraw
 	m_flTime = flTime;
 	m_flTimeDelta = (double)m_flTime - m_fOldTime;
@@ -130,9 +134,9 @@ bool CHud::Redraw(float flTime, bool intermission)
 	if (m_flTimeDelta < 0)
 		m_flTimeDelta = 0;
 
-	if (gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
+	if (view != nullptr && view->model != nullptr)
 	{
-		DispatchAnimEvents(m_flTimeDelta);
+		DispatchAnimEvents(view, m_flTimeDelta);
 	}
 
 	// Bring up the scoreboard during intermission

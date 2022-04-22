@@ -270,8 +270,8 @@ bool CCrossbow::GetItemInfo(ItemInfo* p)
 bool CCrossbow::Deploy()
 {
 	if (0 != m_iClip)
-		return DefaultDeploy("models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW1, "bow");
-	return DefaultDeploy("models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW2, "bow");
+		return DefaultDeploy("models/v_crossbow.mdl", "models/p_crossbow.mdl", 0, "bow");
+	return DefaultDeploy("models/v_crossbow.mdl", "models/p_crossbow.mdl", 3, "bow");
 }
 
 void CCrossbow::Holster()
@@ -285,9 +285,9 @@ void CCrossbow::Holster()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	if (0 != m_iClip)
-		SendWeaponAnim(CROSSBOW_HOLSTER1);
+		SendWeaponAnim(ACT_DISARM, -1, 1);
 	else
-		SendWeaponAnim(CROSSBOW_HOLSTER2);
+		SendWeaponAnim(ACT_DISARM, -1, 2);
 }
 
 void CCrossbow::PrimaryAttack()
@@ -437,16 +437,47 @@ void CCrossbow::SecondaryAttack()
 void CCrossbow::Reload()
 {
 	if (m_pPlayer->ammo_bolts <= 0)
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			if (0 != m_iClip)
+			{
+				int iAnim = SendWeaponAnim(ACT_USE, -1, 1);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
+			}
+			else
+			{
+				int iAnim = SendWeaponAnim(ACT_USE, -1, 2);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
+			}
+		}
 		return;
-
+	}
 	if (m_pPlayer->m_iFOV != 0)
 	{
 		SecondaryAttack();
 	}
 
-	if (DefaultReload(5, CROSSBOW_RELOAD, 4.5))
+	if (DefaultReload(5, ACT_RELOAD, 4.5))
 	{
 		EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/xbow_reload1.wav", RANDOM_FLOAT(0.95, 1.0), ATTN_NORM, 0, 93 + RANDOM_LONG(0, 0xF));
+	}
+	else
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			if (0 != m_iClip)
+			{
+				int iAnim = SendWeaponAnim(ACT_USE, -1, 1);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
+				ALERT(at_console, "%i \n", iAnim);
+			}
+			else
+			{
+				int iAnim = SendWeaponAnim(ACT_USE, -1, 2);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
+			}
+		}
 	}
 }
 
@@ -459,32 +490,16 @@ void CCrossbow::WeaponIdle()
 
 	if (m_flTimeWeaponIdle < UTIL_WeaponTimeBase())
 	{
-		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-		if (flRand <= 0.75)
+		int iAnim = 0;
+		if (0 != m_iClip)
 		{
-			if (0 != m_iClip)
-			{
-				SendWeaponAnim(CROSSBOW_IDLE1);
-			}
-			else
-			{
-				SendWeaponAnim(CROSSBOW_IDLE2);
-			}
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+			iAnim = SendWeaponAnim(ACT_IDLE, -1, 1);
 		}
 		else
 		{
-			if (0 != m_iClip)
-			{
-				SendWeaponAnim(CROSSBOW_FIDGET1);
-				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 90.0 / 30.0;
-			}
-			else
-			{
-				SendWeaponAnim(CROSSBOW_FIDGET2);
-				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 80.0 / 30.0;
-			}
+			iAnim = SendWeaponAnim(ACT_IDLE, -1, 2);
 		}
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
 	}
 }
 

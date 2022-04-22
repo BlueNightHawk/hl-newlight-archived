@@ -820,6 +820,8 @@ public:
 
 	static TYPEDESCRIPTION m_SaveData[];
 
+	void EXPORT AddGravity(void); 
+
 	static const char* m_soundNames[3];
 	int m_lastSound; // no need to save/restore, just keeps the same sound from playing twice in a row
 	float m_maxSpeed;
@@ -863,6 +865,14 @@ void CPushable::Spawn()
 	// Multiply by area of the box's cross-section (assume 1000 units^3 standard volume)
 	pev->skin = (pev->skin * (pev->maxs.x - pev->mins.x) * (pev->maxs.y - pev->mins.y)) * 0.0005;
 	m_soundTime = 0;
+
+	if (pev->gravity <= 0.0)
+		pev->gravity = 0.5;
+	else 
+		pev->gravity = pev->gravity * 0.5;
+
+	SetThink(&CPushable::AddGravity);
+	pev->nextthink = pev->ltime + 0.1;
 }
 
 
@@ -958,6 +968,7 @@ void CPushable::Move(CBaseEntity* pOther, bool push)
 	{
 		if (push && (pevToucher->button & (IN_FORWARD | IN_USE)) == 0) // Don't push unless the player is pushing forward and NOT use (pull)
 			return;
+
 		playerTouch = true;
 	}
 
@@ -977,20 +988,44 @@ void CPushable::Move(CBaseEntity* pOther, bool push)
 	}
 	else
 		factor = 0.25;
+		
+	if (!push) 
+	{
+		float z = pev->velocity.z;
+		if (FBitSet(pevToucher->flags, FL_DUCKING))
+			pev->velocity = pevToucher->velocity * 1.2;
+		else
+			pev->velocity = pevToucher->velocity * 1.1;
+		pev->velocity.z = z;	
+	}
+	else 
+	{
+		pev->velocity.x += pevToucher->velocity.x * factor;
+		pev->velocity.y += pevToucher->velocity.y * factor;
+	}
 
-	pev->velocity.x += pevToucher->velocity.x * factor;
-	pev->velocity.y += pevToucher->velocity.y * factor;
+	float length = pev->velocity.Length2D();
 
-	float length = sqrt(pev->velocity.x * pev->velocity.x + pev->velocity.y * pev->velocity.y);
 	if (push && (length > MaxSpeed()))
 	{
 		pev->velocity.x = (pev->velocity.x * MaxSpeed() / length);
 		pev->velocity.y = (pev->velocity.y * MaxSpeed() / length);
 	}
+
 	if (playerTouch)
 	{
-		pevToucher->velocity.x = pev->velocity.x;
-		pevToucher->velocity.y = pev->velocity.y;
+
+		if (FBitSet(pevToucher->flags, FL_DUCKING))
+		{
+			pevToucher->velocity.x *= 0.7;
+			pevToucher->velocity.y *= 0.7;			
+		}
+		else
+		{
+			pevToucher->velocity.x *= 0.25;
+			pevToucher->velocity.y *= 0.25;
+		}
+
 		if ((gpGlobals->time - m_soundTime) > 0.7)
 		{
 			m_soundTime = gpGlobals->time;
@@ -1022,4 +1057,13 @@ bool CPushable::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, floa
 		return CBreakable::TakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
 
 	return true;
+}
+
+
+void CPushable::AddGravity(void)
+{
+	pev->velocity.z -= (pev->gravity * CVAR_GET_FLOAT("sv_gravity") * gpGlobals->frametime);
+	pev->velocity.z += (pev->basevelocity.z * gpGlobals->frametime);
+	pev->basevelocity.z = 0.0;
+	pev->nextthink = pev->ltime + 0.1;
 }

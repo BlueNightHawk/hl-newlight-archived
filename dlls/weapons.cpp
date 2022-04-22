@@ -768,21 +768,37 @@ bool CBasePlayerWeapon::UpdateClientData(CBasePlayer* pPlayer)
 }
 
 
-void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
+int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight)
 {
 	const bool skiplocal = UseDecrement() != false;
+	int iSeq = 0;
 
-	m_pPlayer->pev->weaponanim = iAnim;
+	if (body > -1)
+		pev->body = body;
+
+	if (m_pPlayer->m_pViewModel)
+		m_pPlayer->m_pViewModel->UpdateThink();
 
 #if defined(CLIENT_WEAPONS)
 	if (skiplocal && ENGINE_CANSKIP(m_pPlayer->edict()))
-		return;
+		return 0;
 #endif
+
+	if (iWeight <= 0)
+		iSeq = LookupActivity(iAnim);
+	else
+		iSeq = LookupActivityWeight(iAnim, iWeight);
+
+	m_pPlayer->pev->weaponanim = iSeq;
 
 	MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, m_pPlayer->pev);
 	WRITE_SHORT(iAnim);	   // sequence number
 	WRITE_SHORT(pev->body); // weaponmodel bodygroup.
+	WRITE_SHORT(iWeight);
+	WRITE_STRING(STRING(m_pPlayer->pev->viewmodel));
 	MESSAGE_END();
+
+	return iSeq;
 }
 
 bool CBasePlayerWeapon::AddPrimaryAmmo(int iCount, char* szName, int iMaxClip, int iMaxCarry)
@@ -881,7 +897,7 @@ bool CBasePlayerWeapon::IsUseable()
 	return false;
 }
 
-bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iAnim, const char* szAnimExt, int body)
+bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iWeight, const char* szAnimExt, int body)
 {
 	if (!CanDeploy())
 		return false;
@@ -892,25 +908,28 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 	strcpy(m_pPlayer->m_szAnimExtention, szAnimExt);
 
 	if (m_pPlayer->m_pViewModel)
-		m_pPlayer->m_pViewModel->UpdateThink();
-
-	if (iAnim < 1)
 	{
-		if (GetActivityHeaviest(ACT_ARM) > 1)
-			iAnim = (m_pPlayer->m_bNotFirstDraw[m_iId]) ? 1 : 2;
-		else
-			iAnim = 1;
+		SET_MODEL(ENT(m_pPlayer->m_pViewModel->pev), szWeaponModel);
+		m_pPlayer->m_pViewModel->UpdateThink();
 	}
-	int iCurAnim = LookupActivityWeight(ACT_ARM, iAnim);
-	if (iCurAnim < 0)
-		iCurAnim = iAnim;
-
-	SendWeaponAnim(iCurAnim, body);
-	
+	if (iWeight == 0)
+	{
+		if (GetActivityHeaviest(ACT_ARM) > 1 && LookupActivityWeight(ACT_ARM, 2) != -1 && (m_pPlayer->m_bNotFirstDraw[m_iId] == false))
+		{
+			iWeight = 2;
+		}
+		else
+			iWeight = 1;
+	}
+	SendWeaponAnim(ACT_ARM, body, iWeight);	
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iCurAnim);
 	m_flLastFireTime = 0.0;
+
+	if (m_pPlayer->m_bNotFirstDraw[m_iId] == false)
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 10.0;
+	else
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0;
 
 	return true;
 }

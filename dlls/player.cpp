@@ -1534,7 +1534,7 @@ void CBasePlayer::PlayerUse()
 	if (tr.pHit)
 	{
 		pObject = CBaseEntity::Instance(tr.pHit);
-		if (!pObject || !(pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)))
+		if (!pObject || (pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) <= 0)
 		{
 			pObject = NULL;
 		}
@@ -1998,6 +1998,9 @@ void CBasePlayer::PreThink()
 			m_iTrain = TrainSpeed(pTrain->pev->speed, pTrain->pev->impulse);
 			m_iTrain |= TRAIN_ACTIVE | TRAIN_NEW;
 		}
+
+		if (!pTrain->pev->speed && m_iTrain != TRAIN_NEUTRAL)
+			m_iTrain = TRAIN_NEUTRAL | TRAIN_NEW;
 	}
 	else if ((m_iTrain & TRAIN_ACTIVE) != 0)
 		m_iTrain = TRAIN_NEW; // turn off train

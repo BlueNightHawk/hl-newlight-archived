@@ -324,6 +324,9 @@
     <ClCompile Include="..\..\cl_dll\particleman\particle_presets.cpp">
       <Filter>Source Files\cl_dll\particleman</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\cl_dll\cl_animation.cpp">
+      <Filter>Source Files\cl_dll</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\cl_dll\kbutton.h">
@@ -600,6 +603,9 @@
       <Filter>Header Files\cl_dll\particleman</Filter>
     </ClInclude>
     <ClInclude Include="..\..\cl_dll\particle_presets.h">
+      <Filter>Header Files\cl_dll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cl_dll\cl_animating.h">
       <Filter>Header Files\cl_dll</Filter>
     </ClInclude>
   </ItemGroup>

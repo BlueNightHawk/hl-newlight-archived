@@ -276,9 +276,9 @@ bool CSatchel::Deploy()
 	bool result;
 
 	if (0 != m_chargeReady)
-		result = DefaultDeploy("models/v_satchel_radio.mdl", "models/p_satchel_radio.mdl", SATCHEL_RADIO_DRAW, "hive");
+		result = DefaultDeploy("models/v_satchel_radio.mdl", "models/p_satchel_radio.mdl", 0, "hive");
 	else
-		result = DefaultDeploy("models/v_satchel.mdl", "models/p_satchel.mdl", SATCHEL_DRAW, "trip");
+		result = DefaultDeploy("models/v_satchel.mdl", "models/p_satchel.mdl", 0, "trip");
 
 	if (result)
 	{
@@ -293,14 +293,8 @@ void CSatchel::Holster()
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 
-	if (0 != m_chargeReady)
-	{
-		SendWeaponAnim(SATCHEL_RADIO_HOLSTER);
-	}
-	else
-	{
-		SendWeaponAnim(SATCHEL_DROP);
-	}
+	SendWeaponAnim(ACT_DISARM);
+
 	EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "common/null.wav", 1.0, ATTN_NORM);
 
 	if (0 == m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] && 0 == m_chargeReady)
@@ -324,7 +318,7 @@ void CSatchel::PrimaryAttack()
 	break;
 	case 1:
 	{
-		SendWeaponAnim(SATCHEL_RADIO_FIRE);
+		SendWeaponAnim(ACT_MELEE_ATTACK1);
 
 		edict_t* pPlayer = m_pPlayer->edict();
 
@@ -386,7 +380,7 @@ void CSatchel::Throw()
 		LoadVModel("models/v_satchel_radio.mdl", m_pPlayer);
 #endif
 
-		SendWeaponAnim(SATCHEL_RADIO_DRAW);
+		SendWeaponAnim(ACT_ARM);
 
 		// player "shoot" animation
 		m_pPlayer->SetAnimation(PLAYER_ATTACK1);
@@ -406,15 +400,17 @@ void CSatchel::WeaponIdle()
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
+	int iAnim = 0;
+
 	switch (m_chargeReady)
 	{
 	case 0:
-		SendWeaponAnim(SATCHEL_FIDGET1);
+		iAnim = SendWeaponAnim(ACT_IDLE);
 		// use tripmine animations
 		strcpy(m_pPlayer->m_szAnimExtention, "trip");
 		break;
 	case 1:
-		SendWeaponAnim(SATCHEL_RADIO_FIDGET1);
+		iAnim = SendWeaponAnim(ACT_IDLE);
 		// use hivehand animations
 		strcpy(m_pPlayer->m_szAnimExtention, "hive");
 		break;
@@ -433,7 +429,7 @@ void CSatchel::WeaponIdle()
 		LoadVModel("models/v_satchel.mdl", m_pPlayer);
 #endif
 
-		SendWeaponAnim(SATCHEL_DRAW);
+		iAnim = SendWeaponAnim(ACT_ARM);
 
 		// use tripmine animations
 		strcpy(m_pPlayer->m_szAnimExtention, "trip");
@@ -443,7 +439,7 @@ void CSatchel::WeaponIdle()
 		m_chargeReady = 0;
 		break;
 	}
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15); // how long till we do this again.
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15); // how long till we do this again.
 }
 
 //=========================================================

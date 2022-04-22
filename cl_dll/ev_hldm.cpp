@@ -44,8 +44,7 @@
 #include "particleman.h"
 #include "particle_presets.h"
 
-extern int LookupActivity(int activity);
-extern int LookupActivityWeight(int activity, int weight);
+#include "cl_animating.h"
 
 extern IParticleMan* g_pParticleMan;
 
@@ -62,7 +61,27 @@ void VectorAngles(const float* forward, float* angles);
 
 extern cvar_t* cl_lw;
 
-void CL_SendWeaponAnim(int iAnim, int iBody);
+int EV_SendWeaponAnim(int iAnim, int iBody = -1, int iWeight = 0)
+{
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	int iSeq = -1;
+
+	if (iBody <= -1)
+		iBody = view->curstate.body;
+
+	if (iWeight > 0)
+		iSeq = LookupActivityWeight(view, iAnim, iWeight);
+	else
+		iSeq = LookupActivity(view, iAnim);
+
+	if (iSeq < 0)
+		return -1;
+
+	gHUD.m_flAnimTime = gHUD.m_flCurTime;
+	gEngfuncs.pEventAPI->EV_WeaponAnimation(iSeq, iBody);
+	return iSeq;
+}
 
 char GetTexType(int idx, pmtrace_t* ptr, float* vecSrc, float* vecEnd)
 {
@@ -540,7 +559,7 @@ void EV_FireGlock1(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(empty ? LookupActivityWeight(ACT_RANGE_ATTACK1, 2) : LookupActivityWeight(ACT_RANGE_ATTACK1, 1), 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, empty ? 2 : 1);
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);
@@ -587,7 +606,7 @@ void EV_FireGlock2(event_args_t* args)
 	{
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(empty ? LookupActivityWeight(ACT_RANGE_ATTACK1, 2) : LookupActivityWeight(ACT_RANGE_ATTACK1, 1), 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, empty ? 2 : 1);
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);
@@ -639,7 +658,7 @@ void EV_FireShotGunDouble(event_args_t* args)
 	{
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(LookupActivity(ACT_RANGE_ATTACK2), 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK2);
 		V_PunchAxis(0, -10.0);
 	}
 
@@ -691,7 +710,7 @@ void EV_FireShotGunSingle(event_args_t* args)
 	{
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(LookupActivity(ACT_RANGE_ATTACK1), 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 
 		V_PunchAxis(0, -5.0);
 	}
@@ -747,7 +766,7 @@ void EV_FireMP5(event_args_t* args)
 	{
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(MP5_FIRE1 + gEngfuncs.pfnRandomLong(0, 2), 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 
 		V_OldPunchAxis(0, gEngfuncs.pfnRandomFloat(-0.5, -0.35));
 	}
@@ -784,7 +803,7 @@ void EV_FireMP52(event_args_t* args)
 
 	if (EV_IsLocal(idx))
 	{
-		CL_SendWeaponAnim(MP5_LAUNCH, 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK2, -1, 1);
 		V_PunchAxis(0, -10);
 	}
 
@@ -830,7 +849,7 @@ void EV_FirePython(event_args_t* args)
 
 		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
-		CL_SendWeaponAnim(LookupActivityWeight(ACT_RANGE_ATTACK1, 1), multiplayer ? 1 : 0);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1, multiplayer ? 1 : 0);
 
 		V_PunchAxis(0, -10.0);
 	}
@@ -941,7 +960,7 @@ void EV_FireGauss(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		V_PunchAxis(0, -2.0);
-		CL_SendWeaponAnim(GAUSS_FIRE2, 2);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK2);
 
 		if (!m_fPrimaryFire)
 			g_flApplyVel = flDamage;
@@ -1185,18 +1204,10 @@ void EV_Crowbar(event_args_t* args)
 
 	if (EV_IsLocal(idx))
 	{
-		switch ((g_iSwing++) % 3)
-		{
-		case 0:
-			CL_SendWeaponAnim(CROWBAR_ATTACK1MISS, 1);
-			break;
-		case 1:
-			CL_SendWeaponAnim(CROWBAR_ATTACK2MISS, 1);
-			break;
-		case 2:
-			CL_SendWeaponAnim(CROWBAR_ATTACK3MISS, 1);
-			break;
-		}
+		if (args->bparam1 == false)
+			EV_SendWeaponAnim(ACT_MELEE_ATTACK2, -1, ((g_iSwing++) % 3) + 1);
+		else
+			((g_iSwing++) % 3);
 	}
 }
 //======================
@@ -1246,9 +1257,9 @@ void EV_FireCrossbow2(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		if (0 != args->iparam1)
-			CL_SendWeaponAnim(CROSSBOW_FIRE1, 1);
+			EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 1);
 		else
-			CL_SendWeaponAnim(CROSSBOW_FIRE3, 1);
+			EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 2);
 	}
 
 	// Store off the old count
@@ -1322,9 +1333,9 @@ void EV_FireCrossbow(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		if (0 != args->iparam1)
-			CL_SendWeaponAnim(CROSSBOW_FIRE1, 1);
+			EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 1);
 		else
-			CL_SendWeaponAnim(CROSSBOW_FIRE3, 1);
+			EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 2);
 
 		V_PunchAxis(0, -2.0);
 	}
@@ -1350,7 +1361,7 @@ void EV_FireRpg(event_args_t* args)
 	//Only play the weapon anims if I shot it.
 	if (EV_IsLocal(idx))
 	{
-		CL_SendWeaponAnim(RPG_FIRE2, 1);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 
 		V_PunchAxis(0, -5.0);
 	}
@@ -1413,7 +1424,7 @@ void EV_EgonFire(event_args_t* args)
 
 	//Only play the weapon anims if I shot it.
 	if (EV_IsLocal(idx))
-		CL_SendWeaponAnim(g_fireAnims1[gEngfuncs.pfnRandomLong(0, 3)], 1);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 
 	if (iStartup && EV_IsLocal(idx) && !pBeam && !pBeam2 && !pFlare && 0 != cl_lw->value) //Adrian: Added the cl_lw check for those lital people that hate weapon prediction.
 	{
@@ -1551,7 +1562,7 @@ void EV_HornetGunFire(event_args_t* args)
 	if (EV_IsLocal(idx))
 	{
 		V_PunchAxis(0, gEngfuncs.pfnRandomLong(0, 2));
-		CL_SendWeaponAnim(HGUN_SHOOT, 1);
+		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 	}
 
 	switch (gEngfuncs.pfnRandomLong(0, 2))
@@ -1606,7 +1617,7 @@ void EV_TripmineFire(event_args_t* args)
 
 	//Hit something solid
 	if (tr.fraction < 1.0)
-		CL_SendWeaponAnim(TRIPMINE_DRAW, 0);
+		EV_SendWeaponAnim(ACT_ARM);
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 }
@@ -1645,7 +1656,7 @@ void EV_SnarkFire(event_args_t* args)
 
 	//Find space to drop the thing.
 	if (tr.allsolid == 0 && tr.startsolid == 0 && tr.fraction > 0.25)
-		CL_SendWeaponAnim(SQUEAK_THROW, 0);
+		EV_SendWeaponAnim(ACT_MELEE_ATTACK1);
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 }

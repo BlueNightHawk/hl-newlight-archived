@@ -103,7 +103,7 @@ void CPython::Holster()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.0;
 	m_flTimeWeaponIdle = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
-	SendWeaponAnim(LookupActivityWeight(ACT_DISARM,1));
+	SendWeaponAnim(ACT_DISARM);
 }
 
 void CPython::SecondaryAttack()
@@ -193,9 +193,9 @@ void CPython::Reload()
 	{
 		if ((m_pPlayer->m_afButtonPressed & IN_RELOAD) != 0)
 		{
-			int iAnim = LookupActivity(ACT_USE);
-			SendWeaponAnim(iAnim, 0);
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+			int iAnim = SendWeaponAnim(ACT_USE);
+			if (iAnim != -1)
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 		}
 		return;
 	}
@@ -207,7 +207,7 @@ void CPython::Reload()
 	bUseScope = g_pGameRules->IsMultiplayer();
 #endif
 
-	if (DefaultReload(6, LookupActivity(ACT_RELOAD), 2.0, bUseScope ? 1 : 0))
+	if (DefaultReload(6, ACT_RELOAD, 2.0, bUseScope ? 1 : 0))
 	{
 		if (m_pPlayer->m_iFOV != 0)
 		{
@@ -218,9 +218,9 @@ void CPython::Reload()
 	{
 		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
 		{
-			int iAnim = LookupActivity(ACT_USE);
-			SendWeaponAnim(iAnim, 0);
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+			int iAnim = SendWeaponAnim(ACT_USE);
+			if (iAnim != -1)
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 		}
 	}
 }
@@ -245,9 +245,8 @@ void CPython::WeaponIdle()
 	int iAnim = 0;
 	if (m_pPlayer->m_iFOV == 0)
 	{
-		iAnim = LookupActivity(ACT_IDLE);
+		iAnim = SendWeaponAnim(ACT_IDLE, bUseScope ? 1 : 0);
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 5, 12);
-		SendWeaponAnim(iAnim, bUseScope ? 1 : 0);
 	}
 }
 

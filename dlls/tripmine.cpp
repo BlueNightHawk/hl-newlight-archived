@@ -87,7 +87,7 @@ void CTripmineGrenade::Spawn()
 	SET_MODEL(ENT(pev), "models/v_tripmine.mdl");
 	pev->frame = 0;
 	pev->body = 3;
-	pev->sequence = TRIPMINE_WORLD;
+	pev->sequence = LookupActivity(ACT_SPECIAL_ATTACK1);
 	ResetSequenceInfo();
 	pev->framerate = 0;
 
@@ -351,7 +351,7 @@ void CTripmine::Spawn()
 	SET_MODEL(ENT(pev), "models/v_tripmine.mdl");
 	pev->frame = 0;
 	pev->body = 3;
-	pev->sequence = TRIPMINE_GROUND;
+	pev->sequence = CBaseAnimating::LookupActivity(ACT_SPECIAL_ATTACK2);
 	// ResetSequenceInfo( );
 	pev->framerate = 0;
 
@@ -403,7 +403,7 @@ bool CTripmine::GetItemInfo(ItemInfo* p)
 bool CTripmine::Deploy()
 {
 	pev->body = 0;
-	return DefaultDeploy("models/v_tripmine.mdl", "models/p_tripmine.mdl", TRIPMINE_DRAW, "trip");
+	return DefaultDeploy("models/v_tripmine.mdl", "models/p_tripmine.mdl", 0, "trip");
 }
 
 
@@ -419,7 +419,7 @@ void CTripmine::Holster()
 		pev->nextthink = gpGlobals->time + 0.1;
 	}
 
-	SendWeaponAnim(TRIPMINE_HOLSTER);
+	SendWeaponAnim(ACT_DISARM);
 	EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "common/null.wav", 1.0, ATTN_NORM);
 }
 
@@ -489,7 +489,7 @@ void CTripmine::WeaponIdle()
 
 	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0)
 	{
-		SendWeaponAnim(TRIPMINE_DRAW);
+		SendWeaponAnim(ACT_ARM);
 	}
 	else
 	{
@@ -497,23 +497,7 @@ void CTripmine::WeaponIdle()
 		return;
 	}
 
-	int iAnim;
-	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-	if (flRand <= 0.25)
-	{
-		iAnim = TRIPMINE_IDLE1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 90.0 / 30.0;
-	}
-	else if (flRand <= 0.75)
-	{
-		iAnim = TRIPMINE_IDLE2;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 60.0 / 30.0;
-	}
-	else
-	{
-		iAnim = TRIPMINE_FIDGET;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 100.0 / 30.0;
-	}
-
-	SendWeaponAnim(iAnim);
+	int iAnim =	SendWeaponAnim(ACT_IDLE);
+	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + flRand * GetSeqLength(iAnim);
 }

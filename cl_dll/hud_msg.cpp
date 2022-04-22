@@ -22,6 +22,8 @@
 #include "r_efx.h"
 
 #include "particleman.h"
+#include "cl_animating.h"
+
 extern IParticleMan* g_pParticleMan;
 
 extern BEAM* pBeam;
@@ -145,17 +147,22 @@ bool CHud::MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf)
 	return true;
 }
 
-void CL_SendWeaponAnim(int iAnim, int iBody);
-
+extern int EV_SendWeaponAnim(int iAnim, int iBody, int iWeight);
 bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
 
 	const int iAnim = READ_SHORT();
-	const int iBody = READ_SHORT();
+	int iBody = READ_SHORT();
+	const int iWeight = READ_SHORT();
+	const char* model = READ_STRING();
+	int iSeq = -1;
 
-	m_flAnimTime = m_flCurTime;
-	gEngfuncs.pfnWeaponAnim(iAnim, iBody);
+	cl_entity_s* view = gEngfuncs.GetViewModel();
 
+	if (model)
+		view->model = gEngfuncs.CL_LoadModel(model, &view->index);
+
+	EV_SendWeaponAnim(iAnim, iBody, iWeight);
 	return true;
 }

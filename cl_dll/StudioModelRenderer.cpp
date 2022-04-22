@@ -148,9 +148,9 @@ void CStudioModelRenderer::Init()
 	// SHADOWS START
 	r_shadows = CVAR_CREATE("r_shadows", "1", FCVAR_ARCHIVE);
 	r_shadow_height = CVAR_CREATE("r_shadow_height", "0", 0);
-	r_shadow_x = CVAR_CREATE("r_shadow_x", "1", 0);
+	r_shadow_x = CVAR_CREATE("r_shadow_x", "0", 0);
 	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
-	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "1", FCVAR_ARCHIVE);
+	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0", FCVAR_ARCHIVE);
 	// SHADOWS END
 
 	r_drawlegs = CVAR_CREATE("r_drawlegs", "1", FCVAR_ARCHIVE);
@@ -1385,46 +1385,76 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
 		StudioRenderModel();
-	}
-
-	if (m_pStudioHeader)
-		g_viewinfo.phdr = m_pStudioHeader;
 
 	// get bone angles and calculate base angles using fake entity
-	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
-	{
-		gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
-		cl_entity_s temp = *gEngfuncs.GetViewModel();
-		temp.angles = temp.curstate.angles = temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-		m_pCurrentEntity = &temp;
-		m_pRenderModel = m_pCurrentEntity->model;
-		m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
-		IEngineStudio.StudioSetHeader(m_pStudioHeader);
-		IEngineStudio.SetRenderModel(m_pRenderModel);
-
-		StudioSetUpTransform(false);
-		StudioSetupBones();
-		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 		{
-			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
-			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
-		}
-		temp = *gEngfuncs.GetViewModel();
-		temp.angles = temp.curstate.angles = temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-		temp.curstate.sequence = 0;
-		temp.curstate.frame = 0;
-		temp.curstate.animtime = 0;
-		temp.latched.prevframe = 0;
-		m_pCurrentEntity = &temp;
+			cl_entity_t saveent = *m_pCurrentEntity;
 
-		StudioSetUpTransform(false);
-		StudioSetupBones();
-		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
+
+			gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
+			cl_entity_s temp = *gEngfuncs.GetViewModel();
+			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+			m_pCurrentEntity = &temp;
+			m_pRenderModel = m_pCurrentEntity->model;
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+			IEngineStudio.SetRenderModel(m_pRenderModel);
+
+			StudioSetUpTransform(false);
+			StudioSetupBones();
+			for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			{
+				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+				NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
+			}
+			temp = *gEngfuncs.GetViewModel();
+			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+			temp.curstate.sequence = 0;
+			temp.curstate.frame = 0;
+			temp.curstate.animtime = 0;
+			temp.latched.prevframe = 0;
+			m_pCurrentEntity = &temp;
+
+			StudioSetUpTransform(false);
+			StudioSetupBones();
+			for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			{
+				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
+				NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
+			}
+			m_pCurrentEntity = gEngfuncs.GetViewModel();
+		}
+
+		void* pfile = nullptr;
+		char modname[64] = {"\0"};
+		strcpy(modname, "models/glow");
+		strcat(modname, m_pCurrentEntity->model->name);
+
+		if (pfile = gEngfuncs.COM_LoadFile(modname, 5, nullptr))
 		{
-			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
-			NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
-		}
+			cl_entity_t saveent = *m_pCurrentEntity;
 
+			model_t* lightmodel = IEngineStudio.Mod_ForName(modname, 0);
+
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(lightmodel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+
+			StudioMergeBones(lightmodel);
+
+			m_pCurrentEntity->curstate.effects |= EF_NOSHADOW;
+			m_pCurrentEntity->curstate.rendermode = kRenderTransAdd;
+			IEngineStudio.StudioSetupLighting(&lighting);
+
+			StudioRenderModel();
+			StudioCalcAttachments();
+
+			*m_pCurrentEntity = saveent;
+			gEngfuncs.COM_FreeFile(pfile);
+		}
 	}
 
 	return true;
@@ -2395,10 +2425,9 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	mstudiomesh_t* pmesh;
 	Vector point;
 	int i, k;
-	int hasStencil = 8;
 	static int numpoly = 0;
 
-	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
+	int iShouldDrawLegs = (g_iDrawLegs <= 0 && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
 	Vector vecSrc, vecEnd;
 	pmtrace_t tr;
@@ -2414,9 +2443,7 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
 
-
-
-	if (iShouldDrawLegs && !cam_thirdperson)
+	if (iShouldDrawLegs != 0 && !cam_thirdperson)
 	{
 		if (tr.fraction <= 0.00001)
 		{
@@ -2431,14 +2458,7 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	if ((m_pCurrentEntity->curstate.effects & EF_NOSHADOW) != 0)
 		return;
 
-	if (hasStencil != 0)
-	{
-		glEnable(GL_STENCIL_TEST);
-	}
-
-//	height = vecLightDir[2] + 1.0f;
-//	vec_x = -vecLightDir[0] * 8.0f;
-//	vec_y = -vecLightDir[1] * 8.0f;
+	glEnable(GL_STENCIL_TEST);
 
 	// magic nipples - no more shadows from lightsources because it looks bad
 	height = r_shadow_height->value + 0.1f;
@@ -2478,10 +2498,8 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 		}
 	}
 
-	if (hasStencil != 0)
-	{
-		glDisable(GL_STENCIL_TEST);
-	}
+
+	glDisable(GL_STENCIL_TEST);
 }
 
 /*
@@ -2500,19 +2518,19 @@ void CStudioModelRenderer::StudioDrawShadow()
 
 	intensity = m_pCurrentEntity->baseline.fuser4 = lerp(m_pCurrentEntity->baseline.fuser4, ((float)amblight / 128), gHUD.m_flTimeDelta * 17.9f);
 
+	glDepthMask(GL_TRUE);
+
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
 	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
-		float color = 1 - intensity;
+		float color = intensity;
 		if (r_shadow_alpha->value < 1)
-			color = 1 - r_shadow_alpha->value;
-
-		glDepthMask(GL_FALSE);
+			color = r_shadow_alpha->value;
 
 		glDisable(GL_TEXTURE_2D);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
-		glColor4f( 0, 0, 0, color);
+		glColor4f(0.0f, 0.0f, 0.0f, 1.0f - color);
 
 		glDepthFunc(GL_LESS);
 		StudioDrawPointsShadow();
@@ -2522,9 +2540,8 @@ void CStudioModelRenderer::StudioDrawShadow()
 		glDisable(GL_BLEND);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glShadeModel(GL_SMOOTH);
-
-		glDepthMask(GL_TRUE);
 	}
+
 }
 
 // SHADOWS END

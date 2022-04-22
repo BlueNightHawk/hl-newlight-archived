@@ -167,13 +167,15 @@ void CBaseEntity::Killed(entvars_t* pevAttacker, int iGib)
 	pev->effects |= EF_NODRAW;
 }
 
+extern int EV_SendWeaponAnim(int iAnim, int iBody, int iWeight);
+
 /*
 =====================
 CBasePlayerWeapon:: DefaultDeploy
 
 =====================
 */
-bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iAnim, const char* szAnimExt, int body)
+bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iWeight, const char* szAnimExt, int body)
 {
 	if (!CanDeploy())
 		return false;
@@ -187,23 +189,11 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 
 	view->model = gEngfuncs.CL_LoadModel(szViewModel, NULL);
 
-	if (iAnim < 1)
-	{
-		if (GetActivityHeaviest(ACT_ARM) > 1)
-			iAnim = (m_pPlayer->m_bNotFirstDraw[m_iId]) ? 1 : 2;
-		else
-			iAnim = 1;
-	}
-//	view->latched.prevfra
-	int iCurAnim = LookupActivityWeight(ACT_ARM, iAnim);
-	if (iCurAnim < 0)
-		iCurAnim = iAnim;
-
-	SendWeaponAnim(iCurAnim, body);
+	int iAnim = EV_SendWeaponAnim(ACT_ARM, body, iWeight);
 
 	g_irunninggausspred = false;
 	m_pPlayer->m_flNextAttack = 0.5;
-	m_flTimeWeaponIdle = GetSeqLength(iCurAnim);
+	m_flTimeWeaponIdle = GetSeqLength(iAnim);
 	return true;
 }
 
@@ -245,12 +235,12 @@ CBasePlayerWeapon::SendWeaponAnim
 Animate weapon model
 =====================
 */
-void CL_SendWeaponAnim(int iAnim, int body); 
-void CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body)
-{
-	m_pPlayer->pev->weaponanim = iAnim;
 
-	CL_SendWeaponAnim(iAnim, body);
+int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight)
+{
+	m_pPlayer->pev->weaponanim  = EV_SendWeaponAnim(iAnim, body, iWeight);
+
+	return 0;
 }
 
 /*

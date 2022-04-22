@@ -90,7 +90,7 @@ bool CMP5::GetItemInfo(ItemInfo* p)
 
 bool CMP5::Deploy()
 {
-	return DefaultDeploy("models/v_9mmAR.mdl", "models/p_9mmAR.mdl", MP5_DEPLOY, "mp5");
+	return DefaultDeploy("models/v_9mmAR.mdl", "models/p_9mmAR.mdl", 0, "mp5");
 }
 
 
@@ -219,9 +219,25 @@ void CMP5::SecondaryAttack()
 void CMP5::Reload()
 {
 	if (m_pPlayer->ammo_9mm <= 0)
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			int iAnim = SendWeaponAnim(ACT_USE);
+			if (iAnim != -1)
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		}
 		return;
+	}
 
-	DefaultReload(MP5_MAX_CLIP, MP5_RELOAD, 1.5);
+	if (!DefaultReload(MP5_MAX_CLIP, ACT_RELOAD, 1.5, -1, (m_iClip == 0) ? 2 : 1))
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			int iAnim = SendWeaponAnim(ACT_USE);
+			if (iAnim != -1)
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+		}
+	}
 }
 
 
@@ -234,22 +250,8 @@ void CMP5::WeaponIdle()
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
-	int iAnim;
-	switch (RANDOM_LONG(0, 1))
-	{
-	case 0:
-		iAnim = MP5_LONGIDLE;
-		break;
-
-	default:
-	case 1:
-		iAnim = MP5_IDLE1;
-		break;
-	}
-
-	SendWeaponAnim(iAnim);
-
-	m_flTimeWeaponIdle = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15); // how long till we do this again.
+	int iAnim = SendWeaponAnim(ACT_IDLE);
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 5, 12);
 }
 
 

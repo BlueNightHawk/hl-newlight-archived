@@ -98,7 +98,7 @@ bool CGauss::GetItemInfo(ItemInfo* p)
 bool CGauss::Deploy()
 {
 	m_pPlayer->m_flPlayAftershock = 0.0;
-	return DefaultDeploy("models/v_gauss.mdl", "models/p_gauss.mdl", GAUSS_DRAW, "gauss");
+	return DefaultDeploy("models/v_gauss.mdl", "models/p_gauss.mdl", 0, "gauss");
 }
 
 void CGauss::Holster()
@@ -107,7 +107,7 @@ void CGauss::Holster()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 
-	SendWeaponAnim(GAUSS_HOLSTER);
+	SendWeaponAnim(ACT_DISARM);
 	m_fInAttack = 0;
 }
 
@@ -150,7 +150,7 @@ void CGauss::SecondaryAttack()
 			EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_WEAPON, "weapons/electro4.wav", 1.0, ATTN_NORM, 0, 80 + RANDOM_LONG(0, 0x3f));
 			//Have to send to the host as well because the client will predict the frame with m_fInAttack == 0
 			SendStopEvent(true);
-			SendWeaponAnim(GAUSS_IDLE);
+			SendWeaponAnim(ACT_IDLE);
 			m_fInAttack = 0;
 		}
 		else
@@ -179,9 +179,9 @@ void CGauss::SecondaryAttack()
 		// spin up
 		m_pPlayer->m_iWeaponVolume = GAUSS_PRIMARY_CHARGE_VOLUME;
 
-		SendWeaponAnim(GAUSS_SPINUP);
+		int iAnim = SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 1);
 		m_fInAttack = 1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) / 15;
 		m_pPlayer->m_flStartCharge = gpGlobals->time;
 		m_pPlayer->m_flAmmoStartCharge = UTIL_WeaponTimeBase() + GetFullChargeTime();
 
@@ -193,7 +193,6 @@ void CGauss::SecondaryAttack()
 	{
 		if (m_flTimeWeaponIdle < UTIL_WeaponTimeBase())
 		{
-			SendWeaponAnim(GAUSS_SPIN);
 			m_fInAttack = 2;
 		}
 	}
@@ -266,7 +265,7 @@ void CGauss::SecondaryAttack()
 			m_pPlayer->TakeDamage(VARS(eoNullEntity), VARS(eoNullEntity), 50, DMG_SHOCK);
 			UTIL_ScreenFade(m_pPlayer, Vector(255, 128, 0), 2, 0.5, 128, FFADE_IN);
 #endif
-			SendWeaponAnim(GAUSS_IDLE);
+			SendWeaponAnim(ACT_IDLE);
 
 			// Player may have been killed and this weapon dropped, don't execute any more code after this!
 			return;
@@ -409,6 +408,8 @@ void CGauss::Fire(Vector vecOrigSrc, Vector vecDir, float flDamage)
 
 			n = -DotProduct(tr.vecPlaneNormal, vecDir);
 
+			n = clamp(n, -0.9, 0);
+
 			if (n < 0.5) // 60 degrees
 			{
 				// ALERT( at_console, "reflect %f\n", n );
@@ -534,6 +535,12 @@ void CGauss::WeaponIdle()
 		m_pPlayer->m_flPlayAftershock = 0.0;
 	}
 
+	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+	{
+		int iAnim = SendWeaponAnim(ACT_USE);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+	}
+
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
@@ -545,26 +552,8 @@ void CGauss::WeaponIdle()
 	}
 	else
 	{
-		int iAnim;
-		float flRand = RANDOM_FLOAT(0, 1);
-		if (flRand <= 0.5)
-		{
-			iAnim = GAUSS_IDLE;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
-		}
-		else if (flRand <= 0.75)
-		{
-			iAnim = GAUSS_IDLE2;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
-		}
-		else
-		{
-			iAnim = GAUSS_FIDGET;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
-		}
-
-		return;
-		SendWeaponAnim(iAnim);
+		int iAnim = SendWeaponAnim(ACT_IDLE);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
 	}
 }
 

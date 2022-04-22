@@ -68,13 +68,13 @@ bool CEgon::Deploy()
 {
 	m_deployed = false;
 	m_fireState = FIRE_OFF;
-	return DefaultDeploy("models/v_egon.mdl", "models/p_egon.mdl", EGON_DRAW, "egon");
+	return DefaultDeploy("models/v_egon.mdl", "models/p_egon.mdl", 0, "egon");
 }
 
 void CEgon::Holster()
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	SendWeaponAnim(EGON_HOLSTER);
+	SendWeaponAnim(ACT_DISARM);
 
 	EndAttack();
 }
@@ -130,7 +130,6 @@ void CEgon::Attack()
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
-
 		if (m_fireState != FIRE_OFF || m_pBeam)
 		{
 			EndAttack();
@@ -452,6 +451,12 @@ void CEgon::DestroyEffect()
 
 void CEgon::WeaponIdle()
 {
+	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+	{
+		int iAnim = SendWeaponAnim(ACT_USE, -1, 2);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+	}
+
 	if ((m_pPlayer->m_afButtonPressed & IN_ATTACK2) == 0 && (m_pPlayer->pev->button & IN_ATTACK) != 0)
 	{
 		return;
@@ -463,24 +468,12 @@ void CEgon::WeaponIdle()
 		return;
 
 	if (m_fireState != FIRE_OFF)
+	{
 		EndAttack();
-
-	int iAnim;
-
-	float flRand = RANDOM_FLOAT(0, 1);
-
-	if (flRand <= 0.5)
-	{
-		iAnim = EGON_IDLE1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+		return;
 	}
-	else
-	{
-		iAnim = EGON_FIDGET1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
-	}
-
-	SendWeaponAnim(iAnim);
+	int iAnim = SendWeaponAnim(ACT_IDLE);
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 7, 10);
 	m_deployed = true;
 }
 
@@ -496,8 +489,9 @@ void CEgon::EndAttack()
 	PLAYBACK_EVENT_FULL(FEV_GLOBAL | FEV_RELIABLE, m_pPlayer->edict(), m_usEgonStop, 0, m_pPlayer->pev->origin, m_pPlayer->pev->angles, 0.0, 0.0,
 		static_cast<int>(bMakeNoise), 0, 0, 0);
 
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2.0;
-	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
+	int iAnim = SendWeaponAnim(ACT_RANGE_ATTACK2);
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 
 	m_fireState = FIRE_OFF;
 

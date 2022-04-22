@@ -273,12 +273,23 @@ void CRpg::Reload()
 	if (m_iClip == 1)
 	{
 		// don't bother with any of this if don't need to reload.
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			int iAnim = SendWeaponAnim(ACT_USE);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+		}
 		return;
 	}
 
 	if (m_pPlayer->ammo_rockets <= 0)
+	{
+		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		{
+			int iAnim = SendWeaponAnim(ACT_USE);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+		}
 		return;
-
+	}
 	// because the RPG waits to autoreload when no missiles are active while  the LTD is on, the
 	// weapons code is constantly calling into this function, but is often denied because
 	// a) missiles are in flight, but the LTD is on
@@ -308,7 +319,7 @@ void CRpg::Reload()
 
 	if (m_iClip == 0)
 	{
-		const bool iResult = DefaultReload(RPG_MAX_CLIP, RPG_RELOAD, 2);
+		const bool iResult = DefaultReload(RPG_MAX_CLIP, ACT_RELOAD, 2);
 
 		if (iResult)
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
@@ -380,10 +391,10 @@ bool CRpg::Deploy()
 {
 	if (m_iClip == 0)
 	{
-		return DefaultDeploy("models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW_UL, "rpg");
+		return DefaultDeploy("models/v_rpg.mdl", "models/p_rpg.mdl", 3, "rpg");
 	}
 
-	return DefaultDeploy("models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW1, "rpg");
+	return DefaultDeploy("models/v_rpg.mdl", "models/p_rpg.mdl", 0, "rpg");
 }
 
 
@@ -404,7 +415,7 @@ void CRpg::Holster()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 
-	SendWeaponAnim(RPG_HOLSTER1);
+	SendWeaponAnim(ACT_DISARM);
 
 #ifndef CLIENT_DLL
 	if (m_pSpot)
@@ -487,29 +498,17 @@ void CRpg::WeaponIdle()
 
 	if (0 != m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
 	{
-		int iAnim;
-		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-		if (flRand <= 0.75 || m_fSpotActive)
-		{
-			if (m_iClip == 0)
-				iAnim = RPG_IDLE_UL;
-			else
-				iAnim = RPG_IDLE;
+		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 90.0 / 15.0;
-		}
+		int iAnim = 0;
+		if (m_iClip == 0)
+			iAnim = SendWeaponAnim(ACT_IDLE, -1, 3);
 		else
-		{
-			if (m_iClip == 0)
-				iAnim = RPG_FIDGET_UL;
-			else
-				iAnim = RPG_FIDGET;
+			iAnim = SendWeaponAnim(ACT_IDLE, -1, 1);
 
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 6.1;
-		}
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * flRand;
 
 		ResetEmptySound();
-		SendWeaponAnim(iAnim);
 	}
 	else
 	{

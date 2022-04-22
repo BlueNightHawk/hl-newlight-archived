@@ -75,7 +75,7 @@ bool CGlock::GetItemInfo(ItemInfo* p)
 bool CGlock::Deploy()
 {
 	// pev->body = 1;
-	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", 1, "onehanded");
+	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", 0, "onehanded");
 }
 
 void CGlock::SecondaryAttack()
@@ -93,7 +93,7 @@ void CGlock::Holster()
 	}
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	SendWeaponAnim(LookupActivityWeight(ACT_DISARM));
+	SendWeaponAnim(ACT_DISARM);
 }
 
 void CGlock::PrimaryAttack()
@@ -177,13 +177,24 @@ void CGlock::Reload()
 	bool iResult;
 
 	if (m_iClip == 0)
-		iResult = DefaultReload(17, LookupActivityWeight(ACT_RELOAD, 1), 1.5);
+		iResult = DefaultReload(17, ACT_RELOAD, 1.5, -1, 2);
 	else
-		iResult = DefaultReload(17, LookupActivityWeight(ACT_RELOAD, 2), 1.5);
+		iResult = DefaultReload(17, ACT_RELOAD, 1.5, -1, 1);
 
 	if (iResult)
 	{
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+	}
+	else
+	{
+		if (LookupActivity(ACT_USE) < 0)
+		{
+			SendWeaponAnim(ACT_IDLE, -1, 2);
+		}
+		else
+		{
+			SendWeaponAnim(ACT_IDLE, -1, 1);
+		}
 	}
 }
 
@@ -204,9 +215,9 @@ void CGlock::WeaponIdle()
 		int iAnim = 0;
 		if (m_pPlayer->m_iFOV == 0)
 		{
-			iAnim = LookupActivity(ACT_IDLE);
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * RANDOM_FLOAT(1.2,3.0);
-			SendWeaponAnim(iAnim);
+			iAnim = SendWeaponAnim(ACT_IDLE);
+			if (iAnim != -1)
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * RANDOM_FLOAT(1.2,3.0);
 		}
 	}
 }

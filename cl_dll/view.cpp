@@ -2161,7 +2161,7 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 
 	g_pparams = *pparams;
 
-	if (pparams->paused == 0 )//&& gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
+	if (pparams->paused == 0 && gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
 	{
 		gHUD.m_flCurTime = V_max(gHUD.m_flCurTime, 1) + pparams->frametime;
 

@@ -462,7 +462,7 @@ bool CSqueak::Deploy()
 
 	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
 
-	const bool result = DefaultDeploy("models/v_squeak.mdl", "models/p_squeak.mdl", SQUEAK_UP, "squeak");
+	const bool result = DefaultDeploy("models/v_squeak.mdl", "models/p_squeak.mdl", 0, "squeak");
 
 	if (result)
 	{
@@ -485,7 +485,7 @@ void CSqueak::Holster()
 		return;
 	}
 
-	SendWeaponAnim(SQUEAK_DOWN);
+	SendWeaponAnim(ACT_DISARM);
 	EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "common/null.wav", 1.0, ATTN_NORM);
 }
 
@@ -569,27 +569,15 @@ void CSqueak::WeaponIdle()
 			return;
 		}
 
-		SendWeaponAnim(SQUEAK_UP);
+		SendWeaponAnim(ACT_ARM);
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 		return;
 	}
 
 	int iAnim;
-	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-	if (flRand <= 0.75)
-	{
-		iAnim = SQUEAK_IDLE1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 30.0 / 16 * (2);
-	}
-	else if (flRand <= 0.875)
-	{
-		iAnim = SQUEAK_FIDGETFIT;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 70.0 / 16.0;
-	}
-	else
-	{
-		iAnim = SQUEAK_FIDGETNIP;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 80.0 / 16.0;
-	}
-	SendWeaponAnim(iAnim);
+	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+
+	iAnim = SendWeaponAnim(ACT_IDLE);
+
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * flRand;
 }

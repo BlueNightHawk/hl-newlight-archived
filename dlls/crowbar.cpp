@@ -72,13 +72,13 @@ bool CCrowbar::GetItemInfo(ItemInfo* p)
 
 bool CCrowbar::Deploy()
 {
-	return DefaultDeploy("models/v_crowbar.mdl", "models/p_crowbar.mdl", CROWBAR_DRAW, "crowbar");
+	return DefaultDeploy("models/v_crowbar.mdl", "models/p_crowbar.mdl", 0, "crowbar");
 }
 
 void CCrowbar::Holster()
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	SendWeaponAnim(CROWBAR_HOLSTER);
+	SendWeaponAnim(ACT_DISARM);
 }
 
 
@@ -181,7 +181,7 @@ bool CCrowbar::Swing(bool fFirst)
 	{
 		PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usCrowbar,
 			0.0, g_vecZero, g_vecZero, 0, 0, 0,
-			0.0, 0, 0.0);
+			0.0, (tr.flFraction < 1.0) ? 1 : 0, 0.0);
 	}
 
 
@@ -198,18 +198,9 @@ bool CCrowbar::Swing(bool fFirst)
 	}
 	else
 	{
-		switch (((m_iSwing++) % 2) + 1)
-		{
-		case 0:
-			SendWeaponAnim(CROWBAR_ATTACK1HIT);
-			break;
-		case 1:
-			SendWeaponAnim(CROWBAR_ATTACK2HIT);
-			break;
-		case 2:
-			SendWeaponAnim(CROWBAR_ATTACK3HIT);
-			break;
-		}
+		int iSwing = ((m_iSwing++) % 3);
+		SendWeaponAnim(ACT_MELEE_ATTACK1, -1, iSwing + 1);
+		ALERT(at_console, "%i \n", iSwing + 1);
 
 		// player "shoot" animation
 		m_pPlayer->SetAnimation(PLAYER_ATTACK1);

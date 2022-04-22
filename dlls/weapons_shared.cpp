@@ -72,7 +72,7 @@ bool CBasePlayerWeapon::CanDeploy()
 	return true;
 }
 
-bool CBasePlayerWeapon::DefaultReload(int iClipSize, int iAnim, float fDelay, int body)
+bool CBasePlayerWeapon::DefaultReload(int iClipSize, int iAnim, float fDelay, int body, int iWeight)
 {
 	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
 		return false;
@@ -85,11 +85,11 @@ bool CBasePlayerWeapon::DefaultReload(int iClipSize, int iAnim, float fDelay, in
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + fDelay;
 
 	//!!UNDONE -- reload sound goes here !!!
-	SendWeaponAnim(iAnim, body);
+	int iSeq = SendWeaponAnim(iAnim, body, iWeight);
 
 	m_fInReload = true;
 
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iSeq);
 	return true;
 }
 

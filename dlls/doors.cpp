@@ -627,13 +627,14 @@ void CBaseDoor::DoorGoUp()
 			if (!FBitSet(pev->spawnflags, SF_DOOR_ONEWAY) && 0 != pev->movedir.y) // Y axis rotation, move away from the player
 			{
 				Vector vec = pevActivator->origin - pev->origin;
-				Vector angles = pevActivator->angles;
-				angles.x = 0;
-				angles.z = 0;
-				UTIL_MakeVectors(angles);
-				//			Vector vnext = (pevToucher->origin + (pevToucher->velocity * 10)) - pev->origin;
-				UTIL_MakeVectors(pevActivator->angles);
-				Vector vnext = (pevActivator->origin + (gpGlobals->v_forward * 10)) - pev->origin;
+				Vector vnext;
+				if (FBitSet(pev->spawnflags, SF_DOOR_USE_ONLY))
+				{
+					UTIL_MakeVectors(pevActivator->angles);
+					vnext = (pevActivator->origin + (gpGlobals->v_forward * 10)) - pev->origin;
+				}
+				else
+					vnext = (pevActivator->origin + (pevActivator->velocity * 10)) - pev->origin;
 				if ((vec.x * vnext.y - vec.y * vnext.x) < 0)
 					sign = -1.0;
 			}

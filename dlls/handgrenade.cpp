@@ -69,7 +69,7 @@ bool CHandGrenade::GetItemInfo(ItemInfo* p)
 bool CHandGrenade::Deploy()
 {
 	m_flReleaseThrow = -1;
-	return DefaultDeploy("models/v_grenade.mdl", "models/p_grenade.mdl", HANDGRENADE_DRAW, "crowbar");
+	return DefaultDeploy("models/v_grenade.mdl", "models/p_grenade.mdl", 0, "crowbar");
 }
 
 bool CHandGrenade::CanHolster()
@@ -87,7 +87,7 @@ void CHandGrenade::Holster()
 
 	if (0 != m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
 	{
-		SendWeaponAnim(HANDGRENADE_HOLSTER);
+		SendWeaponAnim(ACT_DISARM);
 	}
 	else
 	{
@@ -107,7 +107,7 @@ void CHandGrenade::PrimaryAttack()
 		m_flStartThrow = gpGlobals->time;
 		m_flReleaseThrow = 0;
 
-		SendWeaponAnim(HANDGRENADE_PINPULL);
+		SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 1);
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
 	}
 }
@@ -149,15 +149,15 @@ void CHandGrenade::WeaponIdle()
 
 		if (flVel < 500)
 		{
-			SendWeaponAnim(HANDGRENADE_THROW1);
+			SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 2);
 		}
 		else if (flVel < 1000)
 		{
-			SendWeaponAnim(HANDGRENADE_THROW2);
+			SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 3);
 		}
 		else
 		{
-			SendWeaponAnim(HANDGRENADE_THROW3);
+			SendWeaponAnim(ACT_RANGE_ATTACK1, -1, 4);
 		}
 
 		// player "shoot" animation
@@ -186,7 +186,7 @@ void CHandGrenade::WeaponIdle()
 
 		if (0 != m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
 		{
-			SendWeaponAnim(HANDGRENADE_DRAW);
+			SendWeaponAnim(ACT_ARM);
 		}
 		else
 		{
@@ -201,19 +201,8 @@ void CHandGrenade::WeaponIdle()
 
 	if (0 != m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
 	{
-		int iAnim;
-		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-		if (flRand <= 0.75)
-		{
-			iAnim = HANDGRENADE_IDLE;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15); // how long till we do this again.
-		}
-		else
-		{
-			iAnim = HANDGRENADE_FIDGET;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 75.0 / 30.0;
-		}
-
-		SendWeaponAnim(iAnim);
+		int iAnim = SendWeaponAnim(ACT_IDLE);
+		
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15); // how long till we do this again.
 	}
 }

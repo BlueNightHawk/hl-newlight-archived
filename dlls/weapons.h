@@ -315,12 +315,12 @@ public:
 	virtual bool PlayEmptySound();
 	virtual void ResetEmptySound();
 
-	virtual void SendWeaponAnim(int iAnim, int body = 0);
+	virtual int SendWeaponAnim(int iAnim, int body = -1, int weight = 0);
 
 	bool CanDeploy() override;
 	virtual bool IsUseable();
-	bool DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iAnim, const char* szAnimExt, int body = 0);
-	bool DefaultReload(int iClipSize, int iAnim, float fDelay, int body = 0);
+	bool DefaultDeploy(const char* szViewModel, const char* szWeaponModel, int iWeight, const char* szAnimExt, int body = -1);
+	bool DefaultReload(int iClipSize, int iAnim, float fDelay, int body = -1, int iWeight = 0);
 
 	void ItemPostFrame() override; // called each frame by the player PostThink
 	// called by CBasePlayerWeapons ItemPostFrame()

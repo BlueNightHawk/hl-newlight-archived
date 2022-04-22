@@ -118,6 +118,7 @@
     <ClCompile Include="..\..\cl_dll\ammo_secondary.cpp" />
     <ClCompile Include="..\..\cl_dll\battery.cpp" />
     <ClCompile Include="..\..\cl_dll\cdll_int.cpp" />
+    <ClCompile Include="..\..\cl_dll\cl_animation.cpp" />
     <ClCompile Include="..\..\cl_dll\com_weapons.cpp" />
     <ClCompile Include="..\..\cl_dll\death.cpp" />
     <ClCompile Include="..\..\cl_dll\demo.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="..\..\cl_dll\ammo.h" />
     <ClInclude Include="..\..\cl_dll\ammohistory.h" />
     <ClInclude Include="..\..\cl_dll\camera.h" />
+    <ClInclude Include="..\..\cl_dll\cl_animating.h" />
     <ClInclude Include="..\..\cl_dll\cl_dll.h" />
     <ClInclude Include="..\..\cl_dll\cl_util.h" />
     <ClInclude Include="..\..\cl_dll\com_weapons.h" />

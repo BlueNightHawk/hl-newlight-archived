@@ -147,6 +147,8 @@ int LookupActivityWeight(void* pmodel, entvars_t* pev, int activity, int weight)
 
 	mstudioseqdesc_t* pseqdesc;
 
+	int weighttotal = 0;
+
 	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
 
 	int seq = ACTIVITY_NOT_AVAILABLE;
@@ -156,7 +158,9 @@ int LookupActivityWeight(void* pmodel, entvars_t* pev, int activity, int weight)
 		{
 			if (pseqdesc[i].actweight == weight)
 			{
-				seq = i;
+				weighttotal += pseqdesc[i].actweight;
+				if (0 == weighttotal || RANDOM_LONG(0, weighttotal - 1) < pseqdesc[i].actweight)
+					seq = i;
 			}
 		}
 	}

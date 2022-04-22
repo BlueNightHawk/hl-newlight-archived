@@ -94,13 +94,13 @@ bool CHgun::GetItemInfo(ItemInfo* p)
 
 bool CHgun::Deploy()
 {
-	return DefaultDeploy("models/v_hgun.mdl", "models/p_hgun.mdl", HGUN_UP, "hive");
+	return DefaultDeploy("models/v_hgun.mdl", "models/p_hgun.mdl", 0, "hive");
 }
 
 void CHgun::Holster()
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	SendWeaponAnim(HGUN_DOWN);
+	SendWeaponAnim(ACT_DISARM);
 
 	//!!!HACKHACK - can't select hornetgun if it's empty! no way to get ammo for it, either.
 	if (0 == m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()])
@@ -264,25 +264,15 @@ void CHgun::WeaponIdle()
 {
 	Reload();
 
+	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+	{
+		int iAnim = SendWeaponAnim(ACT_USE);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+	}
+
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
-	int iAnim;
-	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0, 1);
-	if (flRand <= 0.75)
-	{
-		iAnim = HGUN_IDLE1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 30.0 / 16 * (2);
-	}
-	else if (flRand <= 0.875)
-	{
-		iAnim = HGUN_FIDGETSWAY;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
-	}
-	else
-	{
-		iAnim = HGUN_FIDGETSHAKE;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 35.0 / 16.0;
-	}
-	SendWeaponAnim(iAnim);
+	int iAnim = SendWeaponAnim(ACT_IDLE);
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
 }
