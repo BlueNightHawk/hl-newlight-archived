@@ -975,7 +975,8 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	V_RetractWeapon(pparams, view);
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 	V_ApplyBob(pparams, view);
-	V_DoJumping(pparams, view);
+	if (cl_jumpanim->value != 0)	
+		V_DoJumping(pparams, view);
 	V_ModifyOrigin(pparams, view);
 
 	// apply angles
