@@ -294,6 +294,14 @@ public:
 
 public:
 	void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);	
+public:
+	void StudioDlightEffects();
+	void StudioExportBoneTransform();
+	void StudioMergeGlowModels(alight_t *lighting);
+
+	cvar_t* r_glowmodels;
+	cvar_t* r_camanims;
+	cvar_t* r_dlightfx;
 };
 
 void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);

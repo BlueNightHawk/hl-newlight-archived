@@ -31,6 +31,10 @@
 #include "vgui_ScorePanel.h"
 
 #include "particleman.h"
+
+extern void ReCacheGlowModels(void);
+extern void CacheGlowModels();
+
 extern IParticleMan* g_pParticleMan;
 
 hud_player_info_t g_PlayerInfoList[MAX_PLAYERS_HUD + 1];	// player info from the engine
@@ -289,6 +293,48 @@ int __MsgFunc_AllowSpec(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
+void ResetCvars()
+{
+#define CVAR_SET (*gEngfuncs.Cvar_SetValue)
+
+	CVAR_SET("nl_hudfade", 1);
+	CVAR_SET("nl_toggleisight", 1);
+	CVAR_SET("nl_autofov", 1);
+
+	CVAR_SET("cl_rollspeed", 200);
+	CVAR_SET("cl_rollangle", 2.0);
+	CVAR_SET("cl_bobcycle", 1.05);
+	CVAR_SET("cl_bob", 0.0075);
+	CVAR_SET("cl_bobup", 0.5);
+
+	CVAR_SET("nl_weaponlag", 2.0);
+	CVAR_SET("nl_weaponlagscale", 1);
+	CVAR_SET("nl_weaponlagspeed", 7.5);
+
+	CVAR_SET("nl_fwdspeed", 200);
+	CVAR_SET("nl_fwdangle", 2);
+
+	CVAR_SET("nl_hudlag", 1);
+
+	CVAR_SET("nl_animbone", 0);
+	CVAR_SET("nl_guessanimbone", 0);
+
+	CVAR_SET("nl_sprintanim", 1);
+	CVAR_SET("nl_jumpanim", 1);
+	CVAR_SET("nl_retractwpn", 1);
+	CVAR_SET("nl_ironsight", 1);
+
+	CVAR_SET("nl_r_shadows", 1);
+	CVAR_SET("nl_r_shadow_height", 0);
+	CVAR_SET("nl_r_shadow_x", 0);
+	CVAR_SET("nl_r_shadow_y", 0);
+	CVAR_SET("nl_r_shadow_alpha", 0);
+
+	CVAR_SET("nl_glowmodels", 1);
+	CVAR_SET("nl_camanims", 1);
+	CVAR_SET("nl_dlightfx", 1);
+	CVAR_SET("nl_drawlegs", 1);
+}
 
 // This is called every time the DLL is loaded
 void CHud::Init()
@@ -337,22 +383,25 @@ void CHud::Init()
 	CVAR_CREATE("hud_classautokill", "1", FCVAR_ARCHIVE | FCVAR_USERINFO); // controls whether or not to suicide immediately on TF class switch
 	CVAR_CREATE("hud_takesshots", "0", FCVAR_ARCHIVE);					   // controls whether or not to automatically take screenshots at the end of a round
 
-	CVAR_CREATE("r_nolight", "0", FCVAR_ARCHIVE);
-
 	m_iLogo = 0;
 	m_iFOV = 0;
 
 	CVAR_CREATE("zoom_sensitivity_ratio", "1.2", 0);
 	cl_autowepswitch = CVAR_CREATE("cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
-	cl_toggleisight = CVAR_CREATE("cl_toggleisight", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
+	cl_toggleisight = CVAR_CREATE("nl_toggleisight", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
 	default_fov = CVAR_CREATE("default_fov", "90", FCVAR_ARCHIVE);
-	r_autofov = CVAR_CREATE("r_autofov", "1", FCVAR_ARCHIVE);
+	r_autofov = CVAR_CREATE("nl_autofov", "1", FCVAR_ARCHIVE);
 	m_pCvarStealMouse = CVAR_CREATE("hud_capturemouse", "1", FCVAR_ARCHIVE);
 	m_pCvarDraw = CVAR_CREATE("hud_draw", "1", FCVAR_ARCHIVE);
 	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
 	cl_rollangle = CVAR_CREATE("cl_rollangle", "2.0", FCVAR_ARCHIVE);
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
-	hud_fade = CVAR_CREATE("hud_fade", "1", FCVAR_ARCHIVE);
+	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
+
+	CacheGlowModels();
+	
+	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
+	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 
 	m_pSpriteList = NULL;
 

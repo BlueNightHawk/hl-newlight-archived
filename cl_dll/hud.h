@@ -629,6 +629,8 @@ public:
 	double m_flCurFrame;
 
 	entity_state_t m_prevstate;
+
+	char m_szGlowModels[512][64];
 };
 
 typedef struct viewinfo_s
@@ -636,6 +638,9 @@ typedef struct viewinfo_s
 	Vector attachment_forward[4];
 	Vector attachment_right[4];
 	Vector attachment_up[4];
+
+	Vector actualbonepos[MAXSTUDIOBONES];
+	Vector actualboneangles[MAXSTUDIOBONES];
 
 	Vector bonepos[MAXSTUDIOBONES];
 	Vector boneangles[MAXSTUDIOBONES];

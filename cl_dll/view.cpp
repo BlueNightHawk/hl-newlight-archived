@@ -45,6 +45,10 @@ void VectorAngles(const float* forward, float* angles);
 #include "r_studioint.h"
 #include "com_model.h"
 #include "kbutton.h"
+#include "StudioModelRenderer.h"
+#include "GameStudioModelRenderer.h"
+
+extern CGameStudioModelRenderer g_StudioRenderer;
 
 extern engine_studio_api_t IEngineStudio;
 
@@ -104,6 +108,11 @@ cvar_t* cl_hudlag;
 cvar_t* cl_animbone;
 
 cvar_t* cl_guessanimbone;
+
+cvar_t* cl_sprintanim;
+cvar_t* cl_jumpanim;
+cvar_t* cl_retractwpn;
+cvar_t* cl_ironsight;
 
 Vector v_jumppunch, v_jumpangle;
 
@@ -571,6 +580,19 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 	if (!viewentity)
 		return;
 
+	if (cl_retractwpn->value == 0)
+	{
+		v_dist = lerp(v_dist, 0, pparams->frametime * 15.5f);
+
+		view->angles[0] += v_dist * 12.25;
+		view->angles[1] -= v_dist * 4.5;
+		for (int i = 0; i < 3; i++)
+		{
+			view->origin[i] -= v_dist * 8.5 * pparams->forward[i];
+			view->origin[i] -= v_dist * 2.5 * pparams->up[i];
+		}
+	}
+
 	if (g_viewinfo.phdr && g_viewinfo.phdr->numattachments > 0)
 	{
 		VectorCopy(view->attachment[0], vecSrc);
@@ -615,7 +637,7 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 
 	Vector forward, right, up;
 
-	if (view->model == nullptr || strlen(view->model->name) <= 0|| g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
+	if (cl_ironsight->value == 0 || view->model == nullptr || strlen(view->model->name) <= 0|| g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
 	{
 		offset = aoffset = Vector(0, 0, 0);
 
@@ -651,7 +673,7 @@ void V_DoSprinting(struct ref_params_s* pparams, cl_entity_s* view)
 	static float l_sprintangle = 0.0f;
 	extern kbutton_t in_run;
 
-	if ((in_run.state & 1) != 0)
+	if ((in_run.state & 1) != 0 && cl_sprintanim->value != 0)
 	{
 		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
 	}
@@ -763,6 +785,11 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 {
 	static Vector l_camangles, l_campos;
 	int index = -1;
+
+	if (g_StudioRenderer.r_camanims->value == 0)
+	{
+		goto end;
+	}
 
 	if (view->model != nullptr && strlen(view->model->name) != 0 && g_viewinfo.phdr != NULL)
 	{
@@ -2293,17 +2320,22 @@ void V_Init()
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
 
-	cl_weaponlag = gEngfuncs.pfnRegisterVariable("cl_weaponlag", "2.0", 0);
-	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("cl_weaponlagscale", "1", FCVAR_ARCHIVE);
-	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("cl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
+	cl_weaponlag = gEngfuncs.pfnRegisterVariable("nl_weaponlag", "2.0", 0);
+	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("nl_weaponlagscale", "1", FCVAR_ARCHIVE);
+	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("nl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
 
-	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("cl_fwdspeed", "200", FCVAR_ARCHIVE);
-	cl_fwdangle = gEngfuncs.pfnRegisterVariable("cl_fwdangle", "2", FCVAR_ARCHIVE);
+	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("nl_fwdspeed", "200", FCVAR_ARCHIVE);
+	cl_fwdangle = gEngfuncs.pfnRegisterVariable("nl_fwdangle", "2", FCVAR_ARCHIVE);
 
-	cl_hudlag = gEngfuncs.pfnRegisterVariable("cl_hudlag", "1", FCVAR_ARCHIVE);
+	cl_hudlag = gEngfuncs.pfnRegisterVariable("nl_hudlag", "1", FCVAR_ARCHIVE);
 
-	cl_animbone = gEngfuncs.pfnRegisterVariable("cl_animbone", "0", FCVAR_ARCHIVE);
-	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("cl_guessanimbone", "1", FCVAR_ARCHIVE);
+	cl_animbone = gEngfuncs.pfnRegisterVariable("nl_animbone", "0", FCVAR_ARCHIVE);
+	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("nl_guessanimbone", "1", FCVAR_ARCHIVE);
+
+	cl_sprintanim = gEngfuncs.pfnRegisterVariable("nl_sprintanim", "1", FCVAR_ARCHIVE);
+	cl_jumpanim = gEngfuncs.pfnRegisterVariable("nl_jumpanim", "1", FCVAR_ARCHIVE);
+	cl_retractwpn = gEngfuncs.pfnRegisterVariable("nl_retractwpn", "1", FCVAR_ARCHIVE);
+	cl_ironsight = gEngfuncs.pfnRegisterVariable("nl_ironsight", "1", FCVAR_ARCHIVE);
 }
 
 

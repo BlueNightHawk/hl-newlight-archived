@@ -163,7 +163,6 @@ void CRpgRocket::IgniteThink()
 	// pev->movetype = MOVETYPE_TOSS;
 
 	pev->movetype = MOVETYPE_FLY;
-	pev->effects |= EF_LIGHT;
 
 	// make rocket sound
 	EMIT_SOUND(ENT(pev), CHAN_VOICE, "weapons/rocket1.wav", 1, 0.5);
@@ -249,7 +248,7 @@ void CRpgRocket::FollowThink()
 	}
 	else
 	{
-		if ((pev->effects & EF_LIGHT) != 0)
+		//if ((pev->effects & EF_NIGHTVISION) != 0)
 		{
 			pev->effects = 0;
 			STOP_SOUND(ENT(pev), CHAN_VOICE, "weapons/rocket1.wav");

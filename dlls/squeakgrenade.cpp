@@ -556,6 +556,13 @@ void CSqueak::SecondaryAttack()
 
 void CSqueak::WeaponIdle()
 {
+	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+	{
+		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 1.4, 1.8);
+		int iAnim = SendWeaponAnim(ACT_IDLE, -1, 2);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * flRand;
+	}
+
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
@@ -569,15 +576,15 @@ void CSqueak::WeaponIdle()
 			return;
 		}
 
-		SendWeaponAnim(ACT_ARM);
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+		int iAnim = SendWeaponAnim(ACT_ARM);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 		return;
 	}
 
 	int iAnim;
-	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+	float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 2, 5);
 
-	iAnim = SendWeaponAnim(ACT_IDLE);
+	iAnim = SendWeaponAnim(ACT_IDLE, -1, (RANDOM_LONG(0,10) == 0) ? 2 : 1);
 
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * flRand;
 }

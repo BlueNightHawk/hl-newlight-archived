@@ -146,14 +146,18 @@ void CStudioModelRenderer::Init()
 	IEngineStudio.GetModelCounters(&m_pStudioModelCount, &m_pModelsDrawn);
 
 	// SHADOWS START
-	r_shadows = CVAR_CREATE("r_shadows", "1", FCVAR_ARCHIVE);
-	r_shadow_height = CVAR_CREATE("r_shadow_height", "0", 0);
-	r_shadow_x = CVAR_CREATE("r_shadow_x", "0", 0);
-	r_shadow_y = CVAR_CREATE("r_shadow_y", "0", 0);
-	r_shadow_alpha = CVAR_CREATE("r_shadow_alpha", "0", FCVAR_ARCHIVE);
+	r_shadows = CVAR_CREATE("nl_r_shadows", "1", FCVAR_ARCHIVE);
+	r_shadow_height = CVAR_CREATE("nl_r_shadow_height", "0", 0);
+	r_shadow_x = CVAR_CREATE("nl_r_shadow_x", "0", 0);
+	r_shadow_y = CVAR_CREATE("nl_r_shadow_y", "0", 0);
+	r_shadow_alpha = CVAR_CREATE("nl_r_shadow_alpha", "0", FCVAR_ARCHIVE);
 	// SHADOWS END
 
-	r_drawlegs = CVAR_CREATE("r_drawlegs", "1", FCVAR_ARCHIVE);
+	r_glowmodels = CVAR_CREATE("nl_glowmodels", "1", FCVAR_ARCHIVE);
+	r_camanims = CVAR_CREATE("nl_camanims", "1", FCVAR_ARCHIVE);
+	r_dlightfx = CVAR_CREATE("nl_dlightfx", "1", FCVAR_ARCHIVE);
+
+	r_drawlegs = CVAR_CREATE("nl_drawlegs", "1", FCVAR_ARCHIVE);
 
 	// Get pointers to engine data structures
 	m_pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])IEngineStudio.StudioGetBoneTransform();
@@ -1251,6 +1255,178 @@ void CStudioModelRenderer::StudioMergeBones(model_t* m_pSubModel)
 	}
 }
 
+void CStudioModelRenderer::StudioDlightEffects()
+{
+	if (!stricmp(m_pCurrentEntity->model->name, "models/w_battery.mdl"))
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		if (dl)
+		{
+			dl->origin = m_pCurrentEntity->origin;
+			dl->color = {0, 96, 128};
+			dl->radius = 64;
+			dl->die = m_clTime + 0.25;
+			dl->decay = 255;
+		}
+	}
+	else if (!stricmp(m_pCurrentEntity->model->name, "models/rpgrocket.mdl"))
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		if (dl)
+		{
+			dl->origin = m_pCurrentEntity->origin;
+			dl->color = {255, 255, 255};
+			dl->radius = 230;
+			dl->die = m_clTime + 0.1;
+			dl->decay = 500;
+		}
+	}
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		if (!stricmp(m_pCurrentEntity->model->name, "models/v_squeak.mdl"))
+		{
+			if ((m_pCurrentEntity->curstate.sequence == 0 && (m_pCurrentEntity->latched.prevframe > 18 && m_pCurrentEntity->latched.prevframe < 24)) ||
+				(m_pCurrentEntity->curstate.sequence == 1 && (m_pCurrentEntity->latched.prevframe > 2 && m_pCurrentEntity->latched.prevframe < 5)) ||
+				(m_pCurrentEntity->curstate.sequence == 2 && (m_pCurrentEntity->latched.prevframe > 19 && m_pCurrentEntity->latched.prevframe < 22)) ||
+				(m_pCurrentEntity->curstate.sequence == 2 && (m_pCurrentEntity->latched.prevframe > 40 && m_pCurrentEntity->latched.prevframe < 43)) ||
+				(m_pCurrentEntity->curstate.sequence == 2 && (m_pCurrentEntity->latched.prevframe > 74 && m_pCurrentEntity->latched.prevframe < 77)) ||
+				(m_pCurrentEntity->curstate.sequence == 4 && (m_pCurrentEntity->latched.prevframe < 22)))
+			{
+			}
+			else
+			{
+				dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+				Vector forward;
+				AngleVectors(g_viewinfo.actualboneangles[50], forward, NULL, NULL);
+				if (dl)
+				{
+					dl->origin = g_viewinfo.actualbonepos[50] + forward * 5.5;
+					dl->color = {0, 255, 0};
+					dl->radius = 32;
+					dl->die = m_clTime + 0.1;
+					dl->decay = 255;
+				}
+			}
+		}
+		else if (!stricmp(m_pCurrentEntity->model->name, "models/v_gauss.mdl"))
+		{
+			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+			Vector forward, right;
+			AngleVectors(g_viewinfo.actualboneangles[1], forward, right, NULL);
+			if (dl)
+			{
+				dl->origin = g_viewinfo.actualbonepos[1] - right * 5;
+				dl->color = {0, 128, 255};
+				dl->radius = 64;
+				dl->die = m_clTime + 0.1;
+				dl->decay = 255;
+			}
+		}
+		else if (!stricmp(m_pCurrentEntity->model->name, "models/v_rpg.mdl"))
+		{
+			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocElight(m_pCurrentEntity->index);
+			Vector forward, right;
+			AngleVectors(g_viewinfo.actualboneangles[50], forward, right, NULL);
+
+			if (dl)
+			{
+				dl->origin = g_viewinfo.actualbonepos[50] + forward * 3.5;
+				dl->color = {0, 255, 0};
+				dl->radius = 2;
+				dl->die = m_clTime + 0.1;
+				dl->decay = 255;
+			}
+		}
+	}
+}
+void CStudioModelRenderer::StudioExportBoneTransform()
+{
+	// get bone angles and calculate base angles using fake entity
+	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+	{
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
+		}
+
+		if (r_camanims->value != 0)
+		{
+			cl_entity_t saveent = *m_pCurrentEntity;
+
+			g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
+
+			cl_entity_s temp = *gEngfuncs.GetViewModel();
+			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+			m_pCurrentEntity = &temp;
+			temp.index = -555;
+			m_pRenderModel = m_pCurrentEntity->model;
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+			IEngineStudio.SetRenderModel(m_pRenderModel);
+
+			StudioSetUpTransform(false);
+			StudioSetupBones();
+			for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			{
+				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+				NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
+			}
+			temp = *gEngfuncs.GetViewModel();
+			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+			temp.curstate.sequence = 0;
+			temp.index = -555;
+			temp.curstate.frame = 0;
+			temp.curstate.animtime = 0;
+			temp.latched.prevframe = 0;
+			m_pCurrentEntity = &temp;
+
+			// StudioSetUpTransform(false);
+			StudioSetupBones();
+			for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			{
+				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
+				NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
+			}
+			m_pCurrentEntity = gEngfuncs.GetViewModel();
+		}
+	}
+}
+
+void CStudioModelRenderer::StudioMergeGlowModels(alight_t *lighting)
+{
+	for (int i = 0; i < 512; i++)
+	{
+		if (gHUD.m_szGlowModels[i][0] != 0 && !stricmp(gHUD.m_szGlowModels[i], m_pCurrentEntity->model->name + 7))
+		{
+			char modname[64] = {"\0"};
+			strcpy(modname, "models/glow");
+			strcat(modname, m_pCurrentEntity->model->name);
+
+			cl_entity_t saveent = *m_pCurrentEntity;
+
+			model_t* lightmodel = IEngineStudio.Mod_ForName(modname, 0);
+
+			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(lightmodel);
+			IEngineStudio.StudioSetHeader(m_pStudioHeader);
+
+			StudioMergeBones(lightmodel);
+
+			m_pCurrentEntity->curstate.effects |= EF_NOSHADOW;
+			m_pCurrentEntity->curstate.rendermode = kRenderTransAdd;
+			IEngineStudio.StudioSetupLighting(lighting);
+
+			StudioRenderModel();
+			StudioCalcAttachments();
+
+			*m_pCurrentEntity = saveent;
+			break;
+		}
+	}
+}
+
 /*
 ====================
 StudioDrawModel
@@ -1360,7 +1536,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		Vector lightcol;
 
 		lighting.plightvec = vecLightDir;
-		
+
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
 		IEngineStudio.StudioEntityLight(&lighting);
@@ -1384,78 +1560,14 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		StudioRenderModel();
 
-	// get bone angles and calculate base angles using fake entity
+		StudioExportBoneTransform();
+		if (r_dlightfx->value != 0)
+			StudioDlightEffects();
+		if (r_glowmodels->value != 0)
+			StudioMergeGlowModels(&lighting);
+
 		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
-		{
-			cl_entity_t saveent = *m_pCurrentEntity;
-
-			g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
-
 			gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
-
-			cl_entity_s temp = *gEngfuncs.GetViewModel();
-			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
-			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-			m_pCurrentEntity = &temp;
-			temp.index = -555;
-			m_pRenderModel = m_pCurrentEntity->model;
-			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
-			IEngineStudio.StudioSetHeader(m_pStudioHeader);
-			IEngineStudio.SetRenderModel(m_pRenderModel);
-
-			StudioSetUpTransform(false);
-			StudioSetupBones();
-			for (int i = 0; i < m_pStudioHeader->numbones; i++)
-			{
-				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
-				NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
-			}
-			temp = *gEngfuncs.GetViewModel();
-			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
-			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-			temp.curstate.sequence = 0;
-			temp.index = -555;
-			temp.curstate.frame = 0;
-			temp.curstate.animtime = 0;
-			temp.latched.prevframe = 0;
-			m_pCurrentEntity = &temp;
-
-			StudioSetUpTransform(false);
-			StudioSetupBones();
-			for (int i = 0; i < m_pStudioHeader->numbones; i++)
-			{
-				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
-				NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
-			}
-			m_pCurrentEntity = gEngfuncs.GetViewModel();
-		}
-
-		void* pfile = nullptr;
-		char modname[64] = {"\0"};
-		strcpy(modname, "models/glow");
-		strcat(modname, m_pCurrentEntity->model->name);
-
-		if (pfile = gEngfuncs.COM_LoadFile(modname, 5, nullptr))
-		{
-			cl_entity_t saveent = *m_pCurrentEntity;
-
-			model_t* lightmodel = IEngineStudio.Mod_ForName(modname, 0);
-
-			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(lightmodel);
-			IEngineStudio.StudioSetHeader(m_pStudioHeader);
-
-			StudioMergeBones(lightmodel);
-
-			m_pCurrentEntity->curstate.effects |= EF_NOSHADOW;
-			m_pCurrentEntity->curstate.rendermode = kRenderTransAdd;
-			IEngineStudio.StudioSetupLighting(&lighting);
-
-			StudioRenderModel();
-			StudioCalcAttachments();
-
-			*m_pCurrentEntity = saveent;
-			gEngfuncs.COM_FreeFile(pfile);
-		}
 	}
 
 	return true;

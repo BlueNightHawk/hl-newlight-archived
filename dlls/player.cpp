@@ -4807,7 +4807,7 @@ void CBasePlayer::EquipWeapon()
 void CBasePlayer::SetPrefsFromUserinfo(char* infobuffer)
 {
 	const char* value = g_engfuncs.pfnInfoKeyValue(infobuffer, "cl_autowepswitch");
-	const char* value2 = g_engfuncs.pfnInfoKeyValue(infobuffer, "cl_toggleisight");
+	const char* value2 = g_engfuncs.pfnInfoKeyValue(infobuffer, "nl_toggleisight");
 
 	if ('\0' != *value)
 	{
