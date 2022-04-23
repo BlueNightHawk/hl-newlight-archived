@@ -453,7 +453,7 @@ void CEgon::WeaponIdle()
 {
 	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
 	{
-		int iAnim = SendWeaponAnim(ACT_USE, -1, 2);
+		int iAnim = SendWeaponAnim(ACT_USE);
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
 	}
 

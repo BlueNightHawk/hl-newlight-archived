@@ -35,6 +35,8 @@
 #include "com_model.h"
 #include "r_studioint.h"
 
+#include "cl_animating.h"
+
 extern engine_studio_api_s IEngineStudio;
 
 extern int g_iUser1;
@@ -72,9 +74,10 @@ CSatchel g_Satchel;
 CTripmine g_Tripmine;
 CSqueak g_Snark;
 
-
 extern cvar_t* cl_toggleisight;
 extern cvar_t* cl_autowepswitch;
+
+void CL_SendWeaponAnim(int iAnim, int iBody);
 
 /*
 ======================
@@ -167,8 +170,6 @@ void CBaseEntity::Killed(entvars_t* pevAttacker, int iGib)
 	pev->effects |= EF_NODRAW;
 }
 
-extern int EV_SendWeaponAnim(int iAnim, int iBody, int iWeight);
-
 /*
 =====================
 CBasePlayerWeapon:: DefaultDeploy
@@ -180,20 +181,29 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 	if (!CanDeploy())
 		return false;
 
-	gEngfuncs.CL_LoadModel(szViewModel, &m_pPlayer->pev->viewmodel);
-
 	cl_entity_s* view = gEngfuncs.GetViewModel();
 
 	if (view == nullptr)
 		return false;
 
-	view->model = gEngfuncs.CL_LoadModel(szViewModel, NULL);
+	gEngfuncs.CL_LoadModel(szViewModel, &m_pPlayer->pev->viewmodel);
+	view->model = gEngfuncs.CL_LoadModel(szViewModel, nullptr);
 
-	int iAnim = EV_SendWeaponAnim(ACT_ARM, body, iWeight);
+	if (iWeight == 0)
+	{
+		if (GetActivityHeaviest(ACT_ARM) > 1 && LookupActivityWeight(ACT_ARM, 2) != -1 && (m_pPlayer->m_bNotFirstDraw[m_iId] == false))
+		{
+			iWeight = 2;
+		}
+		else
+			iWeight = 1;
+	}
+	int iSeq = SendWeaponAnim(ACT_ARM, body, iWeight);
 
 	g_irunninggausspred = false;
 	m_pPlayer->m_flNextAttack = 0.5;
-	m_flTimeWeaponIdle = GetSeqLength(iAnim);
+	m_flTimeWeaponIdle = GetSeqLength(iSeq);
+	m_flLastFireTime = 0.0;
 	return true;
 }
 
@@ -236,11 +246,11 @@ Animate weapon model
 =====================
 */
 
-int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight)
-{
-	m_pPlayer->pev->weaponanim  = EV_SendWeaponAnim(iAnim, body, iWeight);
+extern int EV_SendWeaponAnim(int iAnim, int iBody, int iWeight);
 
-	return 0;
+int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight, bool dontskiplocal)
+{
+	return EV_SendWeaponAnim(iAnim, body, iWeight);
 }
 
 /*
@@ -1017,102 +1027,19 @@ float CBasePlayerItem::GetSeqLength(int sequence)
 
 int CBasePlayerItem::LookupActivityWeight(int activity, int weight)
 {
-	cl_entity_s* view = gEngfuncs.GetViewModel();
-
-	if (view == nullptr)
-		return 0;
-
-	studiohdr_t* pstudiohdr;
-
-	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
-	if (!pstudiohdr)
-		return 0;
-
-	mstudioseqdesc_t* pseqdesc;
-
-	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
-
-	int seq = -1;
-	for (int i = 0; i < pstudiohdr->numseq; i++)
-	{
-		if (pseqdesc[i].activity == activity)
-		{
-			if (pseqdesc[i].actweight == weight)
-			{
-				seq = i;
-			}
-		}
-	}
-
-	return seq;
+	return ::LookupActivityWeight(gEngfuncs.GetViewModel(), activity, weight);
 }
 
 
 int CBasePlayerItem::GetActivityHeaviest(int activity)
 {
-	cl_entity_s* view = gEngfuncs.GetViewModel();
-
-	if (view == nullptr)
-		return 0;
-
-	studiohdr_t* pstudiohdr;
-
-	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
-	if (!pstudiohdr)
-		return 0;
-
-	mstudioseqdesc_t* pseqdesc;
-
-	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
-
-	int weight = 0;
-	int seq = -1;
-	for (int i = 0; i < pstudiohdr->numseq; i++)
-	{
-		if (pseqdesc[i].activity == activity)
-		{
-			if (pseqdesc[i].actweight > weight)
-			{
-				weight = pseqdesc[i].actweight;
-				seq = i;
-			}
-		}
-	}
-
-	return weight;
+	return ::LookupActivityHeaviest(gEngfuncs.GetViewModel(), activity);
 }
 
 
 int CBasePlayerItem::LookupActivity(int activity)
 {
-	cl_entity_s* view = gEngfuncs.GetViewModel();
-
-	if (view == nullptr)
-		return 0;
-
-	studiohdr_t* pstudiohdr;
-
-	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
-	if (!pstudiohdr)
-		return 0;
-
-	mstudioseqdesc_t* pseqdesc;
-
-	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
-
-	int weighttotal = 0;
-	int seq = -1;
-	for (int i = 0; i < pstudiohdr->numseq; i++)
-	{
-		if (pseqdesc[i].activity == activity)
-		{
-			weighttotal += pseqdesc[i].actweight;
-			if (0 == weighttotal || RANDOM_LONG(0, weighttotal - 1) < pseqdesc[i].actweight)
-				seq = i;
-		}
-	}
-
-	return seq;
+	return ::LookupActivity(gEngfuncs.GetViewModel(), activity);
 }
 
 

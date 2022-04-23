@@ -158,9 +158,19 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 	const char* model = READ_STRING();
 	int iSeq = -1;
 
+	char modname[64] = {"null"};
+
 	cl_entity_s* view = gEngfuncs.GetViewModel();
 
-	if (model)
+	if (view->model && view->model->name)
+		strcpy(modname, view->model->name);
+
+	if (model && !stricmp(model, "none"))
+	{
+		view->model = nullptr;
+		view->curstate.frame = view->curstate.framerate = view->curstate.sequence = 0;
+	}
+	else if (model && stricmp(modname, model))
 		view->model = gEngfuncs.CL_LoadModel(model, &view->index);
 
 	EV_SendWeaponAnim(iAnim, iBody, iWeight);

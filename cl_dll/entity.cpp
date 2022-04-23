@@ -360,8 +360,10 @@ fired during this frame, handle the event by it's tag ( e.g., muzzleflash, sound
 void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	//	RecClStudioEvent(event, entity);
+	
+	bool muzzleflash = (event->event == 5001 || event->event == 5011 || event->event == 5021 || event->event == 5031) ? 1 : 0;
 
-	if (entity == gEngfuncs.GetViewModel())
+	if (entity == gEngfuncs.GetViewModel() && !muzzleflash )
 		return;
 
 	StudioEvent(event, entity);

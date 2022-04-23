@@ -434,6 +434,8 @@ int g_iRestoreViewent = 0;
 
 void CHud::VidInit()
 {
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
 	// TODO: needs to be called on every map change, not just when starting a new game
 	if (g_pParticleMan)
 		g_pParticleMan->ResetParticles();

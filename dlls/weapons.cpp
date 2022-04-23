@@ -768,9 +768,9 @@ bool CBasePlayerWeapon::UpdateClientData(CBasePlayer* pPlayer)
 }
 
 
-int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight)
+int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight, bool dontskiplocal)
 {
-	const bool skiplocal = UseDecrement() != false;
+	const bool skiplocal = UseDecrement() != false && dontskiplocal == false; 
 	int iSeq = 0;
 
 	if (body > -1)
@@ -779,15 +779,15 @@ int CBasePlayerWeapon::SendWeaponAnim(int iAnim, int body, int iWeight)
 	if (m_pPlayer->m_pViewModel)
 		m_pPlayer->m_pViewModel->UpdateThink();
 
-#if defined(CLIENT_WEAPONS)
-	if (skiplocal && ENGINE_CANSKIP(m_pPlayer->edict()))
-		return 0;
-#endif
-
 	if (iWeight <= 0)
 		iSeq = LookupActivity(iAnim);
 	else
 		iSeq = LookupActivityWeight(iAnim, iWeight);
+
+#if defined(CLIENT_WEAPONS)
+	if (skiplocal && ENGINE_CANSKIP(m_pPlayer->edict()))
+		return iSeq;
+#endif
 
 	m_pPlayer->pev->weaponanim = iSeq;
 
@@ -921,7 +921,7 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 		else
 			iWeight = 1;
 	}
-	SendWeaponAnim(ACT_ARM, body, iWeight);	
+	SendWeaponAnim(ACT_ARM, body, iWeight, true);	
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	m_flLastFireTime = 0.0;

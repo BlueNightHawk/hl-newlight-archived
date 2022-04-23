@@ -174,6 +174,37 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 	}
 }
 
+int LookupActivityHeaviest(cl_entity_s* ent, int activity)
+{
+	studiohdr_t* pstudiohdr;
+	if (!ent->model)
+		return 0;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(ent->model);
+	if (!pstudiohdr)
+		return 0;
+
+	mstudioseqdesc_t* pseqdesc;
+
+	pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+
+	int weight = 0;
+	int seq = -1;
+	for (int i = 0; i < pstudiohdr->numseq; i++)
+	{
+		if (pseqdesc[i].activity == activity)
+		{
+			if (pseqdesc[i].actweight > weight)
+			{
+				weight = pseqdesc[i].actweight;
+				seq = i;
+			}
+		}
+	}
+
+	return seq;
+}
+
 // ripped from xash
 // required for events to play correctly after changlevel animation fix
 void DispatchAnimEvents(cl_entity_s* e, float flInterval)
@@ -233,6 +264,11 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 	{
 		// ignore all non-client-side events
 		if (pevent[i].event < 5000)
+			continue;
+
+		bool muzzleflash = (pevent[i].event == 5001 || pevent[i].event == 5011 || pevent[i].event == 5021 || pevent[i].event == 5031) ? 1 : 0;
+
+		if (e == gEngfuncs.GetViewModel() && muzzleflash)
 			continue;
 
 		if ((float)pevent[i].frame > start && pevent[i].frame <= end)

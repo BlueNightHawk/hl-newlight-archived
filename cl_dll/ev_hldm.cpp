@@ -1204,10 +1204,11 @@ void EV_Crowbar(event_args_t* args)
 
 	if (EV_IsLocal(idx))
 	{
-		if (args->bparam1 == false)
-			EV_SendWeaponAnim(ACT_MELEE_ATTACK2, -1, ((g_iSwing++) % 3) + 1);
+		int iSwing = ((g_iSwing++) % 3);
+		if (args->bparam1 == 0)
+			EV_SendWeaponAnim(ACT_MELEE_ATTACK2, -1, iSwing + 1);
 		else
-			((g_iSwing++) % 3);
+			EV_SendWeaponAnim(ACT_MELEE_ATTACK1, -1, iSwing + 1);
 	}
 }
 //======================

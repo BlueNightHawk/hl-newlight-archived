@@ -170,14 +170,6 @@ bool CHud::Redraw(float flTime, bool intermission)
 		m_flShotTime = 0;
 	}
 
-	if (gHUD.HasSuit())
-	{
-		if (gEngfuncs.GetViewModel()->model == nullptr)
-		{
-		//	gEngfuncs.GetViewModel()->model = gEngfuncs.CL_LoadModel("models/v_hands.mdl", &gEngfuncs.GetViewModel()->index);
-		}
-	}
-
 	m_iIntermission = intermission;
 
 	// if no redrawing is necessary

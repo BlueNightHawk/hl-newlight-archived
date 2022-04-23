@@ -191,16 +191,20 @@ class CItemSuit : public CItem
 			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_AAx"); // long version of suit logon
 		
 		pPlayer->SetHasSuit(true);
+		if (gEvilImpulse101 == false)
+		{
+			pPlayer->pev->viewmodel = MAKE_STRING("models/v_hands.mdl");
 
-		pPlayer->pev->viewmodel = MAKE_STRING("models/v_hands.mdl");
+			if (pPlayer->m_pViewModel)
+				pPlayer->m_pViewModel->UpdateThink();
 
-		if (pPlayer->m_pViewModel)
-			pPlayer->m_pViewModel->UpdateThink();
-
-		MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, pPlayer->pev);
-		WRITE_SHORT(0); // sequence number
-		WRITE_SHORT(0); // weaponmodel bodygroup.
-		MESSAGE_END();
+			MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, pPlayer->pev);
+			WRITE_SHORT(ACT_IDLE); // sequence number
+			WRITE_SHORT(0);		   // weaponmodel bodygroup.
+			WRITE_SHORT(0);
+			WRITE_STRING("models/v_hands.mdl");
+			MESSAGE_END();
+		}
 		return true;
 	}
 };

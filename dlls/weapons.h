@@ -315,7 +315,7 @@ public:
 	virtual bool PlayEmptySound();
 	virtual void ResetEmptySound();
 
-	virtual int SendWeaponAnim(int iAnim, int body = -1, int weight = 0);
+	virtual int SendWeaponAnim(int iAnim, int body = -1, int weight = 0, bool dontskiplocal = false);
 
 	bool CanDeploy() override;
 	virtual bool IsUseable();

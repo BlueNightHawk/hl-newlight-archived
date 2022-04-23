@@ -823,10 +823,11 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f;
 	float clTime = m_clTime;
+	bool viewmodel = m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
 
 	if (m_fDoInterp)
 	{
-		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+		if (viewmodel)
 		{
 			if (gHUD.m_flCurTime < gHUD.m_flAnimTime)
 			{
@@ -862,7 +863,7 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 	}
 	else
 	{
-		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+		if (viewmodel)
 			f = 0;
 		else
 			f = (m_pCurrentEntity->curstate.frame * (pseqdesc->numframes - 1)) / 256.0;
@@ -951,12 +952,8 @@ void CStudioModelRenderer::StudioSetupBones()
 	}
 */
 
-	if (m_pCurrentEntity->index != -999)
-		f = StudioEstimateFrame(pseqdesc);
-	else
-	{
-		f = 0;
-	}
+	f = StudioEstimateFrame(pseqdesc);
+
 	if (m_pCurrentEntity->latched.prevframe > f)
 	{
 		//Con_DPrintf("%f %f\n", m_pCurrentEntity->prevframe, f );
@@ -1275,6 +1272,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		if (gHUD.m_prevstate.sequence != -1)
 		{
 			gEngfuncs.pfnWeaponAnim(gHUD.m_prevstate.sequence, m_pCurrentEntity->curstate.body);
+			m_pCurrentEntity->curstate.sequence = gHUD.m_prevstate.sequence;
 		}
 		g_iRestoreViewent = 0;
 	}
@@ -1394,10 +1392,12 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
 
 			gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
+
 			cl_entity_s temp = *gEngfuncs.GetViewModel();
 			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
 			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
 			m_pCurrentEntity = &temp;
+			temp.index = -555;
 			m_pRenderModel = m_pCurrentEntity->model;
 			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
 			IEngineStudio.StudioSetHeader(m_pStudioHeader);
@@ -1414,6 +1414,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
 			temp.origin = temp.curstate.origin = Vector(0, 0, 0);
 			temp.curstate.sequence = 0;
+			temp.index = -555;
 			temp.curstate.frame = 0;
 			temp.curstate.animtime = 0;
 			temp.latched.prevframe = 0;

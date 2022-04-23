@@ -179,9 +179,11 @@ bool CCrowbar::Swing(bool fFirst)
 
 	if (fFirst)
 	{
-		PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usCrowbar,
+#ifndef CLIENT_DLL
+		PLAYBACK_EVENT_FULL(0, m_pPlayer->edict(), m_usCrowbar,
 			0.0, g_vecZero, g_vecZero, 0, 0, 0,
 			0.0, (tr.flFraction < 1.0) ? 1 : 0, 0.0);
+#endif
 	}
 
 
@@ -198,10 +200,6 @@ bool CCrowbar::Swing(bool fFirst)
 	}
 	else
 	{
-		int iSwing = ((m_iSwing++) % 3);
-		SendWeaponAnim(ACT_MELEE_ATTACK1, -1, iSwing + 1);
-		ALERT(at_console, "%i \n", iSwing + 1);
-
 		// player "shoot" animation
 		m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 
