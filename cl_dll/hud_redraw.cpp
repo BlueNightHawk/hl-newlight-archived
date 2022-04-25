@@ -20,7 +20,6 @@
 #include "kbutton.h"
 #include "cl_animating.h"
 
-
 #include "vgui_TeamFortressViewport.h"
 
 extern ref_params_t g_pparams;

@@ -36,6 +36,8 @@
 #include "vgui_TeamFortressViewport.h"
 #include "filesystem_utils.h"
 
+#include "discord_integration.h"
+
 cl_enginefunc_t gEngfuncs;
 CHud gHUD;
 TeamFortressViewport* gViewPort = NULL;
@@ -124,6 +126,7 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 		return 0;
 
 	memcpy(&gEngfuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
+	discord_integration::initialize();
 
 	EV_HookEvents();
 	CL_LoadParticleMan();
@@ -221,6 +224,8 @@ int DLLEXPORT HUD_UpdateClientData(client_data_t* pcldata, float flTime)
 
 	IN_Commands();
 
+	discord_integration::on_update_client_data();
+
 	return static_cast<int>(gHUD.UpdateClientData(pcldata, flTime));
 }
 
@@ -250,11 +255,10 @@ Called by engine every frame that client .dll is loaded
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
-
-	
 	if (r_drawlegs && r_drawlegs->value != 0)
 		g_iDrawLegs = 1;
 
+	discord_integration::on_frame();
 
 	GetClientVoiceMgr()->Frame(time);
 }

@@ -20,6 +20,8 @@
 #include "hltv.h"
 #include "Exports.h"
 
+#include "discord_integration.h"
+
 int CL_IsThirdPerson();
 void CL_CameraOffset(float* ofs);
 
@@ -2189,12 +2191,14 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 
 	g_pparams = *pparams;
 
-	if (pparams->paused == 0 && gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
+	if (pparams->paused == 0 )//&& gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
 	{
 		gHUD.m_flCurTime = V_max(gHUD.m_flCurTime, 1) + pparams->frametime;
 
 		gHUD.m_flAnimTime = V_max(gHUD.m_flAnimTime, 1);
 	}
+
+	discord_integration::set_time_data(gHUD.m_flCurTime, gHUD.m_flTime);
 
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 
