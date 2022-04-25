@@ -1571,7 +1571,6 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
 		StudioRenderModel();
-
 		StudioExportBoneTransform();
 		if (r_dlightfx->value != 0)
 			StudioDlightEffects();

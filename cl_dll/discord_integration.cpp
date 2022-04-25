@@ -14,6 +14,25 @@
 
 using namespace std::literals;
 
+extern char chapterdata[64][32][64];
+
+char* GetChapterName(char *name)
+{
+	for (int i = 0; i < 64; i++)
+	{
+		for (int j = 1; j < 32; j++)
+		{
+			if (strlen(chapterdata[i][j]) < 1)
+				break;
+
+			if (!stricmp(chapterdata[i][j], name))
+				return chapterdata[i][0];
+		}
+	}
+
+	return name;
+}
+
 namespace discord_integration
 {
 namespace
@@ -196,6 +215,7 @@ const std::string STATE_NAMES[] = {
 	"Playing"s,
 	"Spectating"s};
 
+
 // For tracking if we're in-game.
 bool updated_client_data = false;
 
@@ -304,8 +324,11 @@ protected:
 		DiscordRichPresence presence{};
 
 		std::string state = STATE_NAMES[static_cast<size_t>(cur_state)];
+
 		if (cur_state == game_state::PLAYING && match_is_on)
 			state = "In a Match"s;
+		else
+			state = "";
 
 		// Default icon.
 		presence.largeImageKey = "default";
@@ -339,17 +362,24 @@ protected:
 				if (maps_with_thumbnails.find(map_name) != maps_with_thumbnails.cend())
 					presence.largeImageKey = map_name;
 
+				if (cur_state == game_state::SINGLEPLAY)
+				{
+					presence.details = GetChapterName(map_name);
+				}
 				presence.largeImageText = map_name;
 			}
 
 			// Get the server address.
-			const auto address = get_server_address();
-			presence.joinSecret = address;
+			if (cur_state != game_state::SINGLEPLAY)
+			{
+				const auto address = get_server_address();
+				presence.joinSecret = address;
 
-			party_id = address + "_"s + map_name;
-			presence.partyId = party_id.c_str();
-			presence.partySize = player_count;
-			presence.partyMax = player_limit;
+				party_id = address + "_"s + map_name;
+				presence.partyId = party_id.c_str();
+				presence.partySize = player_count;
+				presence.partyMax = player_limit;
+			}
 			if (seconds_total != 0)
 			{
 				presence.startTimestamp = start_timestamp;
@@ -478,7 +508,7 @@ void on_frame()
 		discord_state->set_game_state(game_state::NOT_PLAYING);
 	else if (discord_state->get_game_state() == game_state::NOT_PLAYING)
 		// Only set this if we weren't playing, otherwise we might overwrite some other state.
-		discord_state->set_game_state(game_state::PLAYING);
+		discord_state->set_game_state(gEngfuncs.GetMaxClients() > 1 ? game_state::PLAYING : game_state::SINGLEPLAY);
 
 	updated_client_data = false;
 

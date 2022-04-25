@@ -298,6 +298,53 @@ int __MsgFunc_AllowSpec(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
+char chapterdata[64][32][64];
+
+void StoreChapterNames()
+{
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("maps/chapterlist.txt", 5, NULL);
+	char token[500];
+	int i = -1;
+	int j = 0;
+	bool reading = false;
+
+	if (pfile == nullptr)
+	{
+		return;
+	}
+
+	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
+	{
+		if (strlen(token) <= 0)
+			break;
+		
+		if (!stricmp("title", token))
+		{
+			i++;
+			j = 0;
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			strcpy(chapterdata[i][0], token);
+		}
+		else if (!stricmp("{", token))
+		{
+			reading = true;
+		}
+		else if (!stricmp("}", token))
+		{
+			reading = false;
+		}
+		else if (reading)
+		{
+			j++;
+			strcpy(chapterdata[i][j], token);
+		}
+	}
+
+	gEngfuncs.COM_FreeFile(pfile2);
+	pfile = pfile2 = nullptr;
+}
+
 void ResetCvars()
 {
 #define CVAR_SET (*gEngfuncs.Cvar_SetValue)
@@ -405,6 +452,7 @@ void CHud::Init()
 	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
 
 	CacheGlowModels();
+	StoreChapterNames();
 	
 	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
 	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
@@ -597,6 +645,17 @@ void CHud::VidInit()
 	m_TextMessage.VidInit();
 	m_StatusIcons.VidInit();
 	GetClientVoiceMgr()->VidInit();
+
+	for (int i = 0; i < 64; i++)
+	{
+		for (int j = 0; j < 32; j++)
+		{
+			if (strlen(chapterdata[i][j]) <= 1)
+				break;
+
+			gEngfuncs.Con_Printf("%s \n", chapterdata[i][j]);
+		}
+	}
 }
 
 bool CHud::MsgFunc_Logo(const char* pszName, int iSize, void* pbuf)
