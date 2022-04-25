@@ -482,6 +482,9 @@ void IN_Alt1Up() { KeyUp(&in_alt1); }
 
 void IN_RunDown() 
 {
+	if (!gHUD.HasSuit())
+		return;
+
 	extern ref_params_s g_pparams;
 	if (((Length(g_pparams.simvel) <= 15.0f) || (g_pparams.onground <= 0 && fabs(g_pparams.simvel[2]) > 50) || g_pparams.waterlevel > 1 ||
 		((in_forward.state & 1) == 0 &&

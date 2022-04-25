@@ -36,6 +36,8 @@
 #include "StudioModelRenderer.h"
 #include "GameStudioModelRenderer.h"
 
+#include <gl/GL.h>
+
 extern engine_studio_api_s IEngineStudio;
 
 void CBaseParticle::InitializeSprite(Vector org, Vector normal, model_s* sprite, float size, float brightness)
@@ -211,9 +213,9 @@ void CBaseParticle::Draw()
 //		resultColor.y = intensity / (m_vColor.y * 255);
 //		resultColor.z = intensity / (m_vColor.z * 255);
 
-		resultColor.x = (byte)std::clamp((vColor[0] * 255) * intensity, 0.0f, 255.0f);
-		resultColor.y = (byte)std::clamp((vColor[1] * 255) * intensity, 0.0f, 255.0f);
-		resultColor.z = (byte)std::clamp((vColor[2] * 255) * intensity, 0.0f, 255.0f);
+		resultColor.x = (byte)std::clamp((m_vColor[0]) * intensity, 0.0f, 255.0f);
+		resultColor.y = (byte)std::clamp((m_vColor[1]) * intensity, 0.0f, 255.0f);
+		resultColor.z = (byte)std::clamp((m_vColor[2]) * intensity, 0.0f, 255.0f);
 	}
 
 //	resultColor.x = std::clamp(resultColor.x * 50000, 0.f, 255.f);
@@ -502,7 +504,8 @@ void CBaseParticle::CheckCollision(float time)
 
 void CBaseParticle::Touch(Vector pos, Vector normal, int index)
 {
-	//Nothing.
+	if (TouchCallback)
+		TouchCallback(this, pos, normal, index);
 }
 
 void CBaseParticle::Die()
@@ -532,5 +535,8 @@ void CBaseParticle::Think(float time)
 	Spin(time);
 	CalculateVelocity(time);
 	CheckCollision(time);
+
+	if (Callback != nullptr)
+		Callback(this);
 }
 

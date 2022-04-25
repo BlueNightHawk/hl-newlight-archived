@@ -1281,6 +1281,18 @@ void CStudioModelRenderer::StudioDlightEffects()
 			dl->decay = 500;
 		}
 	}
+	else if (!stricmp(m_pCurrentEntity->model->name, "models/w_gauss.mdl"))
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		if (dl)
+		{
+			dl->origin = m_pCurrentEntity->origin;
+			dl->color = {0, 128, 255};
+			dl->radius = 64;
+			dl->die = m_clTime + 0.1;
+			dl->decay = 255;
+		}
+	}
 	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 	{
 		if (!stricmp(m_pCurrentEntity->model->name, "models/v_squeak.mdl"))

@@ -67,4 +67,5 @@ void LinkUserMessages()
 	gmsgWeapons = REG_USER_MSG("Weapons", 8);
 
 	gmsgWAnim = REG_USER_MSG("WAnim", -1);
+	gmsgParticles = REG_USER_MSG("Particles", -1);
 }

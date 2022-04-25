@@ -24,6 +24,10 @@
 #include "particleman.h"
 #include "cl_animating.h"
 
+#include "particle_presets.h"
+
+#include "particle_presets.h"
+
 extern IParticleMan* g_pParticleMan;
 
 extern BEAM* pBeam;
@@ -174,5 +178,29 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 		view->model = gEngfuncs.CL_LoadModel(model, &view->index);
 
 	EV_SendWeaponAnim(iAnim, iBody, iWeight);
+	return true;
+}
+
+bool CHud::MsgFunc_Particles(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	
+	int m_iPreset = READ_BYTE();
+	Vector org;
+	org.x = READ_COORD();
+	org.y = READ_COORD();
+	org.z = READ_COORD();
+
+	switch (m_iPreset)
+	{
+	case 0:
+		ExplosionSmoke(org);
+	case 1:
+		ExplosionCluster(org);
+		break;
+	}
+
+	
 	return true;
 }

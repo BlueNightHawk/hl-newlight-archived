@@ -25,6 +25,7 @@
 #include "weapons.h"
 #include "soundent.h"
 #include "decals.h"
+#include "UserMessages.h"
 
 
 //===================grenade
@@ -63,7 +64,7 @@ void CGrenade::Explode(TraceResult* pTrace, int bitsDamageType)
 	}
 
 	int iContents = UTIL_PointContents(pev->origin);
-
+	#if 0
 	MESSAGE_BEGIN(MSG_PAS, SVC_TEMPENTITY, pev->origin);
 	WRITE_BYTE(TE_EXPLOSION);	// This makes a dynamic light and the explosion sprites/sound
 	WRITE_COORD(pev->origin.x); // Send to PAS because of the sound
@@ -81,6 +82,16 @@ void CGrenade::Explode(TraceResult* pTrace, int bitsDamageType)
 	WRITE_BYTE(15);					   // framerate
 	WRITE_BYTE(TE_EXPLFLAG_NONE);
 	MESSAGE_END();
+	#endif
+
+	MESSAGE_BEGIN(MSG_PAS, gmsgParticles, pev->origin);
+	WRITE_BYTE(0);
+	WRITE_COORD(pev->origin.x); // Send to PAS because of the sound
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z + 50);
+	MESSAGE_END();
+
+	UTIL_ScreenShake(pev->origin, pev->dmg / 50, pev->dmg / 75, pev->dmg / 150, pev->dmg * 4);
 
 	CSoundEnt::InsertSound(bits_SOUND_COMBAT, pev->origin, NORMAL_EXPLOSION_VOLUME, 3.0);
 	entvars_t* pevOwner;
@@ -133,6 +144,13 @@ void CGrenade::Explode(TraceResult* pTrace, int bitsDamageType)
 
 void CGrenade::Smoke()
 {
+	MESSAGE_BEGIN(MSG_PAS, gmsgParticles, pev->origin);
+	WRITE_BYTE(1);
+	WRITE_COORD(pev->origin.x); // Send to PAS because of the sound
+	WRITE_COORD(pev->origin.y);
+	WRITE_COORD(pev->origin.z + 50);
+	MESSAGE_END();
+	#if 0
 	if (UTIL_PointContents(pev->origin) == CONTENTS_WATER)
 	{
 		UTIL_Bubbles(pev->origin - Vector(64, 64, 64), pev->origin + Vector(64, 64, 64), 100);
@@ -149,6 +167,7 @@ void CGrenade::Smoke()
 		WRITE_BYTE(12);						// framerate
 		MESSAGE_END();
 	}
+	#endif
 	UTIL_Remove(this);
 }
 

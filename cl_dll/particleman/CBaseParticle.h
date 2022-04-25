@@ -71,6 +71,9 @@ public:
 	virtual void InitializeSprite(Vector org, Vector normal, model_s* sprite, float size, float brightness);
 	virtual void Force(void);
 
+	void (*Callback)(CBaseParticle* ent);
+	void (*TouchCallback)(CBaseParticle *ent, Vector pos, Vector normal, int index);
+
 	float m_flSize;			 //scale of object
 	float m_flScaleSpeed;	 //speed at which object expands
 	float m_flContractSpeed; //speed at which object expands
@@ -179,6 +182,13 @@ public:
 
 	float GetPlayerDistance() const { return m_flPlayerDistance; }
 	void SetPlayerDistance(float flDistance) { m_flPlayerDistance = flDistance; }
+
+	float m_flNextCallback;
+
+	int m_iuser1;
+	int m_iuser2;
+	int m_iuser3;
+	int m_iuser4;
 
 protected:
 	float m_flOriginalSize;

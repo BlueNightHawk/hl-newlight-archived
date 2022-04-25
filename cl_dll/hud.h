@@ -602,6 +602,7 @@ public:
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_Particles(const char* pszName, int iSize, void* pbuf);
 	
 
 	// Screen information

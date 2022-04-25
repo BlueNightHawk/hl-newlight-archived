@@ -1,6 +1,9 @@
 // Presets for particles
 
 #include "particle_presets.h"
+#include "event_api.h"
+
+char GetTexType(int idx, pmtrace_t* ptr, float* vecSrc, float* vecEnd);
 
 CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framerate, float speed, float scale, float brightness)
 {
@@ -182,4 +185,174 @@ void WallPuffCluster(pmtrace_t* pTrace, char mat)
 			pParticle->SetCollisionFlags(cflag);
 		}
 	}
+}
+
+CBaseParticle* CreateSmoke(Vector origin, char *szName, float scale, float brightness, float life, float framerate)
+{
+	model_s* spr = IEngineStudio.Mod_ForName(szName, 0);
+	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(origin, Vector(0, 0, 0), spr, scale, brightness, "");
+
+	if (pParticle)
+	{
+		pParticle->m_iRendermode = kRenderTransColor;
+		pParticle->m_vColor = Vector(100,100, 100);
+		pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life;
+		pParticle->SetLightFlag(LIGHT_INTENSITY);
+		pParticle->m_iFramerate = framerate;
+		pParticle->m_iFrame = 0;
+		pParticle->m_iNumFrames = spr->numframes;
+		pParticle->SetCollisionFlags(TRI_ANIMATEDIE);
+		pParticle->SetRenderFlag(RENDER_FACEPLAYER);
+	}
+	return pParticle;
+}
+
+void SmokeCallback(CBaseParticle* ent)
+{
+#if 0
+	if (ent->m_flNextCallback > gEngfuncs.GetClientTime())
+		return;
+
+	// TODO : Add smoke particles;
+
+	ent->m_flNextCallback = gEngfuncs.GetClientTime() + 0.044f;
+#endif
+}
+
+void SmokeTouch(CBaseParticle *ent, Vector pos, Vector normal, int index)
+{
+	if (ent->m_iuser1 < 2)
+	{
+		ent->m_iuser1++;
+		return;
+	}
+
+	ent->Callback = nullptr;
+}
+
+void ExplosionCluster(Vector origin)
+{
+	int rendermode = kRenderTransAlpha;
+	Vector color = Vector(255, 255, 255);
+	float scale = gEngfuncs.pfnRandomFloat(1, 7);
+	float life = 1.5;
+	int lflag = LIGHT_INTENSITY;
+	int cflag = TRI_COLLIDEALL;
+	float brightness = 255;
+
+	pmtrace_t tr = *gEngfuncs.PM_TraceLine(origin, origin - Vector(0, 0, 50), PM_TRACELINE_ANYVISIBLE, 2, -1);
+
+	char mat = GetTexType(-1, &tr, origin, origin - Vector(0, 0, 50));
+
+	for (int i = 0; i < gEngfuncs.pfnRandomLong(2, 20); i++)
+	{
+		if (i == gEngfuncs.pfnRandomLong(2, 20))
+			continue;
+
+		CBaseParticle* pParticle = NULL;
+
+		char* spr = NULL;
+
+		switch (mat)
+		{
+		default:
+		case CHAR_TEX_TILE:
+		case CHAR_TEX_CONCRETE:
+		{
+			switch (gEngfuncs.pfnRandomLong(0, 3))
+			{
+			case 0:
+				spr = "sprites/particles/debris_concrete.spr";
+				break;
+			case 1:
+				spr = "sprites/particles/debris_concrete1.spr";
+				break;
+			case 2:
+				spr = "sprites/particles/debris_concrete2.spr";
+				break;
+			case 3:
+				spr = "sprites/particles/debris_concrete3.spr";
+				break;
+			}
+		}
+		break;
+		case CHAR_TEX_SLOSH:
+		case CHAR_TEX_DIRT:
+			spr = "sprites/particles/debris_dirt.spr";
+			break;
+		case CHAR_TEX_GLASS:
+			spr = "sprites/particles/debris_glass.spr";
+			break;
+		case CHAR_TEX_GRATE:
+		case CHAR_TEX_VENT:
+		case CHAR_TEX_METAL:
+		{
+			spr = "sprites/particles/smallspark.spr";
+			rendermode = kRenderTransAdd;
+			scale = gEngfuncs.pfnRandomFloat(0.3, 0.6);
+			lflag = LIGHT_NONE;
+			cflag = TRI_COLLIDEKILL;
+			if (i == 0)
+			{
+				gEngfuncs.pEfxAPI->R_SparkShower(tr.endpos);
+			}
+		}
+		break;
+		case CHAR_TEX_SNOW:
+		{
+			switch (gEngfuncs.pfnRandomLong(0, 3))
+			{
+			case 0:
+				spr = "sprites/particles/debris_snow.spr";
+				break;
+			case 1:
+				spr = "sprites/particles/debris_snow1.spr";
+				break;
+			case 2:
+				spr = "sprites/particles/debris_snow2.spr";
+				break;
+			case 3:
+				spr = "sprites/particles/debris_snow3.spr";
+				break;
+			}
+		}
+		break;
+		case CHAR_TEX_WOOD:
+		{
+			switch (gEngfuncs.pfnRandomLong(0, 3))
+			{
+			case 0:
+				spr = "sprites/particles/debris_wood.spr";
+				break;
+			case 1:
+				spr = "sprites/particles/debris_wood1.spr";
+				break;
+			case 2:
+				spr = "sprites/particles/debris_wood2.spr";
+				break;
+			case 3:
+				spr = "sprites/particles/debris_wood3.spr";
+				break;
+			}
+		}
+		break;
+		}
+		pParticle = CreateCollideParticle(&tr, spr, 100, Vector(gEngfuncs.pfnRandomFloat(-250, 250), gEngfuncs.pfnRandomFloat(-250, 250), 500), scale, brightness);
+
+		if (pParticle)
+		{
+			pParticle->m_iRendermode = rendermode;
+			pParticle->m_vColor = color;
+			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life;
+			pParticle->SetLightFlag(lflag);
+			pParticle->SetCollisionFlags(cflag);
+			pParticle->Callback = SmokeCallback;
+			pParticle->TouchCallback = SmokeTouch;
+		}
+	}
+}
+
+void ExplosionSmoke(Vector origin)
+{
+	CBaseParticle* pSmoke = CreateSmoke(origin, "sprites/steam1.spr", 200, 50, 4, 25);
 }

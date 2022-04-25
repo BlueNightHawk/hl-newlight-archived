@@ -54,6 +54,8 @@ inline int gmsgStatusText = 0;
 inline int gmsgStatusValue = 0;
 
 inline int gmsgWeapons = 0;
+
 inline int gmsgWAnim = 0;
+inline int gmsgParticles = 0;
 
 void LinkUserMessages();

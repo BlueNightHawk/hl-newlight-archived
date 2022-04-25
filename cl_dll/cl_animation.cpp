@@ -16,6 +16,9 @@
 #include "cl_animating.h"
 #include "particle_presets.h"
 
+#include <gl/GL.h>
+#include "gl/glext.h"
+
 extern engine_studio_api_s IEngineStudio;
 
 int LookupActivityWeight(cl_entity_s *ent, int activity, int weight)
@@ -276,4 +279,125 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 			StudioEvent(&pevent[i], e);	
 		}
 	}
+}
+
+//
+// sprite representation in memory
+//
+typedef enum
+{
+	SPR_SINGLE = 0,
+	SPR_GROUP,
+	SPR_ANGLED
+} spriteframetype_t;
+
+typedef struct mspriteframe_s
+{
+	int width;
+	int height;
+	float up, down, left, right;
+	int gl_texturenum;
+} mspriteframe_t;
+
+typedef struct
+{
+	int numframes;
+	float* intervals;
+	mspriteframe_t* frames[1];
+} mspritegroup_t;
+
+typedef struct
+{
+	spriteframetype_t type;
+	mspriteframe_t* frameptr;
+} mspriteframedesc_t;
+
+typedef struct
+{
+	short type;
+	short texFormat;
+	int maxwidth;
+	int maxheight;
+	int numframes;
+	int radius;
+	int facecull;
+	int synctype;
+	mspriteframedesc_t frames[1];
+} msprite_t;
+
+#define Q_rint(x) ((x) < 0 ? ((int)((x)-0.5f)) : ((int)((x) + 0.5f)))
+
+/*
+================
+R_GetSpriteFrame
+
+assume pModel is valid
+================
+*/
+mspriteframe_t* R_GetSpriteFrame(const model_t* pModel, int frame, float yaw)
+{
+	extern Vector v_angles;
+
+	msprite_t* psprite;
+	mspritegroup_t* pspritegroup;
+	mspriteframe_t* pspriteframe = NULL;
+	float *pintervals, fullinterval;
+	int i, numframes;
+	float targettime;
+
+	float time = gEngfuncs.GetClientTime();
+
+	psprite = (msprite_t *)pModel->cache.data;
+
+	if (frame < 0)
+	{
+		frame = 0;
+	}
+	else if (frame >= psprite->numframes)
+	{
+		if (frame > psprite->numframes)
+			gEngfuncs.Con_Printf("R_GetSpriteFrame: no such frame %d (%s)\n", frame, pModel->name);
+		frame = psprite->numframes - 1;
+	}
+
+	if (psprite->frames[frame].type == SPR_SINGLE)
+	{
+		pspriteframe = psprite->frames[frame].frameptr;
+	}
+	else if (psprite->frames[frame].type == SPR_GROUP)
+	{
+		pspritegroup = (mspritegroup_t*)psprite->frames[frame].frameptr;
+		pintervals = pspritegroup->intervals;
+		numframes = pspritegroup->numframes;
+		fullinterval = pintervals[numframes - 1];
+
+		// when loading in Mod_LoadSpriteGroup, we guaranteed all interval values
+		// are positive, so we don't have to worry about division by zero
+		targettime = time - ((int)(time / fullinterval)) * fullinterval;
+
+		for (i = 0; i < (numframes - 1); i++)
+		{
+			if (pintervals[i] > targettime)
+				break;
+		}
+		pspriteframe = pspritegroup->frames[i];
+	}
+	else if (psprite->frames[frame].type == 2)
+	{
+		int angleframe = (int)(Q_rint((v_angles[1] - yaw + 45.0f) / 360 * 8) - 4) & 7;
+
+		// e.g. doom-style sprite monsters
+		pspritegroup = (mspritegroup_t*)psprite->frames[frame].frameptr;
+		pspriteframe = pspritegroup->frames[angleframe];
+	}
+
+	return pspriteframe;
+}
+
+int R_GetSpriteTexture(const model_t* m_pSpriteModel, int frame)
+{
+	if (!m_pSpriteModel || m_pSpriteModel->type != mod_sprite || !m_pSpriteModel->cache.data)
+		return 0;
+
+	return R_GetSpriteFrame(m_pSpriteModel, frame, 0.0f)->gl_texturenum;
 }

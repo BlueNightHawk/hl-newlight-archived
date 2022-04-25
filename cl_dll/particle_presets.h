@@ -34,3 +34,8 @@ CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float
 CBaseParticle* CreateGunSmoke(const Vector org, char* szModelName, float scale, float brightness);
 
 void WallPuffCluster(pmtrace_t* pTrace, char mat);
+
+CBaseParticle* CreateSmoke(Vector origin, char* szName, float scale, float brightness, float life, float framerate);
+void SmokeCallback(CBaseParticle* ent);
+void ExplosionCluster(Vector origin);
+void ExplosionSmoke(Vector origin);

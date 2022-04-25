@@ -1569,9 +1569,9 @@ void CBasePlayer::PlayerUse()
 
 	if (pObject) // don't go through walls
 	{
-		UTIL_TraceLine(pObject->Center(), pev->origin, dont_ignore_monsters, ENT(pev), &tr);
+		UTIL_TraceLine(pev->origin, pObject->Center(), dont_ignore_monsters, ENT(pev), &tr);
 
-		if (tr.flFraction < 1.0)
+		if (tr.pHit != ENT(pObject->pev))
 			pObject = NULL;
 	}
 	
@@ -4043,6 +4043,15 @@ void CBasePlayer::UpdateClientData()
 		FireTargets("game_playerspawn", this, this, USE_TOGGLE, 0);
 
 		InitStatusBar();
+	}
+
+	if (!HasSuit())
+	{
+		g_engfuncs.pfnSetClientMaxspeed(ENT(pev), 230);
+	}
+	else
+	{
+		g_engfuncs.pfnSetClientMaxspeed(ENT(pev), CVAR_GET_FLOAT("sv_maxspeed"));
 	}
 
 	if (m_iHideHUD != m_iClientHideHUD)
