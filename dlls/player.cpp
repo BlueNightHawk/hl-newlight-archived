@@ -1569,10 +1569,10 @@ void CBasePlayer::PlayerUse()
 
 	if (pObject) // don't go through walls
 	{
-		UTIL_TraceLine(pev->origin, pObject->Center(), dont_ignore_monsters, ENT(pev), &tr);
+		//UTIL_TraceLine(pev->origin, pObject->Center(), dont_ignore_monsters, ENT(pev), &tr);
 
-		if (tr.pHit != ENT(pObject->pev))
-			pObject = NULL;
+	//	if (tr.pHit != ENT(pObject->pev))
+	//		pObject = NULL;
 	}
 	
 	// Found an object
@@ -4160,6 +4160,9 @@ void CBasePlayer::UpdateClientData()
 		//Always tell client about battery state
 		MESSAGE_BEGIN(MSG_ONE, gmsgFlashBattery, NULL, pev);
 		WRITE_BYTE(m_iFlashBattery);
+		MESSAGE_END();
+
+		MESSAGE_BEGIN(MSG_ALL, gmsgSubtClear);
 		MESSAGE_END();
 
 		//Tell client the flashlight is on

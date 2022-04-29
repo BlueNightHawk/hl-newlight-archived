@@ -58,6 +58,8 @@ extern cvar_s* r_drawlegs;
 
 extern model_s* TRI_pModel;
 
+void HL_ImGUI_Init();
+
 /*
 ================================
 HUD_GetHullBounds
@@ -116,6 +118,8 @@ void DLLEXPORT HUD_PlayerMove(struct playermove_s* ppmove, int server)
 	PM_Move(ppmove, server);
 }
 
+void FS_InitModule();
+
 int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 {
 	gEngfuncs = *pEnginefuncs;
@@ -127,6 +131,8 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 
 	memcpy(&gEngfuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
 	discord_integration::initialize();
+	FS_InitModule();
+	HL_ImGUI_Init();
 
 	EV_HookEvents();
 	CL_LoadParticleMan();
@@ -200,7 +206,6 @@ int DLLEXPORT HUD_Redraw(float time, int intermission)
 	//	RecClHudRedraw(time, intermission);
 
 	gHUD.Redraw(time, 0 != intermission);
-
 	return 1;
 }
 
@@ -252,6 +257,8 @@ Called by engine every frame that client .dll is loaded
 ==========================
 */
 
+int g_screenheight, g_screenwidth;
+
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
@@ -260,7 +267,12 @@ void DLLEXPORT HUD_Frame(double time)
 
 	discord_integration::on_frame();
 
+	discord_integration::set_time_data(gEngfuncs.GetAbsoluteTime(), gEngfuncs.GetAbsoluteTime());
+
 	GetClientVoiceMgr()->Frame(time);
+
+	g_screenheight = ScreenHeight;
+	g_screenwidth = ScreenWidth;
 }
 
 

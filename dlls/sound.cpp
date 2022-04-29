@@ -26,6 +26,8 @@
 #include "pm_defs.h"
 #include "pm_shared.h"
 
+#include "UserMessages.h"
+
 static char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
 
 
@@ -1451,12 +1453,36 @@ void EMIT_SOUND_DYN(edict_t* entity, int channel, const char* sample, float volu
 	{
 		char name[32];
 		if (SENTENCEG_Lookup(sample, name) >= 0)
+		{
+			if (gmsgOnSound && !(flags & SND_STOP))
+			{
+				MESSAGE_BEGIN(MSG_ALL, gmsgOnSound);
+				WRITE_STRING(sample);
+				WRITE_BYTE(true);
+				WRITE_COORD(entity->v.origin.x);
+				WRITE_COORD(entity->v.origin.y);
+				WRITE_COORD(entity->v.origin.z);
+				MESSAGE_END();
+			}
 			EMIT_SOUND_DYN2(entity, channel, name, volume, attenuation, flags, pitch);
+		}
 		else
 			ALERT(at_aiconsole, "Unable to find %s in sentences.txt\n", sample);
 	}
 	else
+	{
+		if (gmsgOnSound && !(flags & SND_STOP))
+		{
+			MESSAGE_BEGIN(MSG_ALL, gmsgOnSound);
+			WRITE_STRING(sample);
+			WRITE_BYTE(true);
+			WRITE_COORD(entity->v.origin.x);
+			WRITE_COORD(entity->v.origin.y);
+			WRITE_COORD(entity->v.origin.z);
+			MESSAGE_END();
+		}
 		EMIT_SOUND_DYN2(entity, channel, sample, volume, attenuation, flags, pitch);
+	}
 }
 
 void EMIT_SOUND_PREDICTED(edict_t* entity, int channel, const char* sample, float volume, float attenuation,

@@ -16,17 +16,20 @@ using namespace std::literals;
 
 extern char chapterdata[64][32][64];
 
-char* GetChapterName(char *name)
+char* GetChapterName(char *name, char *rpc)
 {
 	for (int i = 0; i < 64; i++)
 	{
-		for (int j = 1; j < 32; j++)
+		for (int j = 2; j < 32; j++)
 		{
 			if (strlen(chapterdata[i][j]) < 1)
 				break;
 
 			if (!stricmp(chapterdata[i][j], name))
+			{
+				strcpy(rpc, chapterdata[i][1]);
 				return chapterdata[i][0];
+			}
 		}
 	}
 
@@ -38,7 +41,7 @@ namespace discord_integration
 namespace
 {
 // From Discord developer dashboard.
-constexpr const char CLIENT_ID[] = "378412193567473674";
+constexpr const char CLIENT_ID[] = "968850234484592640";
 
 // This seems to be consistent across PCs.
 constexpr const char STEAM_APP_ID[] = "17215498729465839686";
@@ -316,6 +319,11 @@ public:
 			update_presence();
 	}
 
+	inline void VidInit()
+	{
+		dirty = true;
+	}
+
 protected:
 	void update_presence()
 	{
@@ -327,8 +335,12 @@ protected:
 
 		if (cur_state == game_state::PLAYING && match_is_on)
 			state = "In a Match"s;
+		else if (cur_state == game_state::SINGLEPLAY)
+			state = "Playing Campaign"s;
+		else if (cur_state == game_state::SPECTATING)
+			state = "Spectating"s;
 		else
-			state = "";
+			state = "In Menu"s;
 
 		// Default icon.
 		presence.largeImageKey = "default";
@@ -364,7 +376,22 @@ protected:
 
 				if (cur_state == game_state::SINGLEPLAY)
 				{
-					presence.details = GetChapterName(map_name);
+					char rpc[64];
+					presence.state = GetChapterName(map_name,rpc);
+					if (strlen(rpc) > 1)
+					{
+						presence.largeImageKey = rpc;
+						presence.smallImageKey = "default";
+						extern ref_params_s g_pparams;
+						if (g_pparams.paused != 0)
+						{
+							presence.smallImageText = "Paused";
+						}
+						else
+						{
+							presence.smallImageText = "Playing";
+						}
+					}
 				}
 				presence.largeImageText = map_name;
 			}
@@ -380,13 +407,21 @@ protected:
 				presence.partySize = player_count;
 				presence.partyMax = player_limit;
 			}
-			if (seconds_total != 0)
-			{
-				presence.startTimestamp = start_timestamp;
-			}
 		}
 
-		presence.state = state.c_str();
+		if (seconds_total != 0)
+		{
+			presence.startTimestamp = start_timestamp;
+		}
+
+		if (cur_state == game_state::SINGLEPLAY)
+		{
+			presence.details = state.c_str();
+		}
+		else
+		{
+			presence.state = state.c_str();
+		}
 
 		Discord_UpdatePresence(&presence);
 	}
@@ -462,6 +497,11 @@ void initialize()
 	last_update_time = gEngfuncs.GetAbsoluteTime();
 }
 
+void VidInit()
+{
+	discord_state->VidInit();
+}
+
 void shutdown()
 {
 	discord_state.reset();
@@ -476,7 +516,7 @@ void set_spectating(bool spectating)
 	{
 		if (gEngfuncs.GetMaxClients() > 1)
 			discord_state->set_game_state(game_state::PLAYING);
-		else 
+		else
 			discord_state->set_game_state(game_state::SINGLEPLAY);
 	}
 }
@@ -521,6 +561,8 @@ void on_frame()
 		discord_state->update_presence_if_dirty();
 	}
 
+//	gEngfuncs.Con_Printf("%f \n", current_time);
+
 	Discord_RunCallbacks();
 }
 
@@ -528,4 +570,5 @@ void on_player_count_update()
 {
 	discord_state->refresh_player_stats();
 }
+
 }

@@ -58,4 +58,8 @@ inline int gmsgWeapons = 0;
 inline int gmsgWAnim = 0;
 inline int gmsgParticles = 0;
 
+inline int gmsgOnSound = 0;
+inline int gmsgSubtClear = 0;
+inline int gmsgSubtRemove = 0;
+
 void LinkUserMessages();

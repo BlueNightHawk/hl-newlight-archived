@@ -625,7 +625,6 @@ public:
 	float m_flTargetFov;
 
 	// stuff specifically for viewmodel
-	double	m_flCurTime;
 	double m_flAnimTime;
 	double m_flCurFrame;
 

@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 // Possible game states.
 enum class game_state
@@ -56,4 +55,6 @@ void on_frame();
  * Call this when a player joins or leaves.
  */
 void on_player_count_update();
+
+void VidInit();
 }

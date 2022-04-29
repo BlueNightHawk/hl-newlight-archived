@@ -204,6 +204,6 @@ void EV_MuzzleFlash()
 // fuck you valv
 void CL_SendWeaponAnim(int iAnim, int iBody)
 {
-	gHUD.m_flAnimTime = gHUD.m_flCurTime;
+	gHUD.m_flAnimTime = gEngfuncs.GetAbsoluteTime();
 	gEngfuncs.pfnWeaponAnim(iAnim, iBody);
 }

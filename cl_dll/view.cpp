@@ -2191,21 +2191,17 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 
 	g_pparams = *pparams;
 
-	if (pparams->paused == 0 )//&& gEngfuncs.GetViewModel() != nullptr && gEngfuncs.GetViewModel()->model != nullptr)
-	{
-		gHUD.m_flCurTime = V_max(gHUD.m_flCurTime, 1) + pparams->frametime;
+	gHUD.m_flAnimTime = V_max(gHUD.m_flAnimTime, 1);
 
-		gHUD.m_flAnimTime = V_max(gHUD.m_flAnimTime, 1);
-	}
-
-	discord_integration::set_time_data(gHUD.m_flCurTime, gHUD.m_flTime);
+	if (pparams->paused)
+		gHUD.m_flAnimTime += pparams->frametime;
 
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 
 	// buz
 	if (CVAR_GET_FLOAT("r_shadows") > 1 )
 		SetupBuffer();
-
+	
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha
 #define SF_TEST
@@ -2341,6 +2337,8 @@ void V_Init()
 	cl_jumpanim = gEngfuncs.pfnRegisterVariable("nl_jumpanim", "1", FCVAR_ARCHIVE);
 	cl_retractwpn = gEngfuncs.pfnRegisterVariable("nl_retractwpn", "1", FCVAR_ARCHIVE);
 	cl_ironsight = gEngfuncs.pfnRegisterVariable("nl_ironsight", "1", FCVAR_ARCHIVE);
+
+	g_pparams.paused = 1;
 }
 
 

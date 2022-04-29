@@ -32,6 +32,8 @@
 
 #include "particleman.h"
 
+#include "discord_integration.h"
+
 extern void ReCacheGlowModels(void);
 extern void CacheGlowModels();
 
@@ -322,9 +324,11 @@ void StoreChapterNames()
 		if (!stricmp("title", token))
 		{
 			i++;
-			j = 0;
+			j = 1;
 			pfile = gEngfuncs.COM_ParseFile(pfile, token);
 			strcpy(chapterdata[i][0], token);
+			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			strcpy(chapterdata[i][1], token);
 		}
 		else if (!stricmp("{", token))
 		{
@@ -387,6 +391,11 @@ void ResetCvars()
 	CVAR_SET("nl_dlightfx", 1);
 	CVAR_SET("nl_drawlegs", 1);
 }
+
+cvar_t* print_subtitles;
+cvar_t* subtitles_font_scale;
+cvar_t* subtitles_language;
+cvar_t* subtitles_log_candidates;
 
 // This is called every time the DLL is loaded
 void CHud::Init()
@@ -451,6 +460,11 @@ void CHud::Init()
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
 	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
 
+	print_subtitles = gEngfuncs.pfnRegisterVariable("subtitles", "2", FCVAR_ARCHIVE);
+	subtitles_font_scale = gEngfuncs.pfnRegisterVariable("subtitles_font_scale", "1", FCVAR_ARCHIVE);
+	subtitles_language = gEngfuncs.pfnRegisterVariable("subtitles_language", "en", FCVAR_ARCHIVE);
+	subtitles_log_candidates = gEngfuncs.pfnRegisterVariable("subtitles_log_candidates", "0", FCVAR_ARCHIVE);
+
 	CacheGlowModels();
 	StoreChapterNames();
 	
@@ -492,6 +506,9 @@ void CHud::Init()
 	GetClientVoiceMgr()->Init(&g_VoiceStatusHelper, (vgui::Panel**)&gViewPort);
 
 	m_Menu.Init();
+
+	m_scrinfo.iSize = sizeof(m_scrinfo);
+	GetScreenInfo(&m_scrinfo);
 
 	MsgFunc_ResetHUD(0, 0, NULL);
 }
@@ -645,7 +662,7 @@ void CHud::VidInit()
 	m_TextMessage.VidInit();
 	m_StatusIcons.VidInit();
 	GetClientVoiceMgr()->VidInit();
-
+#if 1
 	for (int i = 0; i < 64; i++)
 	{
 		for (int j = 0; j < 32; j++)
@@ -656,6 +673,8 @@ void CHud::VidInit()
 			gEngfuncs.Con_Printf("%s \n", chapterdata[i][j]);
 		}
 	}
+#endif
+	discord_integration::VidInit();
 }
 
 bool CHud::MsgFunc_Logo(const char* pszName, int iSize, void* pbuf)

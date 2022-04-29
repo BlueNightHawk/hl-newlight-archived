@@ -1055,17 +1055,17 @@ void ShutdownInput()
 
 #include "interface.h"
 void CL_UnloadParticleMan();
-
+void HL_ImGUI_Deinit();
 
 void DLLEXPORT HUD_Shutdown()
 {
 	//	RecClShutdown();
-
 	ShutdownInput();
-
 
 	FileSystem_FreeFileSystem();
 	CL_UnloadParticleMan();
 
 	discord_integration::shutdown();
+
+	HL_ImGUI_Deinit();
 }

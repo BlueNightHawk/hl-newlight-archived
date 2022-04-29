@@ -94,13 +94,13 @@ float StudioEstimateFrame(cl_entity_s* e, mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f = 0;
 
-	if (gHUD.m_flCurTime < gHUD.m_flAnimTime)
+	if (gEngfuncs.GetAbsoluteTime() < gHUD.m_flAnimTime)
 	{
 		dfdt = 0;
 	}
 	else
 	{
-		dfdt = (gHUD.m_flCurTime - gHUD.m_flAnimTime) * e->curstate.framerate * pseqdesc->fps;
+		dfdt = (gEngfuncs.GetAbsoluteTime() - gHUD.m_flAnimTime) * e->curstate.framerate * pseqdesc->fps;
 		//		gEngfuncs.Con_Printf("%f %f %f\n", (m_clTime - m_pCurrentEntity->curstate.animtime), m_clTime, m_pCurrentEntity->curstate.animtime);
 	}
 

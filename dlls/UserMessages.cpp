@@ -68,4 +68,8 @@ void LinkUserMessages()
 
 	gmsgWAnim = REG_USER_MSG("WAnim", -1);
 	gmsgParticles = REG_USER_MSG("Particles", -1);
+
+	gmsgSubtClear = REG_USER_MSG("SubtClear", 0);
+	gmsgSubtRemove = REG_USER_MSG("SubtRemove", -1);
+	gmsgOnSound = REG_USER_MSG("OnSound", -1);
 }

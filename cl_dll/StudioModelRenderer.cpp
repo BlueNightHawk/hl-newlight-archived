@@ -827,19 +827,25 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f;
 	float clTime = m_clTime;
+	extern ref_params_s g_pparams;
+
 	bool viewmodel = m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
 
+	if (viewmodel != false && g_pparams.paused)
+	{
+		return gHUD.m_flCurFrame;
+	}
 	if (m_fDoInterp)
 	{
 		if (viewmodel)
 		{
-			if (gHUD.m_flCurTime < gHUD.m_flAnimTime)
+			if (gEngfuncs.GetAbsoluteTime() < gHUD.m_flAnimTime)
 			{
 				dfdt = 0;
 			}
 			else
 			{
-				dfdt = (gHUD.m_flCurTime - gHUD.m_flAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+				dfdt = (gEngfuncs.GetAbsoluteTime() - gHUD.m_flAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
 				//		gEngfuncs.Con_Printf("%f %f %f\n", (m_clTime - m_pCurrentEntity->curstate.animtime), m_clTime, m_pCurrentEntity->curstate.animtime);
 			}
 		//	gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);

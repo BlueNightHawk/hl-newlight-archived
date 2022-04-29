@@ -388,7 +388,7 @@ void TRI_SprDrawAdditive(int frame, int x, int y, Rect* prc)
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 }
 
-void TRI_SprSet(HSPRITE spr, int r, int g, int b)
+void TRI_SprSet(int spr, int r, int g, int b)
 {
 	TRI_pModel = (model_s*)gEngfuncs.GetSpritePointer(spr);
 

@@ -31,6 +31,10 @@
 #include <iostream> 
 #include <string> // the C++ Standard String Class
 
+#ifndef HSPRITE
+#define HSPRITE int
+#endif
+
 // Macros to hook function calls into the HUD object
 #define HOOK_MESSAGE(x) gEngfuncs.pfnHookUserMsg(#x, __MsgFunc_##x);
 
