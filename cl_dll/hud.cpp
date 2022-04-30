@@ -552,6 +552,7 @@ int CHud::GetSpriteIndex(const char* SpriteName)
 
 int g_iRestoreViewent = 0;
 
+int Subtitles_SubtClear(const char* pszName, int iSize, void* pbuf);
 void CHud::VidInit()
 {
 	cl_entity_s* view = gEngfuncs.GetViewModel();
@@ -662,7 +663,7 @@ void CHud::VidInit()
 	m_TextMessage.VidInit();
 	m_StatusIcons.VidInit();
 	GetClientVoiceMgr()->VidInit();
-#if 1
+#if 0
 	for (int i = 0; i < 64; i++)
 	{
 		for (int j = 0; j < 32; j++)
@@ -675,6 +676,7 @@ void CHud::VidInit()
 	}
 #endif
 	discord_integration::VidInit();
+	Subtitles_SubtClear("ektum", sizeof("ektom"), (void*)"ektum");
 }
 
 bool CHud::MsgFunc_Logo(const char* pszName, int iSize, void* pbuf)

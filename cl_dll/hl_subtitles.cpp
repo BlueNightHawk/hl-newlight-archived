@@ -189,7 +189,9 @@ void Subtitles_Draw()
 	float LowestWidth = 0;
 	float RealWidth = 0;
 	int ldindex = 0;
-	int h = 0;
+	int farindex = -1;
+	int numsubstodraw = 0;
+	int numsubstodraw2 = 0;
 	float prevduration = 0;
 
 	bool willDrawAtLeastOneSubtitle = false;
@@ -222,26 +224,30 @@ void Subtitles_Draw()
 			continue;
 		}
 
-		if (Subtitle_IsFarAwayFromPlayer(subtitle))
-		{
-			i++;
-			continue;
-		}
-
 		ImVec2 textSize = ImGui::CalcTextSize(subtitle.text.c_str());
 
 		FrameWidth = textSize.x * fontScale;
 
-		FrameHeight += textSize.y * fontScale;
+		if (!Subtitle_IsFarAwayFromPlayer(subtitle))
+		{
+			FrameHeight += textSize.y * fontScale;
 
-		willDrawAtLeastOneSubtitle = true;
+			FrameWidth += 20;
 
-		if (RealWidth < FrameWidth)
-			RealWidth = FrameWidth;
-		
-		if (LowestWidth == 0 || FrameWidth < LowestWidth)
-			LowestWidth = FrameWidth;
+			willDrawAtLeastOneSubtitle = true;
 
+			if (RealWidth < FrameWidth)
+				RealWidth = FrameWidth;
+
+			if (LowestWidth == 0 || FrameWidth < LowestWidth)
+				LowestWidth = FrameWidth;
+			numsubstodraw2++;
+		}
+		else
+		{
+			subtitle.alpha = lerp(subtitle.alpha, 0.0f, g_pparams.frametime * 6.5f);
+			willDrawAtLeastOneSubtitle = true;
+		}
 		i++;
 	}
 
@@ -253,30 +259,38 @@ void Subtitles_Draw()
 	if (l_FrameWidth == 0)
 		l_FrameWidth = LowestWidth;
 
-	l_FrameHeight = lerp(l_FrameHeight, FrameHeight + 17, g_pparams.frametime * 13.5f);
+	l_FrameHeight = lerp(l_FrameHeight, FrameHeight + 20, g_pparams.frametime * 13.5f);
 	l_FrameWidth = lerp(l_FrameWidth, RealWidth, g_pparams.frametime * 15.5f);
 
 	ImGui::SetNextWindowPos(ImVec2(ScreenWidth / 2.0f - l_FrameWidth / 2.0f, ScreenHeight / 1.3f), 0);
-	ImGui::SetNextWindowSize(ImVec2(l_FrameWidth + 20, l_FrameHeight));
+	ImGui::SetNextWindowSize(ImVec2(l_FrameWidth, l_FrameHeight));
 
 	ImGui::Begin("Subtitles", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+	style->WindowRounding = 5.0f;
+	style->WindowTitleAlign = ImVec2(0.5, 0.5);
+
 	for (auto& pair : subtitlesToDraw)
 	{
+
+		bool isfar = false;
 		auto& subtitle = pair.second;
 		if (time < subtitle.delay)
 		{
 			continue;
 		}
 
+
 		if (Subtitle_IsFarAwayFromPlayer(subtitle))
 		{
 			continue;
 		}
+
 		ImVec2 textSize = ImGui::CalcTextSize(subtitle.text.c_str());
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - textSize.x / 2.0f);
 		ImGui::TextColored(ImVec4(subtitle.color[0], subtitle.color[1], subtitle.color[2], subtitle.alpha), "%s", subtitle.text.c_str());
-		if (((subtitle.duration) - 0.25f) <= time)
+
+		if ((subtitle.duration - 0.25f) <= time)
 		{
 			subtitle.alpha = lerp(subtitle.alpha, 0, g_pparams.frametime * 8.5f);
 		}
@@ -286,25 +300,22 @@ void Subtitles_Draw()
 		if (prevduration < subtitle.duration)
 		{
 			prevduration = subtitle.duration;
-			ldindex = h;
+			ldindex = numsubstodraw;
 		}
-		h++;
+		numsubstodraw++;
 	}
 
-	style->WindowRounding = 5.0f;	
-	
-
-	auto& p = subtitlesToDraw.begin();
+	auto& pair = subtitlesToDraw.begin();
 	if (ldindex > 0)
 	{
 		for (int j = 0; j < (ldindex); j++)
 		{
-			p++;
+			pair++;
 		}
 	}
 
-	auto& q = p->second;
-	if (((q.duration) - 0.6) <= time)
+	auto& subtitle = pair->second;
+	if ((subtitle.duration - 0.6) <= time || numsubstodraw == 0 || numsubstodraw2 == 0)
 	{
 		style->Alpha = lerp(style->Alpha, 0, g_pparams.frametime * 6.5f);
 	}
@@ -405,6 +416,8 @@ int Subtitles_OnSound(const char* pszName, int iSize, void* pbuf)
 	{
 		gEngfuncs.Con_DPrintf("RECEIVED SUBTITLE CANDIDATE: %s\n", key.c_str());
 	}
+
+	ignoreLongDistances = false;
 
 	// Dumb exception for Grunt cutscene, because player is actually far away from sound event
 	if (key.find("!HG_DRAG") == 0)

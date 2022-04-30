@@ -3389,7 +3389,7 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 	int istr = MAKE_STRING(pszName);
 
 	pent = CREATE_NAMED_ENTITY(istr);
-	if (FNullEnt(pent))
+	if (FNullEnt(pent) || !stricmp(pszName, "sv_viewmodel"))
 	{
 		ALERT(at_console, "NULL Ent in GiveNamedItem!\n");
 		return;

@@ -169,6 +169,52 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 		gEngfuncs.pEfxAPI->R_SparkEffect((float*)&entity->attachment[0], atoi(event->options), -100, 100);
 		break;
 	// Client side sound
+	case 6001:
+	{	
+		extern ref_params_s g_pparams;
+		extern Vector v_angles;
+		Vector forward, right, up;
+		AngleVectors(v_angles, forward, right, up);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[7], Vector(g_pparams.simvel) + (right * -50), g_viewinfo.actualboneangles[7], 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.baseline.angles[1] = g_viewinfo.actualboneangles[7][1] * 1.3;
+			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[7][2] * 1.3;
+			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
+			NormalizeAngles(ptemp->entity.angles);
+			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_m4clip.mdl", 0);
+			//ptemp->flags &= ~FTENT_GRAVITY;
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM; 
+			ptemp->entity.baseline.entityType = 7;
+			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+		}
+		
+		gEngfuncs.GetViewModel()->curstate.body = 999;
+	}
+		break;
+	case 6003:
+	{
+		extern ref_params_s g_pparams;
+		extern Vector v_angles;
+		Vector forward, right, up;
+		AngleVectors(v_angles, forward, right, up);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], Vector(g_pparams.simvel) + (up * -5) + (right * -10), g_viewinfo.actualboneangles[46], 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_glockclip.mdl", 0);
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
+			ptemp->entity.baseline.entityType = 46;
+			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
+		}
+
+		gEngfuncs.GetViewModel()->curstate.body = 1;
+	}
+	break;
+	case 6002:
+		gEngfuncs.GetViewModel()->curstate.body = 0;
+		break;
 	case 5004:
 		gEngfuncs.pfnPlaySoundByNameAtLocation((char*)event->options, 1.0, (float*)&entity->attachment[0]);
 		break;
@@ -269,7 +315,7 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 		if (pevent[i].event < 5000)
 			continue;
 
-		bool muzzleflash = (pevent[i].event == 5001 || pevent[i].event == 5011 || pevent[i].event == 5021 || pevent[i].event == 5031) ? 1 : 0;
+		bool muzzleflash = (pevent[i].event == 5001 || pevent[i].event == 5011 || pevent[i].event == 6002 || pevent[i].event == 6001 || pevent[i].event == 5021 || pevent[i].event == 5031) ? 1 : 0;
 
 		if (e == gEngfuncs.GetViewModel() && muzzleflash)
 			continue;

@@ -368,7 +368,7 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 	
-	bool muzzleflash = (event->event == 5001 || event->event == 5011 || event->event == 5021 || event->event == 5031) ? 1 : 0;
+	bool muzzleflash = (event->event == 6001 || event->event == 6002 || event->event == 5001 || event->event == 5011 || event->event == 5021 || event->event == 5031) ? 1 : 0;
 
 	if (entity == gEngfuncs.GetViewModel() && !muzzleflash )
 		return;
@@ -661,8 +661,11 @@ void DLLEXPORT HUD_TempEntUpdate(
 							{
 								damp = 0; // Stop
 								pTemp->flags &= ~(FTENT_ROTATE | FTENT_GRAVITY | FTENT_SLOWGRAVITY | FTENT_COLLIDEWORLD | FTENT_SMOKETRAIL);
-								pTemp->entity.angles[0] = 0;
-								pTemp->entity.angles[2] = 0;
+								if ((pTemp->flags & FTENT_MODTRANSFORM) == 0)
+								{
+									pTemp->entity.angles[0] = 0;						
+									pTemp->entity.angles[2] = 0;
+								}
 							}
 						}
 					}
@@ -687,17 +690,51 @@ void DLLEXPORT HUD_TempEntUpdate(
 							VectorMA(pTemp->entity.baseline.origin, -proj * 2, traceNormal, pTemp->entity.baseline.origin);
 							// Reflect rotation (fake)
 
-							pTemp->entity.angles[1] = -pTemp->entity.angles[1];
+						//	pTemp->entity.angles[1] = -pTemp->entity.angles[1];
 						}
 
 						if (damp != 1)
 						{
-
-							VectorScale(pTemp->entity.baseline.origin, damp, pTemp->entity.baseline.origin);
-							VectorScale(pTemp->entity.angles, 0.9, pTemp->entity.angles);
-						}
+							pTemp->entity.baseline.origin[2] *= damp;
+							pTemp->entity.baseline.origin[0] *= damp * 1.5;
+							pTemp->entity.baseline.origin[1] *= damp * 1.5;
+							//VectorScale(pTemp->entity.baseline.origin, damp, pTemp->entity.baseline.origin);
+							if ((pTemp->flags & FTENT_MODTRANSFORM) > 0)
+							{
+								for (int i = 0; i < 3; i++)
+								{
+									if (i == 1)
+										continue;
+									pTemp->entity.angles[i] = lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
+								}
+							}
+							else
+							{
+								VectorScale(pTemp->entity.angles, 0.9, pTemp->entity.angles);
+							}
+						}	
 					}
 				}
+
+				if ((pTemp->flags & FTENT_MODTRANSFORM) > 0)
+				{
+					pmtrace_t pmtrace;
+					physent_t* pe;
+
+					gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+
+					gEngfuncs.pEventAPI->EV_PlayerTrace(pTemp->entity.origin, pTemp->entity.origin - Vector(0, 0, 2), PM_WORLD_ONLY, gEngfuncs.GetLocalPlayer()->index, &pmtrace);
+					if (pmtrace.fraction < 1.0f)
+					{
+						for (int i = 0; i < 3; i++)
+						{
+							if (i == 1)
+								continue;
+							pTemp->entity.angles[i] = lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
+						}					
+					}
+				}
+
 			}
 
 

@@ -829,7 +829,7 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 	float clTime = m_clTime;
 	extern ref_params_s g_pparams;
 
-	bool viewmodel = m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
+	bool viewmodel = false; // m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
 
 	if (viewmodel != false && g_pparams.paused)
 	{
@@ -1530,6 +1530,16 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	else
 	{
 		StudioSetupBones();
+		if ((m_pCurrentEntity->baseline.effects & FTENT_MODTRANSFORM) > 0)
+		{
+			for (int i = 0; i < m_pStudioHeader->numbones; i++)
+			{
+				if (i == m_pCurrentEntity->baseline.entityType)
+					AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[m_pCurrentEntity->baseline.entityType]);
+				else
+					AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[i]);
+			}
+		}
 	}
 	StudioSaveBones();
 
@@ -1573,6 +1583,11 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		m_nTopColor = m_pCurrentEntity->curstate.colormap & 0xFF;
 		m_nBottomColor = (m_pCurrentEntity->curstate.colormap & 0xFF00) >> 8;
+
+		if ((m_pCurrentEntity->baseline.effects & FTENT_MODTRANSFORM) > 0)
+		{
+		//	lighting = gHUD.vmodel_lighting;
+		}
 
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
