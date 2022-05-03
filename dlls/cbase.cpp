@@ -225,7 +225,13 @@ void DispatchTouch(edict_t* pentTouched, edict_t* pentOther)
 	CBaseEntity* pOther = (CBaseEntity*)GET_PRIVATE(pentOther);
 
 	if (pEntity && pOther && ((pEntity->pev->flags | pOther->pev->flags) & FL_KILLME) == 0)
+	{
 		pEntity->Touch(pOther);
+		if ((pEntity->ObjectCaps() & FCAP_HOLDABLE) != 0 || (pEntity->ObjectCaps() & FCAP_SIMPHYS) != 0)
+			pEntity->PhysTouch(pOther);
+		else if ((pEntity->ObjectCaps() & FCAP_BRUSHHOLDABLE) != 0)
+			pEntity->BrushPhysTouch(pOther);
+	}
 }
 
 

@@ -188,9 +188,8 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM; 
 			ptemp->entity.baseline.entityType = 7;
 			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
-		}
-		
-		gEngfuncs.GetViewModel()->curstate.body = 999;
+			gEngfuncs.GetViewModel()->curstate.body = 999;
+		}	
 	}
 		break;
 	case 6003:
@@ -207,9 +206,8 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
 			ptemp->entity.baseline.entityType = 46;
 			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
+			gEngfuncs.GetViewModel()->curstate.body = 1;
 		}
-
-		gEngfuncs.GetViewModel()->curstate.body = 1;
 	}
 	break;
 	case 6002:

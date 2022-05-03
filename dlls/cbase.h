@@ -41,6 +41,9 @@ CBaseEntity
 #define FCAP_ONOFF_USE 0x00000020		  // can be used by the player
 #define FCAP_DIRECTIONAL_USE 0x00000040	  // Player sends +/- 1 when using (currently only tracktrains)
 #define FCAP_MASTER 0x00000080			  // Can be used to "master" other entities (like multisource)
+#define FCAP_HOLDABLE 0x00000100		// Items that can be held by the player
+#define FCAP_SIMPHYS 0x00000200		  // Fake physics for entities, don't use with FUNC_HOLDABLE
+#define FCAP_BRUSHHOLDABLE 0x00000400		// Items that can be held by the player
 
 // UNDONE: This will ignore transition volumes (trigger_transition), but not the PVS!!!
 #define FCAP_FORCE_TRANSITION 0x00000080 // ALWAYS goes across transitions
@@ -49,6 +52,8 @@ CBaseEntity
 #include "saverestore.h"
 #include "schedule.h"
 #include "monsterevent.h"
+
+#include "studio.h"
 
 // C functions for external declarations that call the appropriate C++ methods
 
@@ -213,6 +218,16 @@ public:
 	virtual bool IsNetClient() { return false; }
 	virtual const char* TeamID() { return ""; }
 
+	virtual void PhysThink();
+	virtual void PhysTouch(CBaseEntity* pOther);
+
+	virtual void BrushPhysThink();
+	virtual void BrushPhysTouch(CBaseEntity* pOther);
+
+	virtual bool PhysTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType);
+
+	virtual bool PhysCustomTouch(CBaseEntity* pOther) { return false; };
+	virtual void PhysCustomThink() { return; };
 
 	//	virtual void	SetActivator( CBaseEntity *pActivator ) {}
 	virtual CBaseEntity* GetNextTarget();
@@ -370,6 +385,51 @@ public:
 
 	virtual int Illumination() { return GETENTITYILLUM(ENT(pev)); }
 
+	float DamageForce(float damage)
+	{
+		float force = damage * ((32 * 32 * 72.0) / (pev->size.x * pev->size.y * pev->size.z));
+
+		if (force > 1000.0)
+		{
+			force = 1000.0;
+		}
+
+		return force;
+	}
+
+	void SetModelCollisionBox()
+	{
+		studiohdr_t* pstudiohdr;
+		pstudiohdr = (studiohdr_t*)GET_MODEL_PTR(ENT(pev));
+
+		if (pstudiohdr == NULL)
+		{
+			ALERT(at_console, "Unable to fetch model pointer!\n");
+			return;
+		}
+		mstudioseqdesc_t* pseqdesc;
+		pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+		UTIL_SetSize(pev, pseqdesc[pev->sequence].bbmin, pseqdesc[pev->sequence].bbmax);
+	}
+	void GetModelCollisionBox(float *min, float *max)
+	{
+		if (IsBSPModel())
+			return;
+
+		studiohdr_t* pstudiohdr;
+		pstudiohdr = (studiohdr_t*)GET_MODEL_PTR(ENT(pev));
+
+		if (pstudiohdr == NULL)
+		{
+			ALERT(at_console, "Unable to fetch model pointer!\n");
+			return;
+		}
+		mstudioseqdesc_t* pseqdesc;
+		pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex);
+		VectorCopy(pseqdesc[pev->sequence].bbmin, min);
+		VectorCopy(pseqdesc[pev->sequence].bbmax, max);
+	}
+
 	virtual bool FVisible(CBaseEntity* pEntity);
 	virtual bool FVisible(const Vector& vecOrigin);
 
@@ -389,6 +449,13 @@ public:
 	int m_fInAttack;
 
 	int m_fireState;
+
+	float m_flNextPhysThink;
+	float m_flNextAttack;
+
+	bool m_bHeld;
+
+	int m_bitsDamageType;
 };
 
 inline bool FNullEnt(CBaseEntity* ent) { return (ent == NULL) || FNullEnt(ent->edict()); }

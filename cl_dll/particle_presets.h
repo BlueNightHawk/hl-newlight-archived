@@ -39,3 +39,4 @@ CBaseParticle* CreateSmoke(Vector origin, char* szName, float scale, float brigh
 void SmokeCallback(CBaseParticle* ent);
 void ExplosionCluster(Vector origin);
 void ExplosionSmoke(Vector origin);
+void BloodDroplets(int index, int color);

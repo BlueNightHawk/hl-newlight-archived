@@ -88,8 +88,10 @@ void CWorldItem::Spawn()
 
 void CItem::Spawn()
 {
-	pev->movetype = MOVETYPE_TOSS;
+	pev->movetype = MOVETYPE_BOUNCE;
+	pev->friction = 0.5;
 	pev->solid = SOLID_TRIGGER;
+	pev->takedamage = DAMAGE_YES;
 	UTIL_SetOrigin(pev, pev->origin);
 	UTIL_SetSize(pev, Vector(-16, -16, 0), Vector(16, 16, 16));
 	SetTouch(&CItem::ItemTouch);
@@ -170,6 +172,10 @@ void CItem::Materialize()
 
 class CItemSuit : public CItem
 {
+	int ObjectCaps() override
+	{ 
+		return CBaseEntity::ObjectCaps(); 
+	}
 	void Spawn() override
 	{
 		Precache();
@@ -351,3 +357,25 @@ class CItemLongJump : public CItem
 };
 
 LINK_ENTITY_TO_CLASS(item_longjump, CItemLongJump);
+
+class CItemFlare: public CItem
+{
+	void Spawn() override
+	{
+		Precache();
+		SET_MODEL(ENT(pev), "models/w_flare.mdl");
+		CItem::Spawn();
+		pev->solid = SOLID_TRIGGER;
+		UTIL_SetSize(pev, Vector(0, 0, 0), Vector(0, 0, 0));
+	}
+	void Precache() override
+	{
+		PRECACHE_MODEL("models/w_flare.mdl");
+	}
+	bool MyTouch(CBasePlayer* pPlayer) override
+	{
+		return false;
+	}
+};
+
+LINK_ENTITY_TO_CLASS(item_flare, CItemFlare);

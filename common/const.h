@@ -759,3 +759,12 @@ typedef struct
 	edict_t* ent;	// entity the surface is on
 	int hitgroup;	// 0 == generic, non zero is specific body part
 } trace_t;
+
+
+// Particle System
+
+enum particles_e {
+	PARTICLE_EXPLOSION = 0,
+	PARTICLE_EXPLOSMOKE,
+	PARTICLE_BLOODDRIP,
+};

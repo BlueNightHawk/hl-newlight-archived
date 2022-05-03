@@ -3,6 +3,62 @@
 #include "particle_presets.h"
 #include "event_api.h"
 
+#include "decals.h"
+#include "ev_hldm.h"
+
+#define DONT_BLEED -1
+#define BLOOD_COLOR_RED (byte)247
+#define BLOOD_COLOR_YELLOW (byte)195
+#define BLOOD_COLOR_GREEN BLOOD_COLOR_YELLOW
+
+//
+// This must match the list in util.h
+//
+DLL_DECALLIST gDecals[] = {
+	{"{shot1", 0},	   // DECAL_GUNSHOT1
+	{"{shot2", 0},	   // DECAL_GUNSHOT2
+	{"{shot3", 0},	   // DECAL_GUNSHOT3
+	{"{shot4", 0},	   // DECAL_GUNSHOT4
+	{"{shot5", 0},	   // DECAL_GUNSHOT5
+	{"{lambda01", 0},  // DECAL_LAMBDA1
+	{"{lambda02", 0},  // DECAL_LAMBDA2
+	{"{lambda03", 0},  // DECAL_LAMBDA3
+	{"{lambda04", 0},  // DECAL_LAMBDA4
+	{"{lambda05", 0},  // DECAL_LAMBDA5
+	{"{lambda06", 0},  // DECAL_LAMBDA6
+	{"{scorch1", 0},   // DECAL_SCORCH1
+	{"{scorch2", 0},   // DECAL_SCORCH2
+	{"{blood1", 0},	   // DECAL_BLOOD1
+	{"{blood2", 0},	   // DECAL_BLOOD2
+	{"{blood3", 0},	   // DECAL_BLOOD3
+	{"{blood4", 0},	   // DECAL_BLOOD4
+	{"{blood5", 0},	   // DECAL_BLOOD5
+	{"{blood6", 0},	   // DECAL_BLOOD6
+	{"{yblood1", 0},   // DECAL_YBLOOD1
+	{"{yblood2", 0},   // DECAL_YBLOOD2
+	{"{yblood3", 0},   // DECAL_YBLOOD3
+	{"{yblood4", 0},   // DECAL_YBLOOD4
+	{"{yblood5", 0},   // DECAL_YBLOOD5
+	{"{yblood6", 0},   // DECAL_YBLOOD6
+	{"{break1", 0},	   // DECAL_GLASSBREAK1
+	{"{break2", 0},	   // DECAL_GLASSBREAK2
+	{"{break3", 0},	   // DECAL_GLASSBREAK3
+	{"{bigshot1", 0},  // DECAL_BIGSHOT1
+	{"{bigshot2", 0},  // DECAL_BIGSHOT2
+	{"{bigshot3", 0},  // DECAL_BIGSHOT3
+	{"{bigshot4", 0},  // DECAL_BIGSHOT4
+	{"{bigshot5", 0},  // DECAL_BIGSHOT5
+	{"{spit1", 0},	   // DECAL_SPIT1
+	{"{spit2", 0},	   // DECAL_SPIT2
+	{"{bproof1", 0},   // DECAL_BPROOF1
+	{"{gargstomp", 0}, // DECAL_GARGSTOMP1,	// Gargantua stomp crack
+	{"{smscorch1", 0}, // DECAL_SMALLSCORCH1,	// Small scorch mark
+	{"{smscorch2", 0}, // DECAL_SMALLSCORCH2,	// Small scorch mark
+	{"{smscorch3", 0}, // DECAL_SMALLSCORCH3,	// Small scorch mark
+	{"{mommablob", 0}, // DECAL_MOMMABIRTH		// BM Birth spray
+	{"{mommablob", 0}, // DECAL_MOMMASPLAT		// BM Mortar spray?? need decal
+};
+
 char GetTexType(int idx, pmtrace_t* ptr, float* vecSrc, float* vecEnd);
 
 CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framerate, float speed, float scale, float brightness)
@@ -209,25 +265,28 @@ CBaseParticle* CreateSmoke(Vector origin, char *szName, float scale, float brigh
 
 void SmokeCallback(CBaseParticle* ent)
 {
-#if 0
+	pmtrace_t tr = *gEngfuncs.PM_TraceLine(ent->m_vOrigin, ent->m_vOrigin - Vector(0, 0, 4), PM_TRACELINE_ANYVISIBLE, 2, -1);
+
+	model_s* spr = IEngineStudio.Mod_ForName("sprites/blood.spr", 0);
+
 	if (ent->m_flNextCallback > gEngfuncs.GetClientTime())
 		return;
 
-	// TODO : Add smoke particles;
-
-	ent->m_flNextCallback = gEngfuncs.GetClientTime() + 0.044f;
-#endif
-}
-
-void SmokeTouch(CBaseParticle *ent, Vector pos, Vector normal, int index)
-{
-	if (ent->m_iuser1 < 2)
+	if (tr.fraction == 1.0)
 	{
-		ent->m_iuser1++;
-		return;
-	}
+		CBaseParticle* pPrtcl = CreateGunSmoke(ent->m_vOrigin + tr.plane.normal * 20, "sprites/particles/black_smoke1.spr", gEngfuncs.pfnRandomFloat(60, 80), gEngfuncs.pfnRandomFloat(200, 255));
 
-	ent->Callback = nullptr;
+		pPrtcl->m_iFramerate = 35;
+		pPrtcl->SetLightFlag(LIGHT_INTENSITY);
+		pPrtcl->m_iRendermode = kRenderTransColor;
+
+		if (ent->m_iuser1 == 1)
+			pPrtcl->m_vColor = Vector(255, 0, 0);
+		else
+			pPrtcl->m_vColor = Vector(255, 255, 255);
+
+		ent->m_flNextCallback = gEngfuncs.GetClientTime() + 0.05f;
+	}
 }
 
 void ExplosionCluster(Vector origin)
@@ -345,11 +404,121 @@ void ExplosionCluster(Vector origin)
 			pParticle->m_vColor = color;
 			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life;
 			pParticle->SetLightFlag(lflag);
-			pParticle->SetCollisionFlags(cflag);
 			pParticle->Callback = SmokeCallback;
-			pParticle->TouchCallback = SmokeTouch;
+			pParticle->SetCollisionFlags(cflag);
 		}
 	}
+}
+
+void BloodTouch(CBaseParticle* ent, pmtrace_s *pTrace)
+{
+	ent->SetCollisionFlags(TRI_COLLIDEKILL);
+
+	physent_t* pe;
+
+	pe = gEngfuncs.pEventAPI->EV_GetPhysent(pTrace->ent);
+
+	if (ent->m_iuser1 == 1)
+		EV_HLDM_GunshotDecalTrace(pTrace, (char*)gDecals[DECAL_BLOOD1 + gEngfuncs.pfnRandomLong(0, 5)].name, false);
+	else
+		EV_HLDM_GunshotDecalTrace(pTrace, (char*)gDecals[DECAL_YBLOOD1 + gEngfuncs.pfnRandomLong(0, 5)].name, false);
+
+	ent->m_flDieTime = 0.1;
+}
+
+void BloodDropCallback(CBaseParticle *ent)
+{
+	cl_entity_s* owner = ent->owner;
+
+	if (!owner)
+	{
+		ent->m_flDieTime = 0.1;
+		return;
+	}
+
+	pmtrace_t tr;
+	model_s* spr = IEngineStudio.Mod_ForName("sprites/blood.spr", 0);
+
+	ent->m_vOrigin = owner->origin;
+
+	gEngfuncs.pEventAPI->EV_PushPMStates();
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+
+	gEngfuncs.pEventAPI->EV_PlayerTrace(ent->m_vOrigin, ent->m_vOrigin - Vector(0,0,2), PM_WORLD_ONLY, owner->index, &tr);
+
+	gEngfuncs.pEventAPI->EV_PopPMStates();
+
+	float vel = (ent->m_vOrigin - ent->m_vuser1).Length();
+
+	if (tr.fraction == 1.0 && ent->m_flNextCallback < gEngfuncs.GetClientTime())
+	{
+		CBaseParticle* pParticle = g_pParticleMan->CreateParticle(ent->m_vOrigin, ent->m_vAngles, spr, gEngfuncs.pfnRandomFloat(8, 15), 255, "");
+
+		if (pParticle)
+		{
+			pParticle->m_iRendermode = kRenderTransAdd;
+
+			if (ent->m_iuser1 == 1)
+				pParticle->m_vColor = Vector(255, 0, 0);
+			else
+				pParticle->m_vColor = Vector(255, 255, 255);
+
+			pParticle->m_flBrightness = 255;
+			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 100.0f;
+			pParticle->SetLightFlag(LIGHT_INTENSITY);
+			pParticle->SetCollisionFlags(TRI_COLLIDEALL);
+			pParticle->SetRenderFlag(RENDER_FACEPLAYER);
+			pParticle->m_vVelocity = Vector(0, 0, -10);
+			pParticle->m_flGravity = 1;
+			pParticle->TouchCallback = BloodTouch;
+			pParticle->m_iuser1 = ent->m_iuser1;
+			ent->m_flNextCallback = gEngfuncs.GetClientTime() + gEngfuncs.pfnRandomFloat(0.2, 0.7);
+		}
+	}
+	else if (tr.fraction != 1.0 && vel > 0.5 && ent->m_fuser1 < gEngfuncs.GetClientTime())
+	{
+		CBaseParticle *pPrtcl = CreateGunSmoke(ent->m_vOrigin + tr.plane.normal * 14, "sprites/particles/smokepuff.spr", gEngfuncs.pfnRandomFloat(35, 50), gEngfuncs.pfnRandomFloat(80, 125));
+		pPrtcl->m_iFramerate = 20;
+		pPrtcl->m_vVelocity = tr.plane.normal * 12;
+
+		pPrtcl->SetLightFlag(LIGHT_INTENSITY);
+
+		if (ent->m_iuser1 == 1)
+			pPrtcl->m_vColor = Vector(255, 0, 0);
+		else
+			pPrtcl->m_vColor = Vector(255, 255, 255);
+
+		ent->m_fuser1 = gEngfuncs.GetClientTime() + gEngfuncs.pfnRandomFloat(0.05, 0.15);
+	}
+
+	ent->m_vuser1 = ent->m_vOrigin;
+}
+
+void BloodDroplets(int index, int color)
+{
+	cl_entity_s *ent = gEngfuncs.GetEntityByIndex(index);
+
+	if (!ent)
+		return;
+
+	model_s* spr = IEngineStudio.Mod_ForName("sprites/blooddrop.spr", 0);
+
+	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(ent->origin, ent->angles, spr, 0.1, 0, "");
+
+	if (pParticle)
+	{
+		pParticle->m_iRendermode = kRenderTransAdd;
+		pParticle->owner = ent;
+		pParticle->m_vColor = Vector(0,0,0);
+		pParticle->Callback = BloodDropCallback;
+
+		if (color == BLOOD_COLOR_RED)
+			pParticle->m_iuser1 = 1;
+		else
+			pParticle->m_iuser1 = 0;
+	}
+	
 }
 
 void ExplosionSmoke(Vector origin)

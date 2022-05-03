@@ -483,6 +483,9 @@ void CBaseParticle::CheckCollision(float time)
 		}
 
 		Touch(trace.endpos, trace.plane.normal, trace.ent);
+
+		if (TouchCallback)
+			TouchCallback(this, &trace);
 	}
 	else if ((m_iCollisionFlags & TRI_WATERTRACE) != 0)
 	{
@@ -504,8 +507,6 @@ void CBaseParticle::CheckCollision(float time)
 
 void CBaseParticle::Touch(Vector pos, Vector normal, int index)
 {
-	if (TouchCallback)
-		TouchCallback(this, pos, normal, index);
 }
 
 void CBaseParticle::Die()

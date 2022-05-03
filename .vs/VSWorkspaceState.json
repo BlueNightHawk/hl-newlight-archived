@@ -2,10 +2,11 @@
   "ExpandedNodes": [
     "",
     "\\cl_dll",
+    "\\dlls",
     "\\pm_shared",
     "\\projects",
     "\\projects\\vs2019"
   ],
-  "SelectedNode": "\\pm_shared\\pm_math.cpp",
+  "SelectedNode": "\\dlls\\player.cpp",
   "PreviewInSolutionExplorer": false
 }

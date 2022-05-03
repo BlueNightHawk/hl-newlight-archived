@@ -719,7 +719,6 @@ void DLLEXPORT HUD_TempEntUpdate(
 				if ((pTemp->flags & FTENT_MODTRANSFORM) > 0)
 				{
 					pmtrace_t pmtrace;
-					physent_t* pe;
 
 					gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 

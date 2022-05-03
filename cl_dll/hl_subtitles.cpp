@@ -259,7 +259,7 @@ void Subtitles_Draw()
 	if (l_FrameWidth == 0)
 		l_FrameWidth = LowestWidth;
 
-	l_FrameHeight = lerp(l_FrameHeight, FrameHeight + 20, g_pparams.frametime * 13.5f);
+	l_FrameHeight = lerp(l_FrameHeight, FrameHeight + 7.5 * numsubstodraw2, g_pparams.frametime * 13.5f);
 	l_FrameWidth = lerp(l_FrameWidth, RealWidth, g_pparams.frametime * 15.5f);
 
 	ImGui::SetNextWindowPos(ImVec2(ScreenWidth / 2.0f - l_FrameWidth / 2.0f, ScreenHeight / 1.3f), 0);

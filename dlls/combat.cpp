@@ -30,6 +30,8 @@
 #include "weapons.h"
 #include "func_break.h"
 
+#include "UserMessages.h"
+
 extern Vector VecBModelOrigin(entvars_t* pevBModel);
 
 #define GERMAN_GIB_COUNT 4
@@ -115,6 +117,12 @@ void CGib::SpawnStickyGibs(entvars_t* pevVictim, Vector vecOrigin, int cGibs)
 			pGib->SetThink(NULL);
 		}
 		pGib->LimitVelocity();
+
+		MESSAGE_BEGIN(MSG_PVS, gmsgParticles, pGib->pev->origin);
+		WRITE_BYTE(PARTICLE_BLOODDRIP);
+		WRITE_SHORT(ENTINDEX(pGib->edict()));
+		WRITE_BYTE((CBaseEntity::Instance(pevVictim))->BloodColor());
+		MESSAGE_END();
 	}
 }
 
@@ -174,6 +182,11 @@ void CGib::SpawnHeadGib(entvars_t* pevVictim)
 		}
 	}
 	pGib->LimitVelocity();
+	MESSAGE_BEGIN(MSG_PVS, gmsgParticles, pGib->pev->origin);
+	WRITE_BYTE(PARTICLE_BLOODDRIP);
+	WRITE_SHORT(ENTINDEX(pGib->edict()));
+	WRITE_BYTE((CBaseEntity::Instance(pevVictim))->BloodColor());
+	MESSAGE_END();
 }
 
 void CGib::SpawnRandomGibs(entvars_t* pevVictim, int cGibs, bool human)
@@ -245,6 +258,11 @@ void CGib::SpawnRandomGibs(entvars_t* pevVictim, int cGibs, bool human)
 			UTIL_SetSize(pGib->pev, Vector(0, 0, 0), Vector(0, 0, 0));
 		}
 		pGib->LimitVelocity();
+		MESSAGE_BEGIN(MSG_PVS, gmsgParticles, pGib->pev->origin);
+		WRITE_BYTE(PARTICLE_BLOODDRIP);
+		WRITE_SHORT(ENTINDEX(pGib->edict()));
+		WRITE_BYTE((CBaseEntity::Instance(pevVictim))->BloodColor());
+		MESSAGE_END();
 	}
 }
 
@@ -335,6 +353,45 @@ void CBaseMonster::GibMonster()
 			FadeMonster();
 		}
 	}
+}
+
+bool CGib::PhysCustomTouch(CBaseEntity* pOther)
+{
+	if (pev->velocity.Length() < 10)
+		return true;
+
+	Vector vecSpot;
+	TraceResult tr;
+
+	if (m_bloodColor != DONT_BLEED && RANDOM_LONG(0, 2) == 0)
+	{
+		vecSpot = pev->origin + Vector(0, 0, 8); // move up a bit, and trace down.
+		UTIL_TraceLine(vecSpot, vecSpot + Vector(0, 0, -24), ignore_monsters, ENT(pev), &tr);
+
+		UTIL_BloodDecalTrace(&tr, m_bloodColor);
+
+		m_cBloodDecals--;
+	}
+
+	if (RANDOM_LONG(0, 2) == 0)
+	{
+		float volume;
+		float zvel = fabs(pev->velocity.z);
+
+		if ( m_material == matNone )
+			m_material = matFlesh;
+
+		volume = 0.8 * V_min(1.0, ((float)zvel) / 450.0);
+
+		CBreakable::MaterialSoundRandom(edict(), (Materials)m_material, volume);
+	}
+	return true;
+}
+
+void CGib::PhysCustomThink()
+{
+	if (pev->flags & FL_ONGROUND)
+		return;
 }
 
 //=========================================================
@@ -983,7 +1040,7 @@ bool CBaseMonster::DeadTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacke
 		}
 	}
 
-#if 0 // turn this back on when the bounding box issues are resolved.
+#if 1 // turn this back on when the bounding box issues are resolved.
 
 	pev->flags &= ~FL_ONGROUND;
 	pev->origin.z += 1;
@@ -1708,5 +1765,263 @@ void CBaseMonster::MakeDamageBloodDecal(int cCount, float flNoise, TraceResult* 
 		{
 			UTIL_BloodDecalTrace(&Bloodtr, BloodColor());
 		}
+	}
+}
+
+void CBaseEntity::PhysTouch(CBaseEntity *pOther)
+{
+	entvars_t* pevOther = pOther->pev;
+
+	// don't hit the guy that launched this grenade
+	if (pOther->edict() == pev->owner)
+		return;
+
+	// HACKHACK - On ground isn't always set, so look for ground underneath
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin, pev->origin - Vector(0, 0, 10), ignore_monsters, edict(), &tr);
+
+	bool doSound = !PhysCustomTouch(pOther);
+
+	pev->gravity = 1;
+
+	if (tr.flFraction < 1.0)
+	{
+		// add a bit of static friction
+		float len = UTIL_VecToAngles(tr.vecPlaneNormal).Length();
+		// sloped
+		if (len != 90)
+		{
+			pev->velocity = pev->velocity * 0.99;
+			float y = pev->avelocity.y;
+			pev->avelocity = pev->avelocity * 0.99;
+			pev->avelocity.y = y;
+		}
+		else
+		{
+			pev->velocity = pev->velocity * 0.9;
+			float y = pev->avelocity.y;
+			pev->avelocity = pev->avelocity * 0.9;
+			pev->avelocity.y = y * 0.97;
+		}
+		// play sliding sound, volume based on velocity
+
+ // play bounce sound
+		if (pev->flFallVelocity > 20 && doSound)
+		{
+			int pitch = 95 + RANDOM_LONG(0, 29);
+
+			if (pev->classname != MAKE_STRING("monster_satchel"))
+				EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "items/weapondrop1.wav", 1, ATTN_NORM, 0, pitch);
+
+			pev->flFallVelocity = 0;
+		}
+	}
+	if ((pev->flags & FL_ONGROUND) == 0 && pev->velocity.Length2D() > 10)
+	{
+	
+	}
+
+	// only do damage if we're moving fairly fast
+	if (m_flNextAttack < gpGlobals->time && !m_bHeld && pev->velocity.Length() > 100)
+	{
+		entvars_t* pevOwner = VARS(pev->owner);
+		if (pevOwner)
+		{
+			Vector min, max;
+			GetModelCollisionBox(min, max);
+			float size = min.Length() + max.Length();
+			Vector forward = (pOther->pev->origin - pev->origin).Normalize();
+			ClearMultiDamage();
+			pOther->TraceAttack(pevOwner, (pev->velocity.Length() * 0.0001) * size, forward, &tr, DMG_CLUB);
+			ApplyMultiDamage(pev, pevOwner);
+	//		ALERT(at_console, "%f \n", (pev->velocity.Length() * 0.0001) * size);
+		}
+		m_flNextAttack = gpGlobals->time + 1.0; // debounce
+	}
+}
+
+// Fake Physics
+void CBaseEntity::PhysThink()
+{
+	PhysCustomThink();
+
+	if ((pev->flags & FL_KILLME) != 0 || (pev->effects & EF_NODRAW) != 0 || m_bHeld)
+		return;
+
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin, pev->origin - Vector(0, 0, 6), dont_ignore_monsters, ENT(pev), &tr);
+
+	if (tr.flFraction >= 1.0 && (pev->flags & FL_ONGROUND) == 0)
+	{
+		pev->flFallVelocity = fabs(pev->velocity.z);
+		pev->avelocity = UTIL_VecToAngles(pev->velocity);
+		pev->avelocity.x *= 0.5f;
+		pev->avelocity.z = fabs(-pev->velocity.z) * 0.25f;
+	}
+	else
+	{
+		Vector angle;
+#ifndef M_PI
+#define M_PI 3.14159265358979
+#endif
+#define ang2rad (2 * M_PI / 360)
+
+		if (tr.flFraction < 1.0)
+		{
+			Vector angdir = Vector(
+				cos(pev->angles.y * ang2rad) * cos(pev->angles.x * ang2rad),
+				sin(pev->angles.y * ang2rad) * cos(pev->angles.x * ang2rad),
+				-sin(pev->angles.x * ang2rad));
+			Vector angdiry = Vector(
+				sin(pev->angles.y * ang2rad) * cos(pev->angles.x * ang2rad),
+				cos(pev->angles.y * ang2rad) * cos(pev->angles.x * ang2rad), -sin(pev->angles.x * ang2rad));
+
+			angle = UTIL_VecToAngles(
+				angdir - DotProduct(angdir, tr.vecPlaneNormal) * tr.vecPlaneNormal);
+			angle.y = pev->angles.y;
+			angle.z = -UTIL_VecToAngles(
+				angdiry - DotProduct(angdiry, tr.vecPlaneNormal) *
+							  tr.vecPlaneNormal)
+								 .x;
+		}
+
+#undef ang2rad
+
+		UTIL_SmoothInterpolateAngles(pev->angles, angle, pev->angles, 600);
+		pev->angles.y = angle.y;
+	}
+	pev->avelocity.y = Vector(pev->velocity.x, pev->velocity.y, 0).Length2D();
+
+	if (m_flNextPhysThink < gpGlobals->time)
+	{
+		if (pev->waterlevel == 3)
+		{
+			pev->movetype = MOVETYPE_FLY;
+			pev->velocity = pev->velocity * 0.8;
+			pev->avelocity = pev->avelocity * 0.9;
+			pev->velocity.z += 8;
+		}
+		else if (pev->waterlevel == 0)
+		{
+			pev->movetype = MOVETYPE_BOUNCE;
+		}
+		else
+		{
+			pev->velocity.z -= 8;
+		}
+		m_flNextPhysThink = gpGlobals->time + 0.1f;
+	}
+	UTIL_SetOrigin(pev, pev->origin);
+}
+
+bool CBaseEntity::PhysTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType)
+{
+	if ((ObjectCaps() & FCAP_HOLDABLE) == 0 && (ObjectCaps() & FCAP_SIMPHYS) == 0)
+		return false;
+
+	float flTake;
+	Vector vecDir;
+
+	//!!!LATER - make armor consideration here!
+	flTake = flDamage;
+
+	// set damage type sustained
+	m_bitsDamageType |= bitsDamageType;
+
+	// grab the vector of the incoming attack. ( pretend that the inflictor is a little lower than it really is, so the body will tend to fly upward a bit).
+	vecDir = Vector(0, 0, 0);
+	if (!FNullEnt(pevInflictor))
+	{
+		CBaseEntity* pInflictor = CBaseEntity::Instance(pevInflictor);
+		if (pInflictor)
+		{
+			vecDir = (pInflictor->Center() - Vector(0, 0, 10) - Center()).Normalize();
+			vecDir = g_vecAttackDir = vecDir.Normalize();
+		}
+	}
+
+	pev->origin.z += 1;
+
+	// let the damage scoot the corpse around a bit.
+	if (!FNullEnt(pevInflictor) && (pevAttacker->solid != SOLID_TRIGGER))
+	{
+		pev->velocity = pev->velocity + vecDir * -DamageForce(flDamage);
+	}
+
+	return true;
+}
+
+
+void CBaseEntity::BrushPhysTouch(CBaseEntity* pOther)
+{
+	entvars_t* pevOther = pOther->pev;
+
+	// don't hit the guy that launched this grenade
+	if (pOther->IsPlayer())
+		return;
+
+	// HACKHACK - On ground isn't always set, so look for ground underneath
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin, pev->origin - Vector(0, 0, 10), ignore_monsters, edict(), &tr);
+
+	bool doSound = !PhysCustomTouch(pOther);
+
+	if (tr.flFraction < 1.0)
+	{
+		// add a bit of static friction
+		float len = UTIL_VecToAngles(tr.vecPlaneNormal).Length();
+
+		pev->avelocity = pev->avelocity * 0.8;
+
+		// play bounce sound
+		if (pev->flFallVelocity > 20 && doSound)
+		{
+//			int pitch = 95 + RANDOM_LONG(0, 29);
+
+//			if (pev->classname != MAKE_STRING("monster_satchel"))
+//				EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "items/weapondrop1.wav", 1, ATTN_NORM, 0, pitch);
+
+			pev->flFallVelocity = 0;
+		}
+	}
+	if ((pev->flags & FL_ONGROUND) == 0 && pev->velocity.Length2D() > 10)
+	{
+	}
+
+	// only do damage if we're moving fairly fast
+	if (m_flNextAttack < gpGlobals->time && !m_bHeld && pev->velocity.Length() > 100)
+	{
+		entvars_t* pevOwner = VARS(pev->owner);
+		if (pevOwner)
+			pevOwner = pev;
+		if (pevOwner)
+		{
+			Vector min, max;
+			GetModelCollisionBox(min, max);
+			float size = min.Length() + max.Length();
+			Vector forward = (pOther->pev->origin - pev->origin).Normalize();
+			ClearMultiDamage();
+			pOther->TraceAttack(pevOwner, (pev->velocity.Length() * 0.0001) * size, forward, &tr, DMG_CLUB);
+			ApplyMultiDamage(pev, pevOwner);
+			//		ALERT(at_console, "%f \n", (pev->velocity.Length() * 0.0001) * size);
+		}
+		m_flNextAttack = gpGlobals->time + 1.0; // debounce
+	}
+}
+
+// Fake Physics
+void CBaseEntity::BrushPhysThink()
+{
+	PhysCustomThink();
+
+	if ((pev->flags & FL_KILLME) != 0 || (pev->effects & EF_NODRAW) != 0 || m_bHeld)
+		return;
+
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin, pev->origin - Vector(0, 0, 6), dont_ignore_monsters, ENT(pev), &tr);
+
+	if (tr.flFraction >= 1.0 && (pev->flags & FL_ONGROUND) == 0)
+	{
+		pev->flFallVelocity = fabs(pev->velocity.z);
 	}
 }

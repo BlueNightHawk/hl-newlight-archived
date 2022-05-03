@@ -263,6 +263,7 @@ void W_Precache()
 
 	// custom items...
 	UTIL_PrecacheOther("sv_viewmodel");
+	UTIL_PrecacheOther("item_flare");
 
 	// common world objects
 	UTIL_PrecacheOther("item_suit");
@@ -442,9 +443,10 @@ float CBasePlayerItem::GetCvarValue(char *sz)
 //=========================================================
 void CBasePlayerItem::FallInit()
 {
-	pev->movetype = MOVETYPE_TOSS;
+	pev->movetype = MOVETYPE_BOUNCE;
+	pev->friction = 0.45f;
 	pev->solid = SOLID_BBOX;
-
+	pev->takedamage = DAMAGE_YES;
 	UTIL_SetOrigin(pev, pev->origin);
 	UTIL_SetSize(pev, Vector(0, 0, 0), Vector(0, 0, 0)); //pointsize until it lands on the ground.
 
@@ -968,8 +970,10 @@ void CBasePlayerWeapon::Holster()
 
 void CBasePlayerAmmo::Spawn()
 {
-	pev->movetype = MOVETYPE_TOSS;
+	pev->movetype = MOVETYPE_BOUNCE;
+	pev->friction = 0.45f;
 	pev->solid = SOLID_TRIGGER;
+	pev->takedamage = DAMAGE_YES;
 	UTIL_SetSize(pev, Vector(-16, -16, 0), Vector(16, 16, 16));
 	UTIL_SetOrigin(pev, pev->origin);
 
@@ -1011,6 +1015,18 @@ void CBasePlayerAmmo::DefaultTouch(CBaseEntity* pOther)
 
 	if (AddAmmo(pOther))
 	{
+		CBasePlayer* pPlayer = ((CBasePlayer*)pOther);
+		if (pPlayer->m_pHeldItem == this)
+		{
+			if (pPlayer->m_pLastItem)
+			{
+				pPlayer->m_pLastItem->Deploy();
+				pPlayer->m_pActiveItem = pPlayer->m_pLastItem;
+				pPlayer->m_pLastItem = NULL;
+			}
+			pPlayer->m_pHeldItem->m_bHeld = false;
+			pPlayer->m_pHeldItem = nullptr;
+		}
 		if (g_pGameRules->AmmoShouldRespawn(this) == GR_AMMO_RESPAWN_YES)
 		{
 			Respawn();

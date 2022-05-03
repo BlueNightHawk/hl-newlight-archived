@@ -27,13 +27,35 @@ class CSatchelCharge : public CGrenade
 	void Precache() override;
 	void BounceSound() override;
 
+	int ObjectCaps() override { return CGrenade::ObjectCaps() | FCAP_HOLDABLE; }
+
+	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
+
 	void EXPORT SatchelSlide(CBaseEntity* pOther);
 	void EXPORT SatchelThink();
+
+	float DamageForce(float damage)
+	{
+		float force = damage * ((32 * 32 * 72.0) / (pev->size.x * pev->size.y * pev->size.z));
+
+		if (force > 1000.0)
+		{
+			force = 1000.0;
+		}
+
+		return force;
+	}
+
 
 public:
 	void Deactivate();
 };
 LINK_ENTITY_TO_CLASS(monster_satchel, CSatchelCharge);
+
+bool CSatchelCharge::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType)
+{
+	return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+}
 
 //=========================================================
 // Deactivate - do whatever it is we do to an orphaned
@@ -41,6 +63,7 @@ LINK_ENTITY_TO_CLASS(monster_satchel, CSatchelCharge);
 //=========================================================
 void CSatchelCharge::Deactivate()
 {
+	return;
 	pev->solid = SOLID_NOT;
 	UTIL_Remove(this);
 }
@@ -52,11 +75,14 @@ void CSatchelCharge::Spawn()
 	// motor
 	pev->movetype = MOVETYPE_BOUNCE;
 	pev->solid = SOLID_BBOX;
+	pev->takedamage = DAMAGE_YES;
 
 	SET_MODEL(ENT(pev), "models/w_satchel.mdl");
 	//UTIL_SetSize(pev, Vector( -16, -16, -4), Vector(16, 16, 32));	// Old box -- size of headcrab monsters/players get blocked by this
 	UTIL_SetSize(pev, Vector(-4, -4, -4), Vector(4, 4, 4)); // Uses point-sized, and can be stepped over
 	UTIL_SetOrigin(pev, pev->origin);
+
+	pev->classname = MAKE_STRING("monster_satchel");
 
 	SetTouch(&CSatchelCharge::SatchelSlide);
 	SetUse(&CSatchelCharge::DetonateUse);
@@ -64,7 +90,7 @@ void CSatchelCharge::Spawn()
 	pev->nextthink = gpGlobals->time + 0.1;
 
 	pev->gravity = 0.5;
-	pev->friction = 0.8;
+	pev->friction = 0.7;
 
 	pev->dmg = gSkillData.plrDmgSatchel;
 	// ResetSequenceInfo( );
@@ -90,8 +116,8 @@ void CSatchelCharge::SatchelSlide(CBaseEntity* pOther)
 	if (tr.flFraction < 1.0)
 	{
 		// add a bit of static friction
-		pev->velocity = pev->velocity * 0.95;
-		pev->avelocity = pev->avelocity * 0.9;
+//		pev->velocity = pev->velocity * 0.95;
+//		pev->avelocity = pev->avelocity * 0.9;
 		// play sliding sound, volume based on velocity
 	}
 	if ((pev->flags & FL_ONGROUND) == 0 && pev->velocity.Length2D() > 10)
@@ -109,9 +135,11 @@ void CSatchelCharge::SatchelThink()
 
 	if (!IsInWorld())
 	{
-		UTIL_Remove(this);
+		//UTIL_Remove(this);
 		return;
 	}
+
+	return;
 
 	if (pev->waterlevel == 3)
 	{

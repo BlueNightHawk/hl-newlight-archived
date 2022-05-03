@@ -312,7 +312,7 @@ char* EV_HLDM_DamageDecal(physent_t* pe)
 	return decalname;
 }
 
-void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName)
+void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName, bool playsound)
 {
 	int iRand;
 	physent_t* pe;
@@ -320,7 +320,7 @@ void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName)
 //	gEngfuncs.pEfxAPI->R_BulletImpactParticles(pTrace->endpos);
 
 	iRand = gEngfuncs.pfnRandomLong(0, 0x7FFF);
-	if (iRand < (0x7fff / 2)) // not every bullet makes a sound.
+	if (iRand < (0x7fff / 2) && playsound) // not every bullet makes a sound.
 	{
 		switch (iRand % 5)
 		{

@@ -1275,6 +1275,18 @@ void CStudioModelRenderer::StudioDlightEffects()
 			dl->decay = 255;
 		}
 	}
+	else if (!stricmp(m_pCurrentEntity->model->name, "models/w_flare.mdl"))
+	{
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		if (dl)
+		{
+			dl->origin = m_pCurrentEntity->origin;
+			dl->color = {(byte)gEngfuncs.pfnRandomLong(225,230), 0, 0};
+			dl->radius = gEngfuncs.pfnRandomLong(140,150);
+			dl->die = m_clTime + 0.25;
+			dl->decay = 255;
+		}
+	}
 	else if (!stricmp(m_pCurrentEntity->model->name, "models/rpgrocket.mdl"))
 	{
 		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
@@ -2377,7 +2389,7 @@ void CStudioModelRenderer::StudioRenderPlayerFPS(int num)
 	IEngineStudio.GL_SetRenderMode(rendermode);
 
 	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0.0f, 0.0f + 0.5f * (1 - 0.0f));
+	glDepthRange(0.0f, 0.5);
 	
 	IEngineStudio.StudioDrawPoints();
 

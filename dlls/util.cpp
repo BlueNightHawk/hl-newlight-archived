@@ -325,7 +325,7 @@ TYPEDESCRIPTION gEntvarsDescription[] =
 #ifdef DEBUG
 edict_t* DBG_EntOfVars(const entvars_t* pev)
 {
-	if (pev->pContainingEntity != NULL)
+	if (pev != nullptr && pev->pContainingEntity != NULL)
 		return pev->pContainingEntity;
 	ALERT(at_console, "entvars_t pContainingEntity is NULL, calling into engine");
 	edict_t* pent = (*g_engfuncs.pfnFindEntityByVars)((entvars_t*)pev);
@@ -2571,4 +2571,51 @@ bool CRestore::BufferCheckZString(const char* string)
 			return true;
 	}
 	return false;
+}
+
+void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec)
+{
+	float absd, frac, d, threshhold;
+
+	NormalizeAngles(startAngle);
+	NormalizeAngles(endAngle);
+
+	for (int i = 0; i < 3; i++)
+	{
+		d = endAngle[i] - startAngle[i];
+
+		if (d > 180.0f)
+		{
+			d -= 360.0f;
+		}
+		else if (d < -180.0f)
+		{
+			d += 360.0f;
+		}
+
+		absd = fabs(d);
+
+		if (absd > 0.01f)
+		{
+			frac = degreesPerSec * gpGlobals->frametime;
+
+			if (frac > absd)
+			{
+				finalAngle[i] = endAngle[i];
+			}
+			else
+			{
+				if (d > 0)
+					finalAngle[i] = startAngle[i] + frac;
+				else
+					finalAngle[i] = startAngle[i] - frac;
+			}
+		}
+		else
+		{
+			finalAngle[i] = endAngle[i];
+		}
+	}
+
+	NormalizeAngles(finalAngle);
 }

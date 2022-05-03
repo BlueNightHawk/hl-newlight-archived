@@ -23,4 +23,11 @@ public:
 	void EXPORT ItemTouch(CBaseEntity* pOther);
 	void EXPORT Materialize();
 	virtual bool MyTouch(CBasePlayer* pPlayer) { return false; }
+
+	virtual int ObjectCaps() { return CBaseEntity::ObjectCaps() | FCAP_HOLDABLE; }
+
+	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override
+	{
+		return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+	}
 };

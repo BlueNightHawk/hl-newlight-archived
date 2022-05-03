@@ -72,7 +72,7 @@ public:
 	virtual void Force(void);
 
 	void (*Callback)(CBaseParticle* ent);
-	void (*TouchCallback)(CBaseParticle *ent, Vector pos, Vector normal, int index);
+	void (*TouchCallback)(CBaseParticle *ent, pmtrace_s *pTrace);
 
 	float m_flSize;			 //scale of object
 	float m_flScaleSpeed;	 //speed at which object expands
@@ -189,6 +189,18 @@ public:
 	int m_iuser2;
 	int m_iuser3;
 	int m_iuser4;
+
+	float m_fuser1;
+	float m_fuser2;
+	float m_fuser3;
+	float m_fuser4;
+
+	Vector m_vuser1;
+	Vector m_vuser2;
+	Vector m_vuser3;
+	Vector m_vuser4;
+
+	cl_entity_t* owner;
 
 protected:
 	float m_flOriginalSize;

@@ -362,6 +362,10 @@ public:
 	float m_flIdleTime;
 
 	bool m_bNotFirstDraw[64];
+
+	// Holdable items
+	CBaseEntity* m_pHeldItem;
+	void UpdateHeldItem();
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

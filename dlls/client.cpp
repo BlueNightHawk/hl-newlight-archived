@@ -786,6 +786,20 @@ void StartFrame()
 
 	gpGlobals->teamplay = teamplay.value;
 	g_ulFrameCount++;
+
+	CBaseEntity* ent = nullptr;
+	for (int i = 0; i < gpGlobals->maxEntities; i++)
+	{
+		ent = CBaseEntity::Instance(INDEXENT(i));
+		if ((ent->ObjectCaps() & FCAP_HOLDABLE) != 0 || (ent->ObjectCaps() & FCAP_SIMPHYS) != 0)
+		{
+			ent->PhysThink();
+		}
+		else if ((ent->ObjectCaps() & FCAP_BRUSHHOLDABLE) != 0)
+		{
+			ent->BrushPhysThink();
+		}
+	}
 }
 
 

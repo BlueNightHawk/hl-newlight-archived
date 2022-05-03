@@ -35,6 +35,7 @@ void EMIT_SOUND_DYN(edict_t* entity, int channel, const char* sample, float volu
 // CBaseEntity Stubs
 bool CBaseEntity::TakeHealth(float flHealth, int bitsDamageType) { return true; }
 bool CBaseEntity::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) { return true; }
+bool CBaseEntity::PhysTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) { return true; }
 CBaseEntity* CBaseEntity::GetNextTarget() { return NULL; }
 bool CBaseEntity::Save(CSave& save) { return true; }
 bool CBaseEntity::Restore(CRestore& restore) { return true; }
@@ -338,3 +339,17 @@ void RadiusDamage(Vector vecSrc, entvars_t* pevInflictor, entvars_t* pevAttacker
 int CBaseAnimating::LookupActivityWeight(int activity, int weight) { return 0; }
 float CBaseAnimating::GetSeqLength(int sequence) { return 0.0f; }
 int CBaseAnimating::GetActivityHeaviest(int activity) { return 0; }
+void CBaseEntity::PhysThink() { return; }
+void CBaseEntity::PhysTouch(CBaseEntity* pOther){return;}
+
+
+void CBaseEntity::BrushPhysTouch(CBaseEntity* pOther)
+{
+	return;
+}
+
+
+void CBaseEntity::BrushPhysThink()
+{
+	return;
+}

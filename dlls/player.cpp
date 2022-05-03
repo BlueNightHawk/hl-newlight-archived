@@ -87,7 +87,8 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_ARRAY(CBasePlayer, m_rgpPlayerItems, FIELD_CLASSPTR, MAX_ITEM_TYPES),
 		DEFINE_FIELD(CBasePlayer, m_pActiveItem, FIELD_CLASSPTR),
 		DEFINE_FIELD(CBasePlayer, m_pLastItem, FIELD_CLASSPTR),
-		DEFINE_FIELD(CBasePlayer, m_WeaponBits, FIELD_INT64),
+		DEFINE_FIELD(CBasePlayer, m_pHeldItem, FIELD_CLASSPTR),
+		DEFINE_FIELD(CBasePlayer, m_WeaponBits, FIELD_INT64), 
 
 		DEFINE_ARRAY(CBasePlayer, m_rgAmmo, FIELD_INTEGER, MAX_AMMO_SLOTS),
 		DEFINE_FIELD(CBasePlayer, m_idrowndmg, FIELD_INTEGER),
@@ -1485,6 +1486,23 @@ void CBasePlayer::PlayerUse()
 	if (((pev->button | m_afButtonPressed | m_afButtonReleased) & IN_USE) == 0)
 		return;
 
+	if ((m_afButtonPressed & IN_USE) != 0)
+	{
+		if (m_pHeldItem != nullptr)
+		{
+			if (m_pLastItem)
+			{
+				m_pLastItem->Deploy();
+				m_pActiveItem = m_pLastItem;
+				m_pLastItem = NULL;
+			}
+			m_pHeldItem->m_bHeld = false;
+			m_pHeldItem = nullptr;
+			m_flNextAttack = 0.2;
+			return;
+		}
+	}
+
 	// Hit Use on a train?
 	if ((m_afButtonPressed & IN_USE) != 0)
 	{
@@ -1540,12 +1558,30 @@ void CBasePlayer::PlayerUse()
 		}
 	}
 
-
 	while ((pObject = UTIL_FindEntityInSphere(pObject, pev->origin, PLAYER_SEARCH_RADIUS)) != NULL)
 	{
 
-		if ((pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) != 0)
+		if ((pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE | FCAP_HOLDABLE | FCAP_BRUSHHOLDABLE)) != 0)
 		{
+			if ((pObject->ObjectCaps() & FCAP_HOLDABLE) != 0 || (pObject->ObjectCaps() & FCAP_BRUSHHOLDABLE) != 0)
+			{
+				if ((pObject->ObjectCaps() & (FCAP_BRUSHHOLDABLE & FCAP_CONTINUOUS_USE)) == 0)
+				{
+					if (m_flNextAttack > 0)
+					{
+						continue;
+					}
+					else if ((pObject->pev->effects & EF_NODRAW) != 0)
+					{
+						continue;
+					}
+					else if ((pObject->pev->flags & FL_KILLME) != 0)
+					{
+						continue;
+					}
+				}
+			}
+
 			// !!!PERFORMANCE- should this check be done on a per case basis AFTER we've determined that
 			// this object is actually usable? This dot is being done for every object within PLAYER_SEARCH_RADIUS
 			// when player hits the use key. How many objects can be in that area, anyway? (sjb)
@@ -1566,14 +1602,6 @@ void CBasePlayer::PlayerUse()
 		}
 	}
 	pObject = pClosest;
-
-	if (pObject) // don't go through walls
-	{
-		//UTIL_TraceLine(pev->origin, pObject->Center(), dont_ignore_monsters, ENT(pev), &tr);
-
-	//	if (tr.pHit != ENT(pObject->pev))
-	//		pObject = NULL;
-	}
 	
 	// Found an object
 	if (pObject)
@@ -1584,7 +1612,69 @@ void CBasePlayer::PlayerUse()
 		if ((m_afButtonPressed & IN_USE) != 0)
 			EMIT_SOUND(ENT(pev), CHAN_ITEM, "common/wpn_select.wav", 0.4, ATTN_NORM);
 
-		if (((pev->button & IN_USE) != 0 && (caps & FCAP_CONTINUOUS_USE) != 0) ||
+		Vector min, max;
+
+		float size = -1.0f;
+		
+		if (pObject->IsBSPModel())
+		{
+			min = pObject->pev->mins / 25;
+			max = pObject->pev->maxs / 25;
+
+			size = min.Length() + max.Length();
+		}
+
+		if (pObject->IsBSPModel() && (caps & FCAP_BRUSHHOLDABLE) != 0 && size < 78)
+		{
+			m_pHeldItem = pObject;
+			if (m_pActiveItem)
+			{
+				m_pActiveItem->Holster();
+				m_pLastItem = m_pActiveItem;
+				m_pActiveItem = NULL;
+			}
+			pev->viewmodel = 0;
+		}
+		else if ((m_afButtonPressed & IN_USE) != 0 && (caps & (FCAP_HOLDABLE | FCAP_BRUSHHOLDABLE)) != 0 && size < 78)
+		{
+			if (pObject->pev->solid != SOLID_NOT)
+			{
+				TraceResult tr;
+				UTIL_TraceLine(GetGunPosition(), pObject->Center(), dont_ignore_monsters, ENT(pev), &tr);
+				if (!FNullEnt(tr.pHit) && CBaseEntity::Instance(tr.pHit) != pObject)
+				{
+					CBaseEntity* pTemp = NULL;
+					bool found = false;
+					while (pTemp = UTIL_FindEntityInSphere(pTemp, tr.vecEndPos, 3))
+					{
+						if (pTemp == pObject)
+						{
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+					{
+						pObject = NULL;
+						return;
+					}
+				}
+			}
+			if (pObject != nullptr)
+			{
+				m_pHeldItem = pObject;
+				if (m_pActiveItem)
+				{
+					m_pActiveItem->Holster();
+					m_pLastItem = m_pActiveItem;
+					m_pActiveItem = NULL;
+				}
+				if (FNullEnt(m_pHeldItem->pev->owner))
+					m_pHeldItem->pev->owner = ENT(pev);
+				pev->viewmodel = 0;
+			}
+		}
+		else if (((pev->button & IN_USE) != 0 && (caps & FCAP_CONTINUOUS_USE) != 0) ||
 			((m_afButtonPressed & IN_USE) != 0 && (caps & (FCAP_IMPULSE_USE | FCAP_ONOFF_USE)) != 0))
 		{
 			if ((caps & FCAP_CONTINUOUS_USE) != 0)
@@ -1605,7 +1695,111 @@ void CBasePlayer::PlayerUse()
 	}
 }
 
+void CBasePlayer::UpdateHeldItem()
+{
+	if (FNullEnt(m_pHeldItem))
+		return;
 
+	if ((m_pHeldItem->pev->flags & FL_KILLME) != 0 || (m_pHeldItem->pev->effects & EF_NODRAW) != 0 || (m_pHeldItem->pev->solid == SOLID_NOT))
+	{
+		if (m_pLastItem)
+		{
+			m_pLastItem->Deploy();
+			m_pActiveItem = m_pLastItem;
+			m_pLastItem = NULL;
+		}
+		m_pHeldItem->m_bHeld = false;
+		m_pHeldItem = nullptr;
+		return;
+	}
+
+	bool found = false;
+	TraceResult tr;
+	UTIL_TraceLine(GetGunPosition(), m_pHeldItem->Center(), dont_ignore_monsters, ENT(pev), &tr);
+	if (FNullEnt(tr.pHit) || CBaseEntity::Instance(tr.pHit) != m_pHeldItem)
+	{
+		CBaseEntity* pTemp = NULL;
+		while (pTemp = UTIL_FindEntityInSphere(pTemp, tr.vecEndPos, 3))
+		{
+			if (pTemp == m_pHeldItem)
+			{
+				found = true;
+				break;
+			}
+		}
+	}
+	else if (!FNullEnt(tr.pHit) && CBaseEntity::Instance(tr.pHit) == m_pHeldItem)
+	{
+		found = true;
+	}
+
+	if (!found)
+	{
+		if (m_pLastItem)
+		{
+			m_pLastItem->Deploy();
+			m_pActiveItem = m_pLastItem;
+			m_pLastItem = NULL;
+		}
+		m_pHeldItem->pev->velocity = pev->velocity;
+		m_pHeldItem->m_bHeld = false;
+		m_pHeldItem = nullptr;
+		return;
+	}
+	
+	float fraction = 0.0f;
+
+	Vector min, max;
+	if (m_pHeldItem->IsBSPModel())
+	{
+		min = m_pHeldItem->pev->mins / 25;
+		max = m_pHeldItem->pev->maxs / 25;
+
+		Vector v_angle = pev->v_angle;
+		v_angle.x = clamp(v_angle.x, -50, 50);
+
+		UTIL_MakeVectors(v_angle);
+
+		float size = min.Length() + max.Length();
+		m_pHeldItem->pev->velocity = pev->velocity + (((GetGunPosition() - m_pHeldItem->Center()) + (gpGlobals->v_forward * (5 + size))) * 30);
+	}
+	else
+	{
+		UTIL_MakeVectors(pev->v_angle);
+
+		m_pHeldItem->GetModelCollisionBox(min, max);
+
+		float size = min.Length() + max.Length();
+
+		UTIL_TraceLine(GetGunPosition(), GetGunPosition() + gpGlobals->v_forward * (60 + size), dont_ignore_monsters, ENT(pev), &tr);
+		fraction = tr.flFraction;
+
+		m_pHeldItem->pev->velocity = pev->velocity + (((GetGunPosition() - m_pHeldItem->Center()) - (gpGlobals->v_up * 5) + (gpGlobals->v_forward * (5 + size * fraction))) * 30);
+	}
+	
+	m_pHeldItem->pev->avelocity = Vector(0, 0, 0);
+
+	float yaw = m_pHeldItem->pev->angles.y;
+	m_pHeldItem->pev->angles.x = lerp(m_pHeldItem->pev->angles.x, 0, gpGlobals->frametime * 17.0f);
+	m_pHeldItem->pev->angles.y = yaw;
+	m_pHeldItem->pev->angles.z = lerp(m_pHeldItem->pev->angles.z, 0, gpGlobals->frametime * 17.0f);
+
+	m_pHeldItem->m_bHeld = true;
+
+	if ((m_afButtonPressed & IN_ATTACK) != 0)
+	{
+		m_pHeldItem->pev->velocity = pev->velocity + gpGlobals->v_forward * 300;
+		if (m_pLastItem)
+		{
+			m_pLastItem->Deploy();
+			m_pActiveItem = m_pLastItem;
+			m_pLastItem = NULL;
+		}
+		m_pHeldItem->m_bHeld = false;
+		m_pHeldItem = nullptr;
+		return;
+	}
+}
 
 void CBasePlayer::Jump()
 {
@@ -1881,6 +2075,7 @@ void CBasePlayer::PreThink()
 		m_pViewModel->UpdateThink();
 	}
 
+	UpdateHeldItem();
 	ItemPreFrame();
 	WaterMove();
 
@@ -2617,6 +2812,7 @@ void CBasePlayer::UpdatePlayerSound()
 
 void CBasePlayer::PostThink()
 {
+	UpdateHeldItem();
 	if (g_fGameOver)
 		goto pt_end; // intermission or finale
 
@@ -3738,12 +3934,25 @@ bool CBasePlayer::AddPlayerItem(CBasePlayerItem* pItem)
 
 	pInsert = m_rgpPlayerItems[pItem->iItemSlot()];
 
+	bool bReleasedHeldItem = false;
+
 	while (pInsert)
 	{
 		if (FClassnameIs(pInsert->pev, STRING(pItem->pev->classname)))
 		{
 			if (pItem->AddDuplicate(pInsert))
 			{
+				if (m_pHeldItem == pItem)
+				{
+					if (m_pLastItem)
+					{
+						m_pLastItem->Deploy();
+						m_pActiveItem = m_pLastItem;
+						m_pLastItem = NULL;
+					}
+					m_pHeldItem->m_bHeld = false;
+					m_pHeldItem = nullptr;
+				}
 				g_pGameRules->PlayerGotWeapon(this, pItem);
 				pItem->CheckRespawn();
 
@@ -3767,6 +3976,12 @@ bool CBasePlayer::AddPlayerItem(CBasePlayerItem* pItem)
 
 	if (pItem->AddToPlayer(this))
 	{
+		if (m_pHeldItem == pItem)
+		{
+			bReleasedHeldItem = true;
+			m_pHeldItem->m_bHeld = false;
+			m_pHeldItem = nullptr;
+		}
 		g_pGameRules->PlayerGotWeapon(this, pItem);
 		pItem->CheckRespawn();
 
@@ -3777,6 +3992,18 @@ bool CBasePlayer::AddPlayerItem(CBasePlayerItem* pItem)
 		if (g_pGameRules->FShouldSwitchWeapon(this, pItem))
 		{
 			SwitchWeapon(pItem);
+		}
+		else
+		{
+			if (bReleasedHeldItem)
+			{
+				if (m_pLastItem)
+				{
+					m_pLastItem->Deploy();
+					m_pActiveItem = m_pLastItem;
+					m_pLastItem = NULL;
+				}
+			}
 		}
 
 		return true;

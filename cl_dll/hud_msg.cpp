@@ -187,19 +187,36 @@ bool CHud::MsgFunc_Particles(const char* pszName, int iSize, void* pbuf)
 
 	
 	int m_iPreset = READ_BYTE();
-	Vector org;
-	org.x = READ_COORD();
-	org.y = READ_COORD();
-	org.z = READ_COORD();
 
 	switch (m_iPreset)
 	{
-	case 0:
+	case PARTICLE_EXPLOSMOKE:
+	{
+		Vector org;
+		org.x = READ_COORD();
+		org.y = READ_COORD();
+		org.z = READ_COORD();
 		ExplosionSmoke(org);
-	case 1:
-		ExplosionCluster(org);
-		break;
 	}
+	break;
+	case PARTICLE_EXPLOSION:
+	{
+		Vector org;
+		org.x = READ_COORD();
+		org.y = READ_COORD();
+		org.z = READ_COORD();
+		ExplosionCluster(org);
+	}
+	break;
+	case PARTICLE_BLOODDRIP:
+	{
+		int index = READ_SHORT();
+		int bloodcol = READ_BYTE();
+		BloodDroplets(index, bloodcol);
+	}
+	break;
+	}
+	
 
 	
 	return true;

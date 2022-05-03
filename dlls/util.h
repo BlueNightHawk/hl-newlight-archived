@@ -253,6 +253,7 @@ extern void UTIL_ShowMessage(const char* pString, CBaseEntity* pPlayer);
 extern void UTIL_ShowMessageAll(const char* pString);
 extern void UTIL_ScreenFadeAll(const Vector& color, float fadeTime, float holdTime, int alpha, int flags);
 extern void UTIL_ScreenFade(CBaseEntity* pEntity, const Vector& color, float fadeTime, float fadeHold, int alpha, int flags);
+extern void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec);
 
 typedef enum
 {

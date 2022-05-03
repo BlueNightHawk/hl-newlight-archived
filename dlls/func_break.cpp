@@ -809,7 +809,7 @@ public:
 	void EXPORT StopSound();
 	//	virtual void	SetActivator( CBaseEntity *pActivator ) { m_pPusher = pActivator; }
 
-	int ObjectCaps() override { return (CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION) | FCAP_CONTINUOUS_USE; }
+	int ObjectCaps() override { return (CBaseEntity::ObjectCaps() & ~FCAP_ACROSS_TRANSITION)| FCAP_BRUSHHOLDABLE | FCAP_CONTINUOUS_USE; }
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 

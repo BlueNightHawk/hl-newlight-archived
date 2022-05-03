@@ -24,6 +24,60 @@
 
 LINK_ENTITY_TO_CLASS(weapon_handgrenade, CHandGrenade);
 
+class CHGrenade : public CGrenade
+{
+public:
+	int ObjectCaps() override { return CGrenade::ObjectCaps() | FCAP_HOLDABLE; }
+	
+	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override
+	{
+		return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+	}
+
+	static CHGrenade* CHGrenade::ShootTimed(entvars_t* pevOwner, Vector vecStart, Vector vecVelocity, float time)
+	{
+	#ifdef CLIENT_DLL
+		return nullptr;
+	#else
+		CHGrenade* pGrenade = GetClassPtr((CHGrenade*)NULL);
+		pGrenade->Spawn();
+		UTIL_SetOrigin(pGrenade->pev, vecStart);
+		pGrenade->pev->velocity = vecVelocity;
+		pGrenade->pev->angles = UTIL_VecToAngles(pGrenade->pev->velocity);
+		pGrenade->pev->owner = ENT(pevOwner);
+		pGrenade->pev->takedamage = DAMAGE_YES;
+
+		pGrenade->SetTouch(&CGrenade::BounceTouch); // Bounce if touched
+
+		// Take one second off of the desired detonation time and set the think to PreDetonate. PreDetonate
+		// will insert a DANGER sound into the world sound list and delay detonation for one second so that
+		// the grenade explodes after the exact amount of time specified in the call to ShootTimed().
+
+		pGrenade->pev->dmgtime = gpGlobals->time + time;
+		pGrenade->SetThink(&CGrenade::TumbleThink);
+		pGrenade->pev->nextthink = gpGlobals->time + 0.1;
+		if (time < 0.1)
+		{
+			pGrenade->pev->nextthink = gpGlobals->time;
+			pGrenade->pev->velocity = Vector(0, 0, 0);
+		}
+
+		pGrenade->pev->sequence = RANDOM_LONG(3, 6);
+		pGrenade->pev->framerate = 1.0;
+
+		// Tumble through the air
+		// pGrenade->pev->avelocity.x = -400;
+
+		pGrenade->pev->gravity = 0.5;
+		pGrenade->pev->friction = 0.8;
+
+		SET_MODEL(ENT(pGrenade->pev), "models/w_grenade.mdl");
+		pGrenade->pev->dmg = 100;
+
+		return pGrenade;
+		#endif
+	}
+};
 
 void CHandGrenade::Spawn()
 {
@@ -145,7 +199,7 @@ void CHandGrenade::WeaponIdle()
 		if (time < 0)
 			time = 0;
 
-		CGrenade::ShootTimed(m_pPlayer->pev, vecSrc, vecThrow, time);
+		CHGrenade::ShootTimed(m_pPlayer->pev, vecSrc, vecThrow, time);
 
 		if (flVel < 500)
 		{

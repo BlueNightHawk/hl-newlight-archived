@@ -260,6 +260,8 @@ public:
 	CBasePlayerItem* m_pNext;
 	int m_iId; // WEAPON_???
 
+	int ObjectCaps() override { return CBaseAnimating::ObjectCaps() | FCAP_HOLDABLE; }
+
 	virtual int iItemSlot() { return 0; } // return 0 to MAX_ITEMS_SLOTS, used in hud
 
 	int iItemPosition() { return ItemInfoArray[m_iId].iPosition; }
@@ -276,6 +278,11 @@ public:
 	float GetSeqLength(int sequence) override;
 	int GetActivityHeaviest(int activity) override;
 	int LookupActivity(int activity) override;
+
+	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override
+	{
+		return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+	}
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 };
@@ -380,8 +387,15 @@ public:
 	void EXPORT DefaultTouch(CBaseEntity* pOther); // default weapon touch
 	virtual bool AddAmmo(CBaseEntity* pOther) { return true; }
 
+	int ObjectCaps() override { return CBaseEntity::ObjectCaps() | FCAP_HOLDABLE; }
+
 	CBaseEntity* Respawn() override;
 	void EXPORT Materialize();
+
+	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override
+	{
+		return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+	}
 };
 
 
