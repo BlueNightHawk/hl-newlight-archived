@@ -175,7 +175,7 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 		extern Vector v_angles;
 		Vector forward, right, up;
 		AngleVectors(v_angles, forward, right, up);
-		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[7], Vector(g_pparams.simvel) + (right * -50), g_viewinfo.actualboneangles[7], 25.0f, 1, 0);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[7], Vector(g_pparams.simvel) + (right * -80), g_viewinfo.actualboneangles[7], 25.0f, 1, 0);
 		if (ptemp)
 		{
 			ptemp->entity.baseline.angles[1] = g_viewinfo.actualboneangles[7][1] * 1.3;

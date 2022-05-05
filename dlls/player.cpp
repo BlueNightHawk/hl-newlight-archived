@@ -1571,6 +1571,10 @@ void CBasePlayer::PlayerUse()
 					{
 						continue;
 					}
+					else if (pObject->pev->solid == SOLID_NOT)
+					{
+						continue;
+					}
 					else if ((pObject->pev->effects & EF_NODRAW) != 0)
 					{
 						continue;
@@ -1698,8 +1702,15 @@ void CBasePlayer::PlayerUse()
 void CBasePlayer::UpdateHeldItem()
 {
 	if (FNullEnt(m_pHeldItem))
+	{
+		if (m_pLastItem && !m_pActiveItem)
+		{
+			m_pLastItem->Deploy();
+			m_pActiveItem = m_pLastItem;
+			m_pLastItem = NULL;
+		}
 		return;
-
+	}
 	if ((m_pHeldItem->pev->flags & FL_KILLME) != 0 || (m_pHeldItem->pev->effects & EF_NODRAW) != 0 || (m_pHeldItem->pev->solid == SOLID_NOT))
 	{
 		if (m_pLastItem)
@@ -1716,6 +1727,24 @@ void CBasePlayer::UpdateHeldItem()
 	bool found = false;
 	TraceResult tr;
 	UTIL_TraceLine(GetGunPosition(), m_pHeldItem->Center(), dont_ignore_monsters, ENT(pev), &tr);
+
+	Vector vDiff = GetGunPosition() - m_pHeldItem->Center();
+	float flDist = vDiff.Length();
+
+	if (flDist > 120)
+	{
+		if (m_pLastItem)
+		{
+			m_pLastItem->Deploy();
+			m_pActiveItem = m_pLastItem;
+			m_pLastItem = NULL;
+		}
+		m_pHeldItem->pev->velocity = pev->velocity;
+		m_pHeldItem->m_bHeld = false;
+		m_pHeldItem = nullptr;
+		return;
+	}
+
 	if (FNullEnt(tr.pHit) || CBaseEntity::Instance(tr.pHit) != m_pHeldItem)
 	{
 		CBaseEntity* pTemp = NULL;
@@ -3346,6 +3375,8 @@ bool CBasePlayer::Restore(CRestore& restore)
 
 void CBasePlayer::SelectNextItem(int iItem)
 {
+	if (m_pHeldItem)
+		return;
 	CBasePlayerItem* pItem;
 
 	pItem = m_rgpPlayerItems[iItem];
@@ -3396,6 +3427,9 @@ void CBasePlayer::SelectNextItem(int iItem)
 
 void CBasePlayer::SelectItem(const char* pstr)
 {
+	if (m_pHeldItem)
+		return;
+
 	if (!pstr)
 		return;
 

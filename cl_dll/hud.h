@@ -615,7 +615,6 @@ public:
 	// sprite indexes
 	int m_HUD_number_0;
 
-
 	void AddHudElem(CHudBase* p);
 
 	float GetSensitivity();
@@ -631,6 +630,12 @@ public:
 	entity_state_t m_prevstate;
 
 	char m_szGlowModels[512][64];
+
+	float m_flCrosshairSize;
+
+
+	cvar_t* hud_crosshair;
+	cvar_t* hud_crosshair_speed;
 };
 
 typedef struct viewinfo_s

@@ -829,7 +829,7 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 	float clTime = m_clTime;
 	extern ref_params_s g_pparams;
 
-	bool viewmodel = false; // m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
+	bool viewmodel = m_pCurrentEntity == gEngfuncs.GetViewModel() || m_pCurrentEntity->index == -555;
 
 	if (viewmodel != false && g_pparams.paused)
 	{
@@ -2598,7 +2598,7 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	gEngfuncs.pEventAPI->EV_SetSolidPlayers(gEngfuncs.GetLocalPlayer()->index - 1);
 
 	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
-	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_STUDIO_BOX | PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
 
 	if (iShouldDrawLegs != 0 && !cam_thirdperson)
 	{
@@ -2608,6 +2608,10 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 			AngleVectors(Vector(0, v_angles[1], v_angles[2]), forward, NULL, NULL);
 
 			gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc + forward * 15, vecEnd, PM_GLASS_IGNORE | PM_WORLD_ONLY, m_pCurrentEntity->index, &tr);
+
+			float z = tr.endpos.z;
+			tr.endpos = m_pCurrentEntity->origin;
+			tr.endpos.z = z;
 		}
 	}
 	gEngfuncs.pEventAPI->EV_PopPMStates();
@@ -2655,7 +2659,6 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 		}
 	}
 
-
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -2692,6 +2695,8 @@ void CStudioModelRenderer::StudioDrawShadow()
 		glDepthFunc(GL_LESS);
 		StudioDrawPointsShadow();
 		glDepthFunc(GL_LEQUAL);
+
+		glDepthRange(0.0f, 1.0f);
 
 		glEnable(GL_TEXTURE_2D);
 		glDisable(GL_BLEND);

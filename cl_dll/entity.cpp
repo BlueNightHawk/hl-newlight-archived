@@ -352,8 +352,8 @@ void CL_Muzzleflash(const Vector org)
 		dl->origin = org;
 		dl->color = {249, 207, 87};
 		dl->radius = gEngfuncs.pfnRandomFloat(100, 135);
-		dl->die = gEngfuncs.GetClientTime() + gHUD.m_flTimeDelta * 10;
-		dl->decay = 250;
+		dl->die = gEngfuncs.GetClientTime() + gHUD.m_flTimeDelta * 20;
+		dl->decay = 300;
 	}
 }
 /*

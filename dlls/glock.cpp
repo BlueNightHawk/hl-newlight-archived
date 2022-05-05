@@ -80,7 +80,10 @@ bool CGlock::Deploy()
 
 void CGlock::SecondaryAttack()
 {
-	GlockFire(0.1, 0.2, false);
+	if ((m_pPlayer->pev->button & IN_ATTACK) == 0)
+		return;
+	PrimaryAttack();
+	//	GlockFire(0.1, 0.2, false);
 }
 
 void CGlock::Holster()
@@ -98,7 +101,10 @@ void CGlock::Holster()
 
 void CGlock::PrimaryAttack()
 {
-	GlockFire(0.01, 0.3, true);
+	if ((m_pPlayer->m_afButtonPressed & IN_ATTACK) == 0)
+		return;
+
+	GlockFire(0.01, 0.15, true);
 }
 
 void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
@@ -111,6 +117,7 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 			m_flNextPrimaryAttack = GetNextAttackDelay(0.2);
 		}
 
+		Reload();
 		return;
 	}
 

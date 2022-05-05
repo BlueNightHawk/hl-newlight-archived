@@ -276,7 +276,7 @@ void SmokeCallback(CBaseParticle* ent)
 	{
 		CBaseParticle* pPrtcl = CreateGunSmoke(ent->m_vOrigin + tr.plane.normal * 20, "sprites/particles/black_smoke1.spr", gEngfuncs.pfnRandomFloat(60, 80), gEngfuncs.pfnRandomFloat(200, 255));
 
-		pPrtcl->m_iFramerate = 35;
+		pPrtcl->m_iFramerate = 42;
 		pPrtcl->SetLightFlag(LIGHT_INTENSITY);
 		pPrtcl->m_iRendermode = kRenderTransColor;
 
@@ -285,8 +285,57 @@ void SmokeCallback(CBaseParticle* ent)
 		else
 			pPrtcl->m_vColor = Vector(255, 255, 255);
 
+		pPrtcl->m_iFrame = 15;
+
 		ent->m_flNextCallback = gEngfuncs.GetClientTime() + 0.05f;
 	}
+}
+
+void FireCallback(CBaseParticle* ent)
+{
+	if (ent->m_flNextCallback > gEngfuncs.GetClientTime())
+		return;
+
+	if (ent->m_flBrightness <= 1)
+	{
+		ent->m_flDieTime = 0.1;
+		return;
+	}
+
+	dlight_t *d = gEngfuncs.pEfxAPI->CL_AllocDlight(0);
+	d->origin = ent->m_vOrigin;
+	d->color = {255, 255, 0};
+	d->radius = gEngfuncs.pfnRandomFloat(30, 50);
+	d->die = gEngfuncs.GetClientTime() + 0.1;
+	d->decay = 150;
+
+	ent->m_flNextCallback = gEngfuncs.GetClientTime() + 0.1;
+}
+
+void FireballTouch(CBaseParticle* ent, pmtrace_s* pTrace)
+{
+	Vector angles;
+	VectorAngles(pTrace->plane.normal, angles);
+	if (angles[0] != 90 || (angles.y + angles.z) != 0)
+		return;
+
+	model_s* spr = IEngineStudio.Mod_ForName("sprites/fire.spr", 0);
+
+	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(ent->m_vOrigin + pTrace->plane.normal * 5, pTrace->plane.normal, spr, gEngfuncs.pfnRandomFloat(10, 20), 255, "");
+
+	if (pParticle)
+	{
+		pParticle->m_iRendermode = kRenderTransAdd;
+		pParticle->m_iFramerate = 25;
+		pParticle->SetLightFlag(LIGHT_NONE);
+		pParticle->m_flFadeSpeed = 4;
+		pParticle->SetRenderFlag(RENDER_FACEPLAYER_ROTATEZ);
+		pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 5.5f;
+		pParticle->m_iNumFrames = spr->numframes;
+		pParticle->Callback = FireCallback;
+	}
+
+	ent->m_flDieTime = 0.1;
 }
 
 void ExplosionCluster(Vector origin)
@@ -303,11 +352,8 @@ void ExplosionCluster(Vector origin)
 
 	char mat = GetTexType(-1, &tr, origin, origin - Vector(0, 0, 50));
 
-	for (int i = 0; i < gEngfuncs.pfnRandomLong(2, 20); i++)
+	for (int i = 0; i < gEngfuncs.pfnRandomLong(4, 26); i++)
 	{
-		if (i == gEngfuncs.pfnRandomLong(2, 20))
-			continue;
-
 		CBaseParticle* pParticle = NULL;
 
 		char* spr = NULL;
@@ -404,7 +450,31 @@ void ExplosionCluster(Vector origin)
 			pParticle->m_vColor = color;
 			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life;
 			pParticle->SetLightFlag(lflag);
-			pParticle->Callback = SmokeCallback;
+
+			if ((i % 2) == 0)
+				pParticle->Callback = SmokeCallback;
+			else
+				pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life * 50;
+	
+			pParticle->SetCollisionFlags(cflag);
+		}
+	}
+
+
+	for (int i = 0; i < gEngfuncs.pfnRandomLong(4, 6); i++)
+	{
+		CBaseParticle* pParticle = NULL;
+
+		pParticle = CreateCollideParticle(&tr, "sprites/hotglow.spr", 100, Vector(gEngfuncs.pfnRandomFloat(-250, 250), gEngfuncs.pfnRandomFloat(-250, 250), 500), scale, brightness);
+
+		if (pParticle)
+		{
+			pParticle->m_iRendermode = kRenderTransAdd;
+			pParticle->m_vColor = Vector(255,255,255);
+			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + life;
+			pParticle->SetLightFlag(LIGHT_NONE);
+			pParticle->TouchCallback = FireballTouch;
+
 			pParticle->SetCollisionFlags(cflag);
 		}
 	}
@@ -430,7 +500,7 @@ void BloodDropCallback(CBaseParticle *ent)
 {
 	cl_entity_s* owner = ent->owner;
 
-	if (!owner)
+	if (!owner || (owner->curstate.effects & EF_NODRAW) != 0 || (owner->curstate.renderamt < 10)) 
 	{
 		ent->m_flDieTime = 0.1;
 		return;
@@ -462,7 +532,7 @@ void BloodDropCallback(CBaseParticle *ent)
 			if (ent->m_iuser1 == 1)
 				pParticle->m_vColor = Vector(255, 0, 0);
 			else
-				pParticle->m_vColor = Vector(255, 255, 255);
+				pParticle->m_vColor = Vector(255, 229, 180);
 
 			pParticle->m_flBrightness = 255;
 			pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 100.0f;
@@ -487,7 +557,7 @@ void BloodDropCallback(CBaseParticle *ent)
 		if (ent->m_iuser1 == 1)
 			pPrtcl->m_vColor = Vector(255, 0, 0);
 		else
-			pPrtcl->m_vColor = Vector(255, 255, 255);
+			pPrtcl->m_vColor = Vector(255, 229, 180);
 
 		ent->m_fuser1 = gEngfuncs.GetClientTime() + gEngfuncs.pfnRandomFloat(0.05, 0.15);
 	}

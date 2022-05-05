@@ -238,6 +238,9 @@ void CBasePlayerWeapon::ItemPostFrame()
 
 void CBasePlayer::SelectLastItem()
 {
+	if (m_pHeldItem)
+		return;
+
 	if (!m_pLastItem)
 	{
 		return;

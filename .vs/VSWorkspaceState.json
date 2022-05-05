@@ -2,11 +2,12 @@
   "ExpandedNodes": [
     "",
     "\\cl_dll",
+    "\\cl_dll\\particleman",
     "\\dlls",
     "\\pm_shared",
     "\\projects",
     "\\projects\\vs2019"
   ],
-  "SelectedNode": "\\dlls\\player.cpp",
+  "SelectedNode": "\\cl_dll\\particleman\\particle_presets.cpp",
   "PreviewInSolutionExplorer": false
 }

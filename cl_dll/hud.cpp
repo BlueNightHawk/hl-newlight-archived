@@ -460,6 +460,9 @@ void CHud::Init()
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
 	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
 
+	hud_crosshair = CVAR_CREATE("hud_crosshair", "1", FCVAR_ARCHIVE);		 // main cvar
+	hud_crosshair_speed = CVAR_CREATE("hud_crosshair_speed", "65", FCVAR_ARCHIVE); // speed of returning the sight to its original size
+
 	print_subtitles = gEngfuncs.pfnRegisterVariable("subtitles", "2", FCVAR_ARCHIVE);
 	subtitles_font_scale = gEngfuncs.pfnRegisterVariable("subtitles_font_scale", "1", FCVAR_ARCHIVE);
 	subtitles_language = gEngfuncs.pfnRegisterVariable("subtitles_language", "en", FCVAR_ARCHIVE);
