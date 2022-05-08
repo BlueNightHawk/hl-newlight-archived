@@ -32,6 +32,7 @@
 // so make sure engine declarations aren't done twice
 
 // fed up of errors
+#undef HSPRITE
 #define HSPRITE int  // handle to a graphic
 
 #define SCRINFO_SCREENFLASH 1

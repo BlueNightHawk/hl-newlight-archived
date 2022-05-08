@@ -2842,6 +2842,19 @@ void CBasePlayer::UpdatePlayerSound()
 void CBasePlayer::PostThink()
 {
 	UpdateHeldItem();
+
+	if (m_flRecoilTime < gpGlobals->time)
+	{
+		/*
+		float len;
+
+		len = VectorNormalize(m_vecRecoil);
+		len -= (10.0 + len * 0.5) * (gpGlobals->frametime * 1.5f);
+		len = V_max(len, 0.0);
+		m_vecRecoil = m_vecRecoil * len;
+		*/
+		UTIL_SmoothInterpolateAngles(m_vecRecoil, Vector(0, 0, 0), m_vecRecoil, 25.0f);
+	}
 	if (g_fGameOver)
 		goto pt_end; // intermission or finale
 
@@ -4642,7 +4655,7 @@ Vector CBasePlayer::GetAutoaimVector(float flDelta)
 {
 	if (g_iSkillLevel == SKILL_HARD)
 	{
-		UTIL_MakeVectors(pev->v_angle + pev->punchangle);
+		UTIL_MakeVectors(pev->v_angle + pev->punchangle + m_vecRecoil);
 		return gpGlobals->v_forward;
 	}
 
@@ -4719,7 +4732,7 @@ Vector CBasePlayer::GetAutoaimVector(float flDelta)
 
 	// ALERT( at_console, "%f %f\n", angles.x, angles.y );
 
-	UTIL_MakeVectors(pev->v_angle + pev->punchangle + m_vecAutoAim);
+	UTIL_MakeVectors(pev->v_angle + pev->punchangle + m_vecAutoAim + m_vecRecoil);
 	return gpGlobals->v_forward;
 }
 

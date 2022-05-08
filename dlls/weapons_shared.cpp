@@ -268,3 +268,38 @@ void CBasePlayer::SelectLastItem()
 	m_pActiveItem->Deploy();
 	m_pActiveItem->UpdateItemInfo();
 }
+
+void CBaseEntity::CalcSpread(Vector& spread, Vector forward)
+{
+	CBasePlayer* pPlayer = ((CBasePlayer*)this);
+
+	TraceResult tr;
+
+	Vector outspread;
+	Vector baseSpread = spread;
+
+	float flWpnSpread = 1;
+	float flVelSpread = V_max(pev->velocity.Length() * 0.005, 1);
+	float flCrouchSpread = ((pev->flags & FL_DUCKING) != 0) ? 0.75 : 1;
+	float flRangeSpread = 1;
+
+	UTIL_TraceLine(pPlayer->GetGunPosition(), pPlayer->GetGunPosition() + forward * 8192, dont_ignore_monsters, ENT(pev), &tr);
+
+	flRangeSpread += tr.flFraction / 5;
+
+	if (pPlayer->m_pActiveItem)
+	{
+		flWpnSpread = pPlayer->m_pActiveItem->SpreadMultiplier();
+	}
+
+	// Add in velocity
+	outspread = baseSpread * flVelSpread;
+	// Improve spread when crouched
+	outspread = outspread * flCrouchSpread;
+	// Add a bit of spread on long ranges
+	outspread = outspread * flRangeSpread;
+
+
+	if (outspread.Length() != spread.Length())
+		spread = outspread * flWpnSpread;
+}

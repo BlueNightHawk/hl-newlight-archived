@@ -366,6 +366,9 @@ public:
 	// Holdable items
 	CBaseEntity* m_pHeldItem;
 	void UpdateHeldItem();
+	Vector m_vecRecoil;
+
+	float m_flRecoilTime;
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

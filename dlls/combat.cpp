@@ -30,6 +30,7 @@
 #include "weapons.h"
 #include "func_break.h"
 
+#include "player.h"
 #include "UserMessages.h"
 
 extern Vector VecBModelOrigin(entvars_t* pevBModel);
@@ -1578,6 +1579,8 @@ Vector CBaseEntity::FireBulletsPlayer(unsigned int cShots, Vector vecSrc, Vector
 
 	ClearMultiDamage();
 	gMultiDamage.type = DMG_BULLET | DMG_NEVERGIB;
+
+	CalcSpread(vecSpread, vecDirShooting);
 
 	for (unsigned int iShot = 1; iShot <= cShots; iShot++)
 	{

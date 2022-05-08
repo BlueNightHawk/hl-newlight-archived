@@ -57,6 +57,8 @@ static int tracerCount[MAX_PLAYERS];
 void V_PunchAxis(int axis, float punch);
 void V_OldPunchAxis(int axis, float punch);
 
+extern Vector ev_recoilangle;
+
 void VectorAngles(const float* forward, float* angles);
 
 extern cvar_t* cl_lw;
@@ -498,29 +500,19 @@ void EV_HLDM_FireBullets(int idx, float* forward, float* right, float* up, int c
 			{
 			default:
 			case BULLET_PLAYER_9MM:
-
 				EV_HLDM_PlayTextureSound(idx, &tr, vecSrc, vecEnd, iBulletType);
 				EV_HLDM_DecalGunshot(&tr, iBulletType);
-
 				break;
 			case BULLET_PLAYER_MP5:
-
-				if (!tracer)
-				{
-					EV_HLDM_PlayTextureSound(idx, &tr, vecSrc, vecEnd, iBulletType);
-					EV_HLDM_DecalGunshot(&tr, iBulletType);
-				}
+				EV_HLDM_PlayTextureSound(idx, &tr, vecSrc, vecEnd, iBulletType);
+				EV_HLDM_DecalGunshot(&tr, iBulletType);			
 				break;
 			case BULLET_PLAYER_BUCKSHOT:
-
 				EV_HLDM_DecalGunshot(&tr, iBulletType);
-
 				break;
 			case BULLET_PLAYER_357:
-
 				EV_HLDM_PlayTextureSound(idx, &tr, vecSrc, vecEnd, iBulletType);
 				EV_HLDM_DecalGunshot(&tr, iBulletType);
-
 				break;
 			}
 		}
@@ -765,8 +757,9 @@ void EV_FireMP5(event_args_t* args)
 	VectorCopy(args->origin, origin);
 	VectorCopy(args->angles, angles);
 	VectorCopy(args->velocity, velocity);
+	float recoil = args->iparam1 / 1000;
 
-	AngleVectors(angles, forward, right, up);
+	AngleVectors(angles + Vector(recoil,0,0), forward, right, up);
 
 	shell = gEngfuncs.pEventAPI->EV_FindModelIndex("models/shell.mdl"); // brass shell
 
@@ -776,8 +769,12 @@ void EV_FireMP5(event_args_t* args)
 		EV_MuzzleFlash();
 		EV_SendWeaponAnim(ACT_RANGE_ATTACK1);
 
-		V_OldPunchAxis(0, gEngfuncs.pfnRandomFloat(-0.5, -0.35));
+		V_OldPunchAxis(0, gEngfuncs.pfnRandomFloat(-0.86, 0.86));
+		V_OldPunchAxis(2, gEngfuncs.pfnRandomFloat(-1.5, 1.5));
 
+		ev_recoilangle[0] -= 0.5f;
+
+		gHUD.m_flRecoilTime = gEngfuncs.GetClientTime() + 0.1;
 		gHUD.m_flCrosshairSize += 12;
 	}
 

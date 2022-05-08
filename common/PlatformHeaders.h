@@ -63,11 +63,13 @@
 #ifdef ARRAYSIZE
 #undef ARRAYSIZE
 #endif
+#undef HSPRITE
 #define HSPRITE WINDOWS_HSPRITE
 
 #include <Windows.h>
 
 #undef HSPRITE
+#define HSPRITE int
 #pragma pop_macro("ARRAYSIZE")
 #else
 //Add core Linux headers here if you need them

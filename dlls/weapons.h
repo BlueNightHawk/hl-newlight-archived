@@ -106,7 +106,7 @@ public:
 //#define CROWBAR_MAX_CLIP		WEAPON_NOCLIP
 #define GLOCK_MAX_CLIP 17
 #define PYTHON_MAX_CLIP 6
-#define MP5_MAX_CLIP 50
+#define MP5_MAX_CLIP 30
 #define MP5_DEFAULT_AMMO 25
 #define SHOTGUN_MAX_CLIP 8
 #define CROSSBOW_MAX_CLIP 5
@@ -283,6 +283,8 @@ public:
 	{
 		return PhysTakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
 	}
+
+	virtual float SpreadMultiplier() { return 1.0f; }
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 };

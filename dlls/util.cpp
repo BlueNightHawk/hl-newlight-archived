@@ -2575,7 +2575,7 @@ bool CRestore::BufferCheckZString(const char* string)
 
 void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec)
 {
-	float absd, frac, d, threshhold;
+	float absd, frac, d;
 
 	NormalizeAngles(startAngle);
 	NormalizeAngles(endAngle);

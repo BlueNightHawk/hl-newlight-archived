@@ -74,6 +74,8 @@ CSatchel g_Satchel;
 CTripmine g_Tripmine;
 CSqueak g_Snark;
 
+CBasePlayerWeapon* g_pWeapon;
+
 extern cvar_t* cl_toggleisight;
 extern cvar_t* cl_autowepswitch;
 
@@ -263,6 +265,8 @@ Only produces random numbers to match the server ones.
 Vector CBaseEntity::FireBulletsPlayer(unsigned int cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq, int iDamage, entvars_t* pevAttacker, int shared_rand)
 {
 	float x = 0, y = 0, z;
+
+	CalcSpread(vecSpread, vecDirShooting);
 
 	for (unsigned int iShot = 1; iShot <= cShots; iShot++)
 	{
@@ -545,6 +549,15 @@ void HUD_SetLastOrg()
 	}
 }
 
+void HUD_PostFrame()
+{
+	if (player.m_flNextAttack > 0)
+		return;
+
+	if (g_pWeapon)
+		g_pWeapon->ItemPostFrame();
+}
+
 	/*
 =====================
 HUD_WeaponsPostThink
@@ -630,6 +643,8 @@ void HUD_WeaponsPostThink(local_state_s* from, local_state_s* to, usercmd_t* cmd
 		pWeapon = &g_Snark;
 		break;
 	}
+
+	g_pWeapon = pWeapon;
 
 	// Store pointer to our destination entity_state_t so we can get our origin, etc. from it
 	//  for setting up events on the client

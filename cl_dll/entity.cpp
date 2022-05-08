@@ -313,6 +313,8 @@ void Beams()
 }
 #endif
 
+extern void HUD_PostFrame();
+
 /*
 =========================
 HUD_CreateEntities
@@ -339,6 +341,8 @@ void DLLEXPORT HUD_CreateEntities()
 
 	// Add in any game specific objects
 	Game_AddObjects();
+
+	HUD_PostFrame();
 
 	GetClientVoiceMgr()->CreateEntities();
 }

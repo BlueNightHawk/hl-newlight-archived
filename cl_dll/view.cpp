@@ -42,6 +42,8 @@ extern float vJumpAngles[3];
 void V_DropPunchAngle(float frametime, float* ev_punchangle);
 void V_Punch(float* ev_punchangle, float *punch, float frametime);
 
+void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec);
+
 void VectorAngles(const float* forward, float* angles);
 
 #include "r_studioint.h"
@@ -84,6 +86,8 @@ Vector v_client_aimangles;
 Vector ev_punchangle;
 Vector ev_oldpunchangle;
 Vector ev_punch;
+
+Vector ev_recoilangle;
 
 cvar_t* scr_ofsx;
 cvar_t* scr_ofsy;
@@ -939,6 +943,12 @@ void V_ApplyPunchAngles(struct ref_params_s* pparams, cl_entity_s* view)
 
 	// calculate punchangles
 	V_DropPunchAngle(pparams->frametime, (float*)&ev_oldpunchangle);
+
+	v_frametime = pparams->frametime;
+
+	if (gHUD.m_flRecoilTime < gEngfuncs.GetClientTime())
+		UTIL_SmoothInterpolateAngles((float*)&ev_recoilangle, Vector(0, 0, 0), (float*)&ev_recoilangle, 25.0f);
+
 	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
 	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);
 
@@ -947,11 +957,13 @@ void V_ApplyPunchAngles(struct ref_params_s* pparams, cl_entity_s* view)
 
 	// Include client side punch, too
 	VectorAdd(pparams->viewangles, (float*)&ev_punchangle, pparams->viewangles);
+	VectorAdd(pparams->viewangles, (float*)&ev_recoilangle, pparams->viewangles);
 	VectorAdd(pparams->viewangles, (float*)&ev_oldpunchangle, pparams->viewangles);
 
 	// Add half of punchangles to viewmodel angles
 	VectorAdd(view->angles, INVPITCH((ev_punchangle * 0.5f)), view->angles);
 	VectorAdd(view->angles, INVPITCH((ev_oldpunchangle * 0.5f)), view->angles);
+	VectorAdd(view->angles, INVPITCH((ev_recoilangle * 1.01f)), view->angles);
 }
 
 /*
@@ -2423,3 +2435,50 @@ void V_Move(int mx, int my)
 }
 
 #endif
+
+void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec)
+{
+	float absd, frac, d;
+
+	NormalizeAngles(startAngle);
+	NormalizeAngles(endAngle);
+
+	for (int i = 0; i < 3; i++)
+	{
+		d = endAngle[i] - startAngle[i];
+
+		if (d > 180.0f)
+		{
+			d -= 360.0f;
+		}
+		else if (d < -180.0f)
+		{
+			d += 360.0f;
+		}
+
+		absd = fabs(d);
+
+		if (absd > 0.01f)
+		{
+			frac = degreesPerSec * v_frametime;
+
+			if (frac > absd)
+			{
+				finalAngle[i] = endAngle[i];
+			}
+			else
+			{
+				if (d > 0)
+					finalAngle[i] = startAngle[i] + frac;
+				else
+					finalAngle[i] = startAngle[i] - frac;
+			}
+		}
+		else
+		{
+			finalAngle[i] = endAngle[i];
+		}
+	}
+
+	NormalizeAngles(finalAngle);
+}

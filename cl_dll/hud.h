@@ -632,7 +632,7 @@ public:
 	char m_szGlowModels[512][64];
 
 	float m_flCrosshairSize;
-
+	float m_flRecoilTime;
 
 	cvar_t* hud_crosshair;
 	cvar_t* hud_crosshair_speed;

@@ -456,6 +456,8 @@ public:
 	bool m_bHeld;
 
 	int m_bitsDamageType;
+
+	void CalcSpread(Vector& spread, Vector forward);
 };
 
 inline bool FNullEnt(CBaseEntity* ent) { return (ent == NULL) || FNullEnt(ent->edict()); }
