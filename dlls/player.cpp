@@ -85,6 +85,7 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_lastDamageAmount, FIELD_INTEGER),
 
 		DEFINE_ARRAY(CBasePlayer, m_rgpPlayerItems, FIELD_CLASSPTR, MAX_ITEM_TYPES),
+		DEFINE_FIELD(CBasePlayer, m_pNextItem, FIELD_CLASSPTR),
 		DEFINE_FIELD(CBasePlayer, m_pActiveItem, FIELD_CLASSPTR),
 		DEFINE_FIELD(CBasePlayer, m_pLastItem, FIELD_CLASSPTR),
 		DEFINE_FIELD(CBasePlayer, m_pHeldItem, FIELD_CLASSPTR),
@@ -114,7 +115,7 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_flIdleTime, FIELD_TIME),
 
 		DEFINE_ARRAY(CBasePlayer, m_bNotFirstDraw, FIELD_BOOLEAN, MAX_WEAPONS),
-		
+		DEFINE_FIELD(CBasePlayer, m_flNextAttack, FIELD_FLOAT),
 
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
@@ -1490,11 +1491,11 @@ void CBasePlayer::PlayerUse()
 	{
 		if (m_pHeldItem != nullptr)
 		{
-			if (m_pLastItem)
+			if (m_pNextItem)
 			{
-				m_pLastItem->Deploy();
-				m_pActiveItem = m_pLastItem;
-				m_pLastItem = NULL;
+				m_pNextItem->Deploy();
+				m_pActiveItem = m_pNextItem;
+				m_pNextItem = NULL;
 			}
 			m_pHeldItem->m_bHeld = false;
 			m_pHeldItem = nullptr;
@@ -1634,7 +1635,7 @@ void CBasePlayer::PlayerUse()
 			if (m_pActiveItem)
 			{
 				m_pActiveItem->Holster();
-				m_pLastItem = m_pActiveItem;
+				m_pNextItem = m_pActiveItem;
 				m_pActiveItem = NULL;
 			}
 			pev->viewmodel = 0;
@@ -1670,7 +1671,7 @@ void CBasePlayer::PlayerUse()
 				if (m_pActiveItem)
 				{
 					m_pActiveItem->Holster();
-					m_pLastItem = m_pActiveItem;
+					m_pNextItem = m_pActiveItem;
 					m_pActiveItem = NULL;
 				}
 				if (FNullEnt(m_pHeldItem->pev->owner))
@@ -1703,21 +1704,21 @@ void CBasePlayer::UpdateHeldItem()
 {
 	if (FNullEnt(m_pHeldItem))
 	{
-		if (m_pLastItem && !m_pActiveItem)
+		if (m_pNextItem && !m_pActiveItem)
 		{
-			m_pLastItem->Deploy();
-			m_pActiveItem = m_pLastItem;
-			m_pLastItem = NULL;
+			m_pNextItem->Deploy();
+			m_pActiveItem = m_pNextItem;
+			m_pNextItem = NULL;
 		}
 		return;
 	}
 	if ((m_pHeldItem->pev->flags & FL_KILLME) != 0 || (m_pHeldItem->pev->effects & EF_NODRAW) != 0 || (m_pHeldItem->pev->solid == SOLID_NOT))
 	{
-		if (m_pLastItem)
+		if (m_pNextItem)
 		{
-			m_pLastItem->Deploy();
-			m_pActiveItem = m_pLastItem;
-			m_pLastItem = NULL;
+			m_pNextItem->Deploy();
+			m_pActiveItem = m_pNextItem;
+			m_pNextItem = NULL;
 		}
 		m_pHeldItem->m_bHeld = false;
 		m_pHeldItem = nullptr;
@@ -1733,11 +1734,11 @@ void CBasePlayer::UpdateHeldItem()
 
 	if (flDist > 120)
 	{
-		if (m_pLastItem)
+		if (m_pNextItem)
 		{
-			m_pLastItem->Deploy();
-			m_pActiveItem = m_pLastItem;
-			m_pLastItem = NULL;
+			m_pNextItem->Deploy();
+			m_pActiveItem = m_pNextItem;
+			m_pNextItem = NULL;
 		}
 		m_pHeldItem->pev->velocity = pev->velocity;
 		m_pHeldItem->m_bHeld = false;
@@ -1764,11 +1765,11 @@ void CBasePlayer::UpdateHeldItem()
 
 	if (!found)
 	{
-		if (m_pLastItem)
+		if (m_pNextItem)
 		{
-			m_pLastItem->Deploy();
-			m_pActiveItem = m_pLastItem;
-			m_pLastItem = NULL;
+			m_pNextItem->Deploy();
+			m_pActiveItem = m_pNextItem;
+			m_pNextItem = NULL;
 		}
 		m_pHeldItem->pev->velocity = pev->velocity;
 		m_pHeldItem->m_bHeld = false;
@@ -1818,11 +1819,11 @@ void CBasePlayer::UpdateHeldItem()
 	if ((m_afButtonPressed & IN_ATTACK) != 0)
 	{
 		m_pHeldItem->pev->velocity = pev->velocity + gpGlobals->v_forward * 300;
-		if (m_pLastItem)
+		if (m_pNextItem)
 		{
-			m_pLastItem->Deploy();
-			m_pActiveItem = m_pLastItem;
-			m_pLastItem = NULL;
+			m_pNextItem->Deploy();
+			m_pActiveItem = m_pNextItem;
+			m_pNextItem = NULL;
 		}
 		m_pHeldItem->m_bHeld = false;
 		m_pHeldItem = nullptr;
@@ -2845,15 +2846,12 @@ void CBasePlayer::PostThink()
 
 	if (m_flRecoilTime < gpGlobals->time)
 	{
-		/*
 		float len;
 
 		len = VectorNormalize(m_vecRecoil);
 		len -= (10.0 + len * 0.5) * (gpGlobals->frametime * 1.5f);
 		len = V_max(len, 0.0);
 		m_vecRecoil = m_vecRecoil * len;
-		*/
-		UTIL_SmoothInterpolateAngles(m_vecRecoil, Vector(0, 0, 0), m_vecRecoil, 25.0f);
 	}
 	if (g_fGameOver)
 		goto pt_end; // intermission or finale
@@ -3266,7 +3264,9 @@ void CBasePlayer::Spawn()
 	m_flIdleTime = gpGlobals->time + 20.0; // first animation after 20 seconds
 	m_fSequenceFinished = true;			   // animation is over, first just hold the weapon
 
-	memset(&m_bNotFirstDraw, false, MAX_WEAPONS);
+	memset(&m_bNotFirstDraw, (int)false, MAX_WEAPONS);
+
+	m_iBtnAttackBits = 0;
 }
 
 
@@ -3429,13 +3429,9 @@ void CBasePlayer::SelectNextItem(int iItem)
 		}
 	}
 
-	m_pActiveItem = pItem;
-
-	if (m_pActiveItem)
-	{
-		m_pActiveItem->Deploy();
-		m_pActiveItem->UpdateItemInfo();
-	}
+	m_pLastItem = m_pActiveItem;
+	m_pNextItem = pItem;
+//	m_pActiveItem = nullptr;
 }
 
 void CBasePlayer::SelectItem(const char* pstr)
@@ -3485,13 +3481,8 @@ void CBasePlayer::SelectItem(const char* pstr)
 		}
 	}
 	m_pLastItem = m_pActiveItem;
-	m_pActiveItem = pItem;
-
-	if (m_pActiveItem)
-	{
-		m_pActiveItem->Deploy();
-		m_pActiveItem->UpdateItemInfo();
-	}
+	m_pNextItem = pItem;
+//	m_pActiveItem = nullptr;
 }
 
 //==============================================
@@ -4191,6 +4182,17 @@ void CBasePlayer::ItemPostFrame()
 	if (m_pTank != NULL)
 		return;
 
+	if (m_pNextItem && m_flNextAttack < UTIL_WeaponTimeBase())
+	{
+	//	ALERT(at_console, "%f \n", m_flNextAttack - UTIL_WeaponTimeBase());
+		m_pActiveItem = m_pNextItem;
+		m_pActiveItem->Deploy();
+		m_pActiveItem->UpdateItemInfo();
+		m_pNextItem = nullptr;
+		return;
+	}
+
+
 #if defined(CLIENT_WEAPONS)
 	if (m_flNextAttack > 0)
 #else
@@ -4199,7 +4201,6 @@ void CBasePlayer::ItemPostFrame()
 	{
 		return;
 	}
-
 	ImpulseCommands();
 
 	if (!m_pActiveItem)

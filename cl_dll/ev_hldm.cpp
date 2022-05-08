@@ -544,6 +544,7 @@ void EV_FireGlock1(event_args_t* args)
 	VectorCopy(args->velocity, velocity);
 
 	empty = 0 != args->bparam1;
+
 	AngleVectors(angles, forward, right, up);
 
 	shell = gEngfuncs.pEventAPI->EV_FindModelIndex("models/shell.mdl"); // brass shell
@@ -555,6 +556,11 @@ void EV_FireGlock1(event_args_t* args)
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);
+
+		Vector recoil;
+		gEngfuncs.GetViewAngles((float*)&recoil);
+		recoil[0] -= 0.1;
+		gEngfuncs.SetViewAngles((float*)&recoil);
 
 		gHUD.m_flCrosshairSize += 10;
 	}
@@ -598,12 +604,16 @@ void EV_FireGlock2(event_args_t* args)
 
 	if (EV_IsLocal(idx))
 	{
-		// Add muzzle flash to current weapon model
 		EV_MuzzleFlash();
 		EV_SendWeaponAnim(ACT_RANGE_ATTACK1, -1, empty ? 2 : 1);
 
 		V_OldPunchAxis(0, -0.4);
 		V_OldPunchAxis(1, -0.4);
+
+		Vector recoil;
+		gEngfuncs.GetViewAngles((float*)&recoil);
+		recoil[0] -= 0.1;
+		gEngfuncs.SetViewAngles((float*)&recoil);
 
 		gHUD.m_flCrosshairSize += 10;
 	}
@@ -757,7 +767,7 @@ void EV_FireMP5(event_args_t* args)
 	VectorCopy(args->origin, origin);
 	VectorCopy(args->angles, angles);
 	VectorCopy(args->velocity, velocity);
-	float recoil = args->iparam1 / 1000;
+	float recoil = (float)args->iparam1 / 1000;
 
 	AngleVectors(angles + Vector(recoil,0,0), forward, right, up);
 
@@ -772,7 +782,12 @@ void EV_FireMP5(event_args_t* args)
 		V_OldPunchAxis(0, gEngfuncs.pfnRandomFloat(-0.86, 0.86));
 		V_OldPunchAxis(2, gEngfuncs.pfnRandomFloat(-1.5, 1.5));
 
-		ev_recoilangle[0] -= 0.5f;
+		ev_recoilangle[0] -= 0.3f;
+
+		Vector recoil;
+		gEngfuncs.GetViewAngles((float*)&recoil);
+		recoil[0] -= 0.2f;
+		gEngfuncs.SetViewAngles((float*)&recoil);
 
 		gHUD.m_flRecoilTime = gEngfuncs.GetClientTime() + 0.1;
 		gHUD.m_flCrosshairSize += 12;

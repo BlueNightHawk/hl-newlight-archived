@@ -292,6 +292,8 @@ void CCrossbow::Holster()
 
 void CCrossbow::PrimaryAttack()
 {
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK) != 0)
+		return;
 
 #ifdef CLIENT_DLL
 	if (m_pPlayer->m_iFOV != 0 && bIsMultiplayer())
@@ -304,12 +306,14 @@ void CCrossbow::PrimaryAttack()
 	}
 
 	FireBolt();
+
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK;
 }
 
 // this function only gets called in multiplayer
 void CCrossbow::FireSniperBolt()
 {
-	m_flNextPrimaryAttack = GetNextAttackDelay(0.75);
+	m_flNextPrimaryAttack = GetNextAttackDelay(2.2);
 
 	if (m_iClip == 0)
 	{
@@ -407,9 +411,12 @@ void CCrossbow::FireBolt()
 		// HEV suit - indicate out of ammo condition
 		m_pPlayer->SetSuitUpdate("!HEV_AMO0", false, 0);
 
-	m_flNextPrimaryAttack = GetNextAttackDelay(0.75);
+	if (m_iClip)
+		m_flNextPrimaryAttack = GetNextAttackDelay(2.2);
+	else
+		m_flNextPrimaryAttack = GetNextAttackDelay(0.5);
 
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.75;
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 2.2;
 
 	if (m_iClip != 0)
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
@@ -458,7 +465,7 @@ void CCrossbow::Reload()
 		SecondaryAttack();
 	}
 
-	if (DefaultReload(5, ACT_RELOAD, 4.5))
+	if (DefaultReload(5, ACT_RELOAD, 4.4))
 	{
 		EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/xbow_reload1.wav", RANDOM_FLOAT(0.95, 1.0), ATTN_NORM, 0, 93 + RANDOM_LONG(0, 0xF));
 	}

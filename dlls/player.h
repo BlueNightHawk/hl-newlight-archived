@@ -181,6 +181,7 @@ public:
 	// usable player items
 	CBasePlayerItem* m_rgpPlayerItems[MAX_ITEM_TYPES];
 	CBasePlayerItem* m_pActiveItem;
+	CBasePlayerItem* m_pNextItem;
 	CBasePlayerItem* m_pClientActiveItem; // client version of the active item
 	CBasePlayerItem* m_pLastItem;
 	CViewModel* m_pViewModel;
@@ -369,6 +370,8 @@ public:
 	Vector m_vecRecoil;
 
 	float m_flRecoilTime;
+
+	int m_iBtnAttackBits;
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

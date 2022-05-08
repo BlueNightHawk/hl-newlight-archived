@@ -131,6 +131,9 @@ void CPython::SecondaryAttack()
 
 void CPython::PrimaryAttack()
 {
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK) != 0)
+		return;
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
@@ -182,7 +185,8 @@ void CPython::PrimaryAttack()
 		// HEV suit - indicate out of ammo condition
 		m_pPlayer->SetSuitUpdate("!HEV_AMO0", false, 0);
 
-	m_flNextPrimaryAttack = 0.75;
+	m_flNextPrimaryAttack = GetNextAttackDelay(0.75);
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK;
 	m_flTimeWeaponIdle = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 }
 
@@ -207,7 +211,7 @@ void CPython::Reload()
 	bUseScope = g_pGameRules->IsMultiplayer();
 #endif
 
-	if (DefaultReload(6, ACT_RELOAD, 2.0, bUseScope ? 1 : 0))
+	if (DefaultReload(6, ACT_RELOAD, 2.75, bUseScope ? 1 : 0))
 	{
 		if (m_pPlayer->m_iFOV != 0)
 		{

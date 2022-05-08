@@ -572,6 +572,8 @@ public:
 	int m_iSwing;
 	TraceResult m_trHit;
 
+	void WeaponIdle() override;
+
 	bool UseDecrement() override
 	{
 #if defined(CLIENT_WEAPONS)
@@ -639,6 +641,11 @@ enum mp5_e
 class CMP5 : public CBasePlayerWeapon
 {
 public:
+#ifndef CLIENT_DLL
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+#endif
 	void Spawn() override;
 	void Precache() override;
 	int iItemSlot() override { return 3; }
@@ -652,6 +659,8 @@ public:
 	float m_flNextAnimTime;
 	int m_iShell;
 
+	bool m_bReloadLauncher;
+	bool m_bReloadingLauncher;
 	bool UseDecrement() override
 	{
 #if defined(CLIENT_WEAPONS)

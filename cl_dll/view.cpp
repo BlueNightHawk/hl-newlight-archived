@@ -947,7 +947,7 @@ void V_ApplyPunchAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	v_frametime = pparams->frametime;
 
 	if (gHUD.m_flRecoilTime < gEngfuncs.GetClientTime())
-		UTIL_SmoothInterpolateAngles((float*)&ev_recoilangle, Vector(0, 0, 0), (float*)&ev_recoilangle, 25.0f);
+		V_DropPunchAngle(pparams->frametime * 1.5f, (float*)&ev_recoilangle);
 
 	V_Punch((float*)&ev_punchangle, (float*)&ev_punch, pparams->frametime);
 	V_Punch((float*)&v_jumpangle, (float*)&v_jumppunch, pparams->frametime);

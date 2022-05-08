@@ -193,6 +193,7 @@ bool CCrowbar::Swing(bool fFirst)
 		{
 			// miss
 			m_flNextPrimaryAttack = GetNextAttackDelay(0.5);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 
 			// player "shoot" animation
 			m_pPlayer->SetAnimation(PLAYER_ATTACK1);
@@ -226,6 +227,7 @@ bool CCrowbar::Swing(bool fFirst)
 #endif
 
 		m_flNextPrimaryAttack = GetNextAttackDelay(0.25);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 
 #ifndef CLIENT_DLL
 		// play thwack, smack, or dong sound
@@ -295,4 +297,22 @@ bool CCrowbar::Swing(bool fFirst)
 		pev->nextthink = gpGlobals->time + 0.2;
 	}
 	return fDidHit;
+}
+
+void CCrowbar::WeaponIdle()
+{
+	ResetEmptySound();
+
+	if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+	{
+		int iAnim = SendWeaponAnim(ACT_USE);
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 13);
+	}
+
+	if (m_flTimeWeaponIdle < UTIL_WeaponTimeBase())
+	{
+		int iAnim = SendWeaponAnim(ACT_IDLE);
+
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim) * UTIL_SharedRandomFloat(m_pPlayer->random_seed, 8, 10);
+	}
 }

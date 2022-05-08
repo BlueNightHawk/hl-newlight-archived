@@ -54,6 +54,7 @@ using byte = unsigned char;
 using string_t = unsigned int;
 using qboolean = int;
 
+#undef ARRAYSIZE
 #define ARRAYSIZE(p) (sizeof(p) / sizeof(p[0]))
 
 #ifdef WIN32

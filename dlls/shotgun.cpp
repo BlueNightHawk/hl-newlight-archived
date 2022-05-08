@@ -92,6 +92,9 @@ bool CShotgun::Deploy()
 
 void CShotgun::PrimaryAttack()
 {
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK) != 0)
+		return;
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
@@ -119,7 +122,6 @@ void CShotgun::PrimaryAttack()
 #else
 	flags = 0;
 #endif
-
 
 	m_pPlayer->pev->effects = (int)(m_pPlayer->pev->effects) | EF_MUZZLEFLASH;
 
@@ -152,18 +154,23 @@ void CShotgun::PrimaryAttack()
 	//if (m_iClip != 0)
 	m_flPumpTime = gpGlobals->time + 0.5;
 
-	m_flNextPrimaryAttack = GetNextAttackDelay(0.75);
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.75;
+	m_flNextPrimaryAttack = GetNextAttackDelay(0.9);
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.9;
 	if (m_iClip != 0)
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
 	else
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.75;
+
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK;
 	m_fInSpecialReload = 0;
 }
 
 
 void CShotgun::SecondaryAttack()
 {
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK2) != 0)
+		return;
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
@@ -226,12 +233,14 @@ void CShotgun::SecondaryAttack()
 	//if (m_iClip != 0)
 	m_flPumpTime = gpGlobals->time + 0.95;
 
-	m_flNextPrimaryAttack = GetNextAttackDelay(1.5);
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.5;
+	m_flNextPrimaryAttack = GetNextAttackDelay(1.515);
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.515;
 	if (m_iClip != 0)
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 6.0;
 	else
 		m_flTimeWeaponIdle = 1.5;
+
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK2;
 
 	m_fInSpecialReload = 0;
 }
@@ -277,14 +286,15 @@ void CShotgun::Reload()
 
 		int iAnim = SendWeaponAnim(ACT_RELOAD, -1, 2);
 
+		// Add them to the clip
+		m_iClip += 1;
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= 1;
+
 		m_flNextReload = UTIL_WeaponTimeBase() + 0.5;
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
 	}
 	else
 	{
-		// Add them to the clip
-		m_iClip += 1;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= 1;
 		m_fInSpecialReload = 1;
 	}
 }
@@ -324,7 +334,7 @@ void CShotgun::WeaponIdle()
 				SendWeaponAnim(ACT_RELOAD, -1, 3);
 
 				// play cocking sound
-				EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/scock1.wav", 1, ATTN_NORM, 0, 95 + RANDOM_LONG(0, 0x1f));
+			//	EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/scock1.wav", 1, ATTN_NORM, 0, 95 + RANDOM_LONG(0, 0x1f));
 				m_fInSpecialReload = 0;
 				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5;
 			}
@@ -342,7 +352,7 @@ void CShotgun::ItemPostFrame()
 	if (0 != m_flPumpTime && m_flPumpTime < gpGlobals->time)
 	{
 		// play pumping sound
-		EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/scock1.wav", 1, ATTN_NORM, 0, 95 + RANDOM_LONG(0, 0x1f));
+	//	EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/scock1.wav", 1, ATTN_NORM, 0, 95 + RANDOM_LONG(0, 0x1f));
 		m_flPumpTime = 0;
 	}
 

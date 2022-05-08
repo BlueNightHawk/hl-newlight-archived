@@ -116,7 +116,7 @@ void CMP5::PrimaryAttack()
 
 	m_iClip--;
 
-	m_pPlayer->m_vecRecoil[0] -= 0.5f;
+	m_pPlayer->m_vecRecoil[0] -= 0.3f;
 	m_pPlayer->m_flRecoilTime = gpGlobals->time + 0.1;
 
 	m_pPlayer->pev->effects = (int)(m_pPlayer->pev->effects) | EF_MUZZLEFLASH;
@@ -135,12 +135,12 @@ void CMP5::PrimaryAttack()
 #endif
 	{
 		// optimized multiplayer. Widened to make it easier to hit a moving player
-		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_6DEGREES, 8192, BULLET_PLAYER_MP5, 2, 0, m_pPlayer->pev, m_pPlayer->random_seed);
+		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_3DEGREES, 8192, BULLET_PLAYER_MP5, 2, 0, m_pPlayer->pev, m_pPlayer->random_seed);
 	}
 	else
 	{
 		// single player spread
-		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_3DEGREES, 8192, BULLET_PLAYER_MP5, 2, 0, m_pPlayer->pev, m_pPlayer->random_seed);
+		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_2DEGREES, 8192, BULLET_PLAYER_MP5, 2, 0, m_pPlayer->pev, m_pPlayer->random_seed);
 	}
 
 	int flags;
@@ -168,17 +168,27 @@ void CMP5::PrimaryAttack()
 
 void CMP5::SecondaryAttack()
 {
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK2) != 0)
+		return;
+
+	if (m_bReloadLauncher && m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] > 0)
+	{
+		Reload();
+		return;
+	}
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
 		PlayEmptySound();
-		m_flNextPrimaryAttack = 0.15;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = 0.15;
 		return;
 	}
 
 	if (m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] == 0)
 	{
 		PlayEmptySound();
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = 0.15;
 		return;
 	}
 
@@ -200,6 +210,8 @@ void CMP5::SecondaryAttack()
 		m_pPlayer->pev->origin + m_pPlayer->pev->view_ofs + gpGlobals->v_forward * 16,
 		gpGlobals->v_forward * 800);
 
+	m_bReloadLauncher = true;
+
 	int flags;
 #if defined(CLIENT_WEAPONS)
 	flags = FEV_NOTHOST;
@@ -208,6 +220,8 @@ void CMP5::SecondaryAttack()
 #endif
 
 	PLAYBACK_EVENT(flags, m_pPlayer->edict(), m_usMP52);
+
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK2;
 
 	m_flNextPrimaryAttack = GetNextAttackDelay(1);
 	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1;
@@ -220,9 +234,18 @@ void CMP5::SecondaryAttack()
 
 void CMP5::Reload()
 {
+	if (m_flNextAttack > gpGlobals->time)
+		return;
+
 	if (m_pPlayer->ammo_9mm <= 0)
 	{
-		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		if (m_bReloadLauncher && m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] > 0)
+		{
+			m_bReloadingLauncher = true;
+			SendWeaponAnim(ACT_RANGE_ATTACK2, -1, 2);
+			m_flNextAttack = gpGlobals->time + 2.8;
+		}	
+		else if ((m_pPlayer->m_afButtonPressed & IN_RELOAD) != 0)
 		{
 			int iAnim = SendWeaponAnim(ACT_USE);
 			if (iAnim != -1)
@@ -233,7 +256,13 @@ void CMP5::Reload()
 
 	if (!DefaultReload(MP5_MAX_CLIP, ACT_RELOAD, 1.5, -1, (m_iClip == 0) ? 2 : 1))
 	{
-		if (m_pPlayer->m_afButtonPressed & IN_RELOAD)
+		if (m_bReloadLauncher && m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] > 0)
+		{
+			m_bReloadingLauncher = true;
+			SendWeaponAnim(ACT_RANGE_ATTACK2, -1, 2);
+			m_flNextAttack = gpGlobals->time + 2.8;
+		}
+		else if ((m_pPlayer->m_afButtonPressed & IN_RELOAD) != 0)
 		{
 			int iAnim = SendWeaponAnim(ACT_USE);
 			if (iAnim != -1)
@@ -248,6 +277,12 @@ void CMP5::WeaponIdle()
 	ResetEmptySound();
 
 	m_pPlayer->GetAutoaimVector(AUTOAIM_5DEGREES);
+
+	if (m_bReloadLauncher && m_bReloadingLauncher && m_flNextAttack < gpGlobals->time)
+	{
+		m_bReloadingLauncher = false;
+		m_bReloadLauncher = false;
+	}
 
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;

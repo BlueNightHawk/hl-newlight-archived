@@ -80,9 +80,7 @@ bool CGlock::Deploy()
 
 void CGlock::SecondaryAttack()
 {
-	if ((m_pPlayer->pev->button & IN_ATTACK) == 0)
-		return;
-	PrimaryAttack();
+	return;
 	//	GlockFire(0.1, 0.2, false);
 }
 
@@ -101,9 +99,8 @@ void CGlock::Holster()
 
 void CGlock::PrimaryAttack()
 {
-	if ((m_pPlayer->m_afButtonPressed & IN_ATTACK) == 0)
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK) != 0)
 		return;
-
 	GlockFire(0.01, 0.15, true);
 }
 
@@ -158,13 +155,16 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 	}
 	else
 	{
+		UTIL_MakeVectors(m_pPlayer->pev->v_angle + m_pPlayer->m_vecRecoil);
 		vecAiming = gpGlobals->v_forward;
 	}
 
 	Vector vecDir;
 	vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, Vector(flSpread, flSpread, flSpread), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed);
 
-	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, 0, 0, (m_iClip == 0) ? 1 : 0, 0);
+	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, m_pPlayer->m_vecRecoil[0] * 1000, 0, (m_iClip == 0) ? 1 : 0, 0);
+
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK;
 
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay(flCycleTime);
 
@@ -184,9 +184,9 @@ void CGlock::Reload()
 	bool iResult;
 
 	if (m_iClip == 0)
-		iResult = DefaultReload(17, ACT_RELOAD, 1.5, -1, 2);
+		iResult = DefaultReload(17, ACT_RELOAD, 1.65, -1, 2);
 	else
-		iResult = DefaultReload(17, ACT_RELOAD, 1.5, -1, 1);
+		iResult = DefaultReload(17, ACT_RELOAD, 1.65, -1, 1);
 
 	if (iResult)
 	{

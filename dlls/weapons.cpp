@@ -386,6 +386,7 @@ TYPEDESCRIPTION CBasePlayerWeapon::m_SaveData[] =
 		DEFINE_FIELD(CBasePlayerWeapon, m_iSecondaryAmmoType, FIELD_INTEGER),
 		DEFINE_FIELD(CBasePlayerWeapon, m_iClip, FIELD_INTEGER),
 		DEFINE_FIELD(CBasePlayerWeapon, m_iDefaultAmmo, FIELD_INTEGER),
+		DEFINE_FIELD(CBasePlayerWeapon, m_fInReload, FIELD_BOOLEAN),
 		//	DEFINE_FIELD( CBasePlayerWeapon, m_iClientClip, FIELD_INTEGER )	 , reset to zero on load so hud gets updated correctly
 		//  DEFINE_FIELD( CBasePlayerWeapon, m_iClientWeaponState, FIELD_INTEGER ), reset to zero on load so hud gets updated correctly
 };
@@ -1541,3 +1542,10 @@ TYPEDESCRIPTION CSatchel::m_SaveData[] =
 		DEFINE_FIELD(CSatchel, m_chargeReady, FIELD_INTEGER),
 };
 IMPLEMENT_SAVERESTORE(CSatchel, CBasePlayerWeapon);
+
+TYPEDESCRIPTION CMP5::m_SaveData[] =
+	{
+		DEFINE_FIELD(CMP5, m_bReloadLauncher, FIELD_BOOLEAN),
+		DEFINE_FIELD(CMP5, m_bReloadingLauncher, FIELD_BOOLEAN),
+};
+IMPLEMENT_SAVERESTORE(CMP5, CBasePlayerWeapon);

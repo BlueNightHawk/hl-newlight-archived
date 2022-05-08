@@ -154,6 +154,15 @@ void CBasePlayerWeapon::ItemPostFrame()
 		m_fInReload = false;
 	}
 
+	if ((m_pPlayer->pev->button & IN_ATTACK) == 0 && (m_pPlayer->m_iBtnAttackBits & IN_ATTACK) != 0 && CanAttack(m_flNextPrimaryAttack, gpGlobals->time, UseDecrement()))
+	{
+		m_pPlayer->m_iBtnAttackBits &= ~IN_ATTACK;
+	}
+	if ((m_pPlayer->pev->button & IN_ATTACK2) == 0 && (m_pPlayer->m_iBtnAttackBits & IN_ATTACK2) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
+	{
+		m_pPlayer->m_iBtnAttackBits &= ~IN_ATTACK2;
+	}
+
 	if ((m_pPlayer->pev->button & IN_ATTACK) == 0)
 	{
 		m_flLastFireTime = 0.0f;
@@ -263,10 +272,9 @@ void CBasePlayer::SelectLastItem()
 		}
 	}
 	CBasePlayerItem* pTemp = m_pActiveItem;
-	m_pActiveItem = m_pLastItem;
+	m_pNextItem = m_pLastItem;
 	m_pLastItem = pTemp;
-	m_pActiveItem->Deploy();
-	m_pActiveItem->UpdateItemInfo();
+	m_pActiveItem = NULL;
 }
 
 void CBaseEntity::CalcSpread(Vector& spread, Vector forward)
@@ -282,10 +290,13 @@ void CBaseEntity::CalcSpread(Vector& spread, Vector forward)
 	float flVelSpread = V_max(pev->velocity.Length() * 0.005, 1);
 	float flCrouchSpread = ((pev->flags & FL_DUCKING) != 0) ? 0.75 : 1;
 	float flRangeSpread = 1;
+	float flRecoilSpread = pPlayer->m_vecRecoil.Length() / 65;
 
 	UTIL_TraceLine(pPlayer->GetGunPosition(), pPlayer->GetGunPosition() + forward * 8192, dont_ignore_monsters, ENT(pev), &tr);
 
 	flRangeSpread += tr.flFraction / 5;
+	// Increase spread when recoil value is high
+	flRangeSpread += flRecoilSpread;
 
 	if (pPlayer->m_pActiveItem)
 	{
@@ -298,7 +309,6 @@ void CBaseEntity::CalcSpread(Vector& spread, Vector forward)
 	outspread = outspread * flCrouchSpread;
 	// Add a bit of spread on long ranges
 	outspread = outspread * flRangeSpread;
-
 
 	if (outspread.Length() != spread.Length())
 		spread = outspread * flWpnSpread;
