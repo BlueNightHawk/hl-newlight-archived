@@ -1638,7 +1638,7 @@ void CBasePlayer::PlayerUse()
 				m_pNextItem = m_pActiveItem;
 				m_pActiveItem = NULL;
 			}
-			pev->viewmodel = 0;
+		//	pev->viewmodel = 0;
 		}
 		else if ((m_afButtonPressed & IN_USE) != 0 && (caps & (FCAP_HOLDABLE | FCAP_BRUSHHOLDABLE)) != 0 && size < 78)
 		{
@@ -1676,7 +1676,7 @@ void CBasePlayer::PlayerUse()
 				}
 				if (FNullEnt(m_pHeldItem->pev->owner))
 					m_pHeldItem->pev->owner = ENT(pev);
-				pev->viewmodel = 0;
+			//	pev->viewmodel = 0;
 			}
 		}
 		else if (((pev->button & IN_USE) != 0 && (caps & FCAP_CONTINUOUS_USE) != 0) ||
@@ -4182,7 +4182,7 @@ void CBasePlayer::ItemPostFrame()
 	if (m_pTank != NULL)
 		return;
 
-	if (m_pNextItem && m_flNextAttack < UTIL_WeaponTimeBase())
+	if (m_pNextItem && m_flNextAttack < UTIL_WeaponTimeBase() && !m_pHeldItem)
 	{
 	//	ALERT(at_console, "%f \n", m_flNextAttack - UTIL_WeaponTimeBase());
 		m_pActiveItem = m_pNextItem;

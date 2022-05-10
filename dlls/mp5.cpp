@@ -96,6 +96,10 @@ bool CMP5::Deploy()
 
 void CMP5::PrimaryAttack()
 {
+	if (m_flNextAttack > gpGlobals->time)
+		return;
+
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3)
 	{
@@ -165,15 +169,29 @@ void CMP5::PrimaryAttack()
 }
 
 
+void CMP5::Holster()
+{
+	m_fInReload = 0;
+	m_bReloadingLauncher = 0;
+	m_flNextAttack = 0;
+
+	SendWeaponAnim(ACT_DISARM);
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+}
 
 void CMP5::SecondaryAttack()
 {
+	if (m_flNextAttack > gpGlobals->time)
+		return;
+
 	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK2) != 0)
 		return;
 
 	if (m_bReloadLauncher && m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] > 0)
 	{
-		Reload();
+		m_bReloadingLauncher = true;
+		SendWeaponAnim(ACT_RANGE_ATTACK2, -1, 2);
+		m_flNextAttack = gpGlobals->time + 2.8;
 		return;
 	}
 
@@ -283,6 +301,9 @@ void CMP5::WeaponIdle()
 		m_bReloadingLauncher = false;
 		m_bReloadLauncher = false;
 	}
+
+	if (m_flNextAttack > gpGlobals->time)
+		return;
 
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;

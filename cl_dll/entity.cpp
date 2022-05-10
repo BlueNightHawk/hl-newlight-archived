@@ -372,9 +372,8 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 	
-	bool muzzleflash = (event->event == 6001 || event->event == 6002 || event->event == 5001 || event->event == 5011 || event->event == 5021 || event->event == 5031) ? 1 : 0;
-
-	if (entity == gEngfuncs.GetViewModel() && !muzzleflash )
+	bool soundevent = (event->event == 5004);
+	if (entity == gEngfuncs.GetViewModel() && soundevent )
 		return;
 
 	StudioEvent(event, entity);

@@ -132,6 +132,34 @@ float StudioEstimateFrame(cl_entity_s* e, mstudioseqdesc_t* pseqdesc)
 	return f;
 }
 
+void SetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(ent->model);
+	if (!pstudiohdr)
+		return;
+
+	if (iGroup > pstudiohdr->numbodyparts)
+		return;
+
+	mstudiobodyparts_t* pbodypart = (mstudiobodyparts_t*)((byte*)pstudiohdr + pstudiohdr->bodypartindex) + iGroup;
+
+	if (iValue >= pbodypart->nummodels)
+		return;
+
+	int iCurrent = (ent->curstate.body / pbodypart->base) % pbodypart->nummodels;
+
+	ent->curstate.body = (ent->curstate.body - (iCurrent * pbodypart->base) + (iValue * pbodypart->base));
+}
+
+void MuzzleEvent(const struct cl_entity_s* entity, int i)
+{
+	CL_Muzzleflash((float*)&entity->attachment[i]);
+	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+}
+
 void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	int iShouldDrawLegs = (g_iDrawLegs <= 0 && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
@@ -143,27 +171,19 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 	{
 	case 5001:
 		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[0], atoi(event->options));
-		CL_Muzzleflash((float*)&entity->attachment[0]);
-		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-		CreateGunSmoke((float*)&entity->attachment[0], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		MuzzleEvent(entity, 0);
 		break;
 	case 5011:
 		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[1], atoi(event->options));
-		CL_Muzzleflash((float*)&entity->attachment[1]);
-		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-		CreateGunSmoke((float*)&entity->attachment[1], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		MuzzleEvent(entity, 1);
 		break;
 	case 5021:
 		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[2], atoi(event->options));
-		CL_Muzzleflash((float*)&entity->attachment[2]);
-		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-		CreateGunSmoke((float*)&entity->attachment[2], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		MuzzleEvent(entity, 2);
 		break;
 	case 5031:
 		gEngfuncs.pEfxAPI->R_MuzzleFlash((float*)&entity->attachment[3], atoi(event->options));
-		CL_Muzzleflash((float*)&entity->attachment[3]);
-		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-		CreateGunSmoke((float*)&entity->attachment[3], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+		MuzzleEvent(entity, 3);
 		break;
 	case 5002:
 		gEngfuncs.pEfxAPI->R_SparkEffect((float*)&entity->attachment[0], atoi(event->options), -100, 100);
@@ -183,12 +203,11 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
 			NormalizeAngles(ptemp->entity.angles);
 			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_m4clip.mdl", 0);
-			//ptemp->flags &= ~FTENT_GRAVITY;
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM; 
 			ptemp->entity.baseline.entityType = 7;
 			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
-			gEngfuncs.GetViewModel()->curstate.body = 999;
+			SetBodygroup(gEngfuncs.GetViewModel(), 2, 1);
 		}	
 	}
 		break;
@@ -207,6 +226,26 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 			ptemp->entity.baseline.entityType = 46;
 			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
 			gEngfuncs.GetViewModel()->curstate.body = 1;
+		}
+	}
+	break;
+	case 6004:
+	{
+		extern ref_params_s g_pparams;
+		extern Vector v_angles;
+		gEngfuncs.Con_Printf("a");
+		Vector forward, right, up;
+		AngleVectors(v_angles, forward, right, up);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[10], Vector(g_pparams.simvel) + (up * -5) + (right * -10), g_viewinfo.actualboneangles[10], 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[10][0] * 1.3;
+			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_glshell.mdl", 0);
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
+			ptemp->entity.baseline.entityType = 10;
+			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+			SetBodygroup(gEngfuncs.GetViewModel(), 3, 1);
 		}
 	}
 	break;
@@ -253,7 +292,7 @@ int LookupActivityHeaviest(cl_entity_s* ent, int activity)
 }
 
 // ripped from xash
-// required for events to play correctly after changlevel animation fix
+// required for event sounds to play correctly after changlevel animation fix
 void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 {
 	mstudioseqdesc_t* pseqdesc;
@@ -313,9 +352,9 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 		if (pevent[i].event < 5000)
 			continue;
 
-		bool muzzleflash = (pevent[i].event == 5001 || pevent[i].event == 5011 || pevent[i].event == 6002 || pevent[i].event == 6001 || pevent[i].event == 5021 || pevent[i].event == 5031) ? 1 : 0;
+		bool notsound = (pevent->event != 5004);
 
-		if (e == gEngfuncs.GetViewModel() && muzzleflash)
+		if (e == gEngfuncs.GetViewModel() && notsound)
 			continue;
 
 		if ((float)pevent[i].frame > start && pevent[i].frame <= end)

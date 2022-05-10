@@ -80,7 +80,7 @@ int EV_SendWeaponAnim(int iAnim, int iBody = -1, int iWeight = 0)
 	if (iSeq < 0)
 		return -1;
 
-	gHUD.m_flAnimTime = gEngfuncs.GetAbsoluteTime();
+	gHUD.m_flAnimTime = gHUD.m_flCurTime;
 	gEngfuncs.pEventAPI->EV_WeaponAnimation(iSeq, iBody);
 	return iSeq;
 }

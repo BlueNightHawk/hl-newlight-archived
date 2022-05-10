@@ -621,17 +621,18 @@ public:
 
 	alight_s vmodel_lighting;
 
-	float m_flTargetFov;
+	double m_flTargetFov;
 
 	// stuff specifically for viewmodel
 	double m_flAnimTime;
 	double m_flCurFrame;
+	double m_flCurTime;
 
 	entity_state_t m_prevstate;
 
 	char m_szGlowModels[512][64];
 
-	float m_flCrosshairSize;
+	double m_flCrosshairSize;
 	float m_flRecoilTime;
 
 	cvar_t* hud_crosshair;

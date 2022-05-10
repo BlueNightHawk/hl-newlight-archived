@@ -659,6 +659,8 @@ public:
 	float m_flNextAnimTime;
 	int m_iShell;
 
+	void Holster() override;
+
 	bool m_bReloadLauncher;
 	bool m_bReloadingLauncher;
 	bool UseDecrement() override
