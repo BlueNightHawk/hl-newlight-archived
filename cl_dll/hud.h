@@ -619,16 +619,7 @@ public:
 
 	float GetSensitivity();
 
-	alight_s vmodel_lighting;
-
 	double m_flTargetFov;
-
-	// stuff specifically for viewmodel
-	double m_flAnimTime;
-	double m_flCurFrame;
-	double m_flCurTime;
-
-	entity_state_t m_prevstate;
 
 	char m_szGlowModels[512][64];
 
@@ -637,27 +628,9 @@ public:
 
 	cvar_t* hud_crosshair;
 	cvar_t* hud_crosshair_speed;
+
+	model_s* m_pModCache[512];
 };
-
-typedef struct viewinfo_s
-{
-	Vector attachment_forward[4];
-	Vector attachment_right[4];
-	Vector attachment_up[4];
-
-	Vector actualbonepos[MAXSTUDIOBONES];
-	Vector actualboneangles[MAXSTUDIOBONES];
-
-	Vector bonepos[MAXSTUDIOBONES];
-	Vector boneangles[MAXSTUDIOBONES];
-
-	Vector prevbonepos[MAXSTUDIOBONES];
-	Vector prevboneangles[MAXSTUDIOBONES];
-
-	studiohdr_t	*phdr;
-} vminfo_t;
-
-extern viewinfo_s g_viewinfo;
 
 extern CHud gHUD;
 

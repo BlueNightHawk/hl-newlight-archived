@@ -216,6 +216,7 @@
     <ClInclude Include="..\..\cl_dll\camera.h" />
     <ClInclude Include="..\..\cl_dll\cl_animating.h" />
     <ClInclude Include="..\..\cl_dll\cl_dll.h" />
+    <ClInclude Include="..\..\cl_dll\cl_filesystem.h" />
     <ClInclude Include="..\..\cl_dll\cl_util.h" />
     <ClInclude Include="..\..\cl_dll\com_weapons.h" />
     <ClInclude Include="..\..\cl_dll\demo.h" />

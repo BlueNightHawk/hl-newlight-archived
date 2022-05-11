@@ -35,6 +35,8 @@
 #include <wingdi.h>
 // SHADOWS END
 
+#include "cl_animating.h"
+
 viewinfo_s g_viewinfo;
 
 extern cvar_t* tfc_newmodels;
@@ -835,13 +837,13 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 	{
 		if (viewmodel)
 		{
-			if (gHUD.m_flCurTime < gHUD.m_flAnimTime)
+			if (g_viewinfo.m_flCurTime < g_viewinfo.m_flAnimTime)
 			{
 				dfdt = 0;
 			}
 			else
 			{
-				dfdt = (gHUD.m_flCurTime - gHUD.m_flAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
+				dfdt = (g_viewinfo.m_flCurTime - g_viewinfo.m_flAnimTime) * m_pCurrentEntity->curstate.framerate * pseqdesc->fps;
 				//		gEngfuncs.Con_Printf("%f %f %f\n", (m_clTime - m_pCurrentEntity->curstate.animtime), m_clTime, m_pCurrentEntity->curstate.animtime);
 			}
 		//	gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
@@ -903,7 +905,7 @@ float CStudioModelRenderer::StudioEstimateFrame(mstudioseqdesc_t* pseqdesc)
 	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 	{
 		m_clTime = clTime;
-		gHUD.m_flCurFrame = f;
+		g_viewinfo.m_flCurFrame = f;
 	}
 	return f;
 }
@@ -1433,7 +1435,7 @@ void CStudioModelRenderer::StudioMergeGlowModels(alight_t *lighting)
 
 			cl_entity_t saveent = *m_pCurrentEntity;
 
-			model_t* lightmodel = IEngineStudio.Mod_ForName(modname, 0);
+			model_t* lightmodel = GetModel(modname);
 
 			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(lightmodel);
 			IEngineStudio.StudioSetHeader(m_pStudioHeader);
@@ -1471,10 +1473,10 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 	if (g_iRestoreViewent != 0 && m_pCurrentEntity == gEngfuncs.GetViewModel())
 	{		
-		if (gHUD.m_prevstate.sequence != -1)
+		if (g_viewinfo.m_iPrevSeq != -1)
 		{
-			gEngfuncs.pfnWeaponAnim(gHUD.m_prevstate.sequence, m_pCurrentEntity->curstate.body);
-			m_pCurrentEntity->curstate.sequence = gHUD.m_prevstate.sequence;
+			gEngfuncs.pfnWeaponAnim(g_viewinfo.m_iPrevSeq, m_pCurrentEntity->curstate.body);
+			m_pCurrentEntity->curstate.sequence = g_viewinfo.m_iPrevSeq;
 		}
 		g_iRestoreViewent = 0;
 	}
@@ -1584,11 +1586,6 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		// get remap colors
 
-		if (gEngfuncs.GetViewModel() == m_pCurrentEntity)
-		{
-			gHUD.vmodel_lighting = lighting;
-		}
-
 		m_nTopColor = m_pCurrentEntity->curstate.colormap & 0xFF;
 		m_nBottomColor = (m_pCurrentEntity->curstate.colormap & 0xFF00) >> 8;
 
@@ -1607,7 +1604,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			StudioMergeGlowModels(&lighting);
 
 		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
-			gHUD.m_prevstate.sequence = m_pCurrentEntity->curstate.sequence;
+			g_viewinfo.m_iPrevSeq = m_pCurrentEntity->curstate.sequence;
 	}
 
 	return true;
@@ -1843,7 +1840,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			{
 				gEngfuncs.COM_FreeFile(pfile);
 				pfile = nullptr;
-				m_pRenderModel = IEngineStudio.Mod_ForName(modelname, 0);
+				m_pRenderModel = GetModel(modelname);
 			}
 			else
 				m_pRenderModel = NULL;
@@ -1851,17 +1848,17 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 			if (!m_pRenderModel)
 			{
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_legs.mdl", 0);
+				m_pRenderModel = GetModel("models/player_legs.mdl");
 			}
 		}
 		else
 		{
 			if (gHUD.HasSuit() != 0)
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_legs.mdl", 0);
+				m_pRenderModel = GetModel("models/player_legs.mdl");
 			else
 			{
-				m_pCurrentEntity->model = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_sci_legs.mdl", 0);
+				m_pCurrentEntity->model = GetModel("models/player_sci.mdl");
+				m_pRenderModel = GetModel("models/player_sci_legs.mdl");
 			}
 		}
 		if (v_angles[0] < 0)
@@ -1876,10 +1873,10 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		else
 		{
 			if (gHUD.HasSuit())
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player.mdl", 0);
+				m_pRenderModel = GetModel("models/player.mdl");
 			else
 			{
-				m_pCurrentEntity->model = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
+				m_pCurrentEntity->model = GetModel("models/player_sci.mdl");
 			}
 		}
 	}
@@ -2102,7 +2099,7 @@ void CStudioModelRenderer::StudioLightAtPos(const float* pos, float* color, int&
 	// setup a fake entity
 	static cl_entity_t temp;
 	VectorCopy(pos, temp.origin);
-	temp.model = IEngineStudio.Mod_ForName("models/v_9mmhandgun.mdl", 0);
+	temp.model = GetModel("models/v_9mmhandgun.mdl");
 
 	m_pCurrentEntity = &temp;
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
@@ -2405,10 +2402,10 @@ void CStudioModelRenderer::StudioRenderPlayerShadow(int num)
 		else
 		{
 			if (gHUD.HasSuit())
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player.mdl", 0);
+				m_pRenderModel = GetModel("models/player.mdl");
 			else
 			{
-				m_pRenderModel = IEngineStudio.Mod_ForName("models/player_sci.mdl", 0);
+				m_pRenderModel = GetModel("models/player_sci.mdl");
 			}
 		}
 		if (m_pRenderModel != NULL)

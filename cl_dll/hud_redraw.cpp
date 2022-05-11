@@ -135,7 +135,11 @@ bool CHud::Redraw(float flTime, bool intermission)
 
 	if (view != nullptr && view->model != nullptr)
 	{
-		DispatchAnimEvents(view, m_flTimeDelta);
+		cl_animutils.DispatchAnimEvents(view, m_flTimeDelta);
+	}
+	else
+	{
+		g_viewinfo.m_iPrevSeq = -1;
 	}
 
 	// Bring up the scoreboard during intermission

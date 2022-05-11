@@ -34,8 +34,9 @@
 
 #include "discord_integration.h"
 
-extern void ReCacheGlowModels(void);
-extern void CacheGlowModels();
+#include "cl_animating.h"
+
+#include "cl_filesystem.h"
 
 extern IParticleMan* g_pParticleMan;
 
@@ -96,6 +97,14 @@ cvar_t* cl_rollspeed = nullptr;
 cvar_t* cl_toggleisight = nullptr;
 cvar_t* cl_autowepswitch = nullptr;
 cvar_t* hud_fade = nullptr;
+
+cvar_t* print_subtitles = nullptr;
+cvar_t* subtitles_font_scale = nullptr;
+cvar_t* subtitles_language = nullptr;
+cvar_t* subtitles_log_candidates = nullptr;
+
+int Subtitles_SubtClear(const char* pszName, int iSize, void* pbuf);
+int g_iRestoreViewent = 0;
 
 void ShutdownInput();
 
@@ -300,55 +309,6 @@ int __MsgFunc_AllowSpec(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
-char chapterdata[64][32][64];
-
-void StoreChapterNames()
-{
-	char *pfile, *pfile2;
-	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("maps/chapterlist.txt", 5, NULL);
-	char token[500];
-	int i = -1;
-	int j = 0;
-	bool reading = false;
-
-	if (pfile == nullptr)
-	{
-		return;
-	}
-
-	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
-	{
-		if (strlen(token) <= 0)
-			break;
-		
-		if (!stricmp("title", token))
-		{
-			i++;
-			j = 1;
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			strcpy(chapterdata[i][0], token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			strcpy(chapterdata[i][1], token);
-		}
-		else if (!stricmp("{", token))
-		{
-			reading = true;
-		}
-		else if (!stricmp("}", token))
-		{
-			reading = false;
-		}
-		else if (reading)
-		{
-			j++;
-			strcpy(chapterdata[i][j], token);
-		}
-	}
-
-	gEngfuncs.COM_FreeFile(pfile2);
-	pfile = pfile2 = nullptr;
-}
-
 void ResetCvars()
 {
 #define CVAR_SET (*gEngfuncs.Cvar_SetValue)
@@ -392,10 +352,57 @@ void ResetCvars()
 	CVAR_SET("nl_drawlegs", 1);
 }
 
-cvar_t* print_subtitles;
-cvar_t* subtitles_font_scale;
-cvar_t* subtitles_language;
-cvar_t* subtitles_log_candidates;
+extern model_s* GetModel(char* szname);
+void Precache()
+{
+	// Preload frequently used models
+	// Might reduce stutters
+
+	for (int i = 0; i < 512; i++)
+	{
+		if (strlen(gHUD.m_szGlowModels[i]) <= 1)
+			break;
+
+		char mdlname[64] = {"models/glowmodels/"};
+		char tempstr[64];
+		strcpy(tempstr, gHUD.m_szGlowModels[i]);
+
+		strcat(mdlname, tempstr);
+
+		GetModel(mdlname);
+	}
+	GetModel("models/v_m4clip.mdl");
+	GetModel("models/v_glockclip.mdl");
+	GetModel("models/v_glshell.mdl");
+
+	GetModel("sprites/particles/debris_concrete.spr");
+	GetModel("sprites/particles/debris_concrete1.spr");
+	GetModel("sprites/particles/debris_concrete2.spr");
+	GetModel("sprites/particles/debris_concrete3.spr");
+	GetModel("sprites/particles/debris_dirt.spr");
+	GetModel("sprites/particles/debris_glass.spr");
+	GetModel("sprites/particles/smallspark.spr");
+	GetModel("sprites/particles/debris_snow.spr");
+	GetModel("sprites/particles/debris_snow1.spr");
+	GetModel("sprites/particles/debris_snow2.spr");
+	GetModel("sprites/particles/debris_snow3.spr");
+	GetModel("sprites/particles/debris_wood.spr");
+	GetModel("sprites/particles/debris_wood1.spr");
+	GetModel("sprites/particles/debris_wood2.spr");
+	GetModel("sprites/particles/debris_wood3.spr");
+
+	GetModel("sprites/blood.spr");
+	GetModel("sprites/fire.spr");
+	GetModel("sprites/blooddrop.spr");
+	GetModel("sprites/steam1.spr");
+	GetModel("sprites/particles/smokepuff.spr");
+	GetModel("sprites/particles/pistol_smoke1.spr");
+	GetModel("sprites/hotglow.spr");
+	GetModel("models/player_legs.mdl");
+	GetModel("models/player_sci_legs.mdl");
+	GetModel("models/player_sci.mdl");
+
+}
 
 // This is called every time the DLL is loaded
 void CHud::Init()
@@ -439,8 +446,7 @@ void CHud::Init()
 	HOOK_MESSAGE(WAnim);
 	HOOK_MESSAGE(Particles);
 
-	m_prevstate = { };
-	m_prevstate.sequence = -1;
+	g_viewinfo.m_iPrevSeq = -1;
 
 	CVAR_CREATE("hud_classautokill", "1", FCVAR_ARCHIVE | FCVAR_USERINFO); // controls whether or not to suicide immediately on TF class switch
 	CVAR_CREATE("hud_takesshots", "0", FCVAR_ARCHIVE);					   // controls whether or not to automatically take screenshots at the end of a round
@@ -553,9 +559,6 @@ int CHud::GetSpriteIndex(const char* SpriteName)
 	return -1; // invalid sprite
 }
 
-int g_iRestoreViewent = 0;
-
-int Subtitles_SubtClear(const char* pszName, int iSize, void* pbuf);
 void CHud::VidInit()
 {
 	cl_entity_s* view = gEngfuncs.GetViewModel();
@@ -666,20 +669,11 @@ void CHud::VidInit()
 	m_TextMessage.VidInit();
 	m_StatusIcons.VidInit();
 	GetClientVoiceMgr()->VidInit();
-#if 0
-	for (int i = 0; i < 64; i++)
-	{
-		for (int j = 0; j < 32; j++)
-		{
-			if (strlen(chapterdata[i][j]) <= 1)
-				break;
 
-			gEngfuncs.Con_Printf("%s \n", chapterdata[i][j]);
-		}
-	}
-#endif
 	discord_integration::VidInit();
 	Subtitles_SubtClear("ektum", sizeof("ektom"), (void*)"ektum");
+
+	Precache();
 }
 
 bool CHud::MsgFunc_Logo(const char* pszName, int iSize, void* pbuf)

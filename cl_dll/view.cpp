@@ -52,6 +52,9 @@ void VectorAngles(const float* forward, float* angles);
 #include "StudioModelRenderer.h"
 #include "GameStudioModelRenderer.h"
 
+#include "cl_animating.h"
+#include "cl_filesystem.h"
+
 extern CGameStudioModelRenderer g_StudioRenderer;
 
 extern engine_studio_api_t IEngineStudio;
@@ -139,174 +142,6 @@ float v_idlescale; // used by TFC for concussion grenade effect
 #define PUNCH_DAMPING 10.0f // bigger number makes the response more damped, smaller is less damped
 // currently the system will overshoot, with larger damping values it won't
 #define PUNCH_SPRING_CONSTANT 100.0f // bigger number increases the speed at which the view corrects
-
-// for viewmodel only
-int GetBoneIndexByName(char* name)
-{
-	mstudiobone_t* pbone = nullptr;
-	int index = -1;
-
-	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
-	{
-		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
-		if (!stricmp(name,pbone[i].name))
-		{
-			index = i;
-			break;
-		}
-	}
-	return index;
-}
-
-// get camanim bone index from file
-int GetAnimBoneFromFile(char* name)
-{
-	static int prevboneindex = -1;
-	static char pszPrevName[100] = {"\0"};
-
-	if (strlen(pszPrevName) > 1 && !stricmp(pszPrevName, name))
-		return prevboneindex;
-
-	char *pfile, *pfile2;
-	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/animbonelist.txt", 5, NULL);
-	char token[500];
-	int index = -1;
-
-	if (pfile == nullptr)
-	{
-		return -1;
-	}
-
-	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
-	{
-		if(strlen(token) <= 0)
-			break;
-
-		if (!stricmp(token, name))
-		{
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			if (!stricmp("bone",token))
-			{
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-				index = GetBoneIndexByName(token);
-			}
-			else
-				index = atoi(token);
-			break;
-		}
-	}
-
-	gEngfuncs.COM_FreeFile(pfile2);
-	pfile = pfile2 = nullptr;
-
-	strcpy(pszPrevName, name);
-	
-	prevboneindex = index;
-	return index;
-}
-
-int GetCamBoneIndex(cl_entity_s *view)
-{
-	int index = -1;
-
-	// if it finds the bone index in the text file, bone guessing will not be done
-	index = GetAnimBoneFromFile(view->model->name + 7);
-
-	mstudiobone_t* pbone = nullptr;
-
-	for (int i = 0; i < g_viewinfo.phdr->numbones; i++)
-	{
-		pbone = (mstudiobone_t*)((byte*)g_viewinfo.phdr + g_viewinfo.phdr->boneindex);
-
-		if (pbone == nullptr || pbone[i].name == nullptr)
-			break;
-
-		if (strlen(pbone[i].name) > 1  && !stricmp(pbone[i].name, "camera"))
-		{
-			index = i;
-			break;
-		}
-		// try using common gun bone names to get bone index
-		else if (cl_guessanimbone->value != 0 && (index) == -1 && strlen(pbone[i].name) > 1)
-		{
-			// add checks for more names if needed
-			if (!stricmp(pbone[i].name, "gun"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "weapon"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "glock"))
-			{
-				index = i;
-				break;
-			}
-			else if (!stricmp(pbone[i].name, "Bip01 R Wrist") || !stricmp(pbone[i].name, "Bip01 R Hand"))
-			{
-				index = i;
-				break;
-			}
-		}
-	}
-
-	if ((int)cl_animbone->value > 0)
-		index = (int)cl_animbone->value - 1;
-
-	return index;
-}
-
-// get offsets from text file
-bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
-{
-	static char pszPrevName[100] = {"\0"};
-
-	if (strlen(pszPrevName) > 1 && !stricmp(pszPrevName, name))
-		return true;
-
-	char *pfile, *pfile2;
-	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("models/isight_offsets.txt", 5, NULL);
-	char token[500];
-	bool found = false;
-
-	if (pfile == nullptr)
-	{
-		return false;
-	}
-
-	while (pfile = gEngfuncs.COM_ParseFile(pfile, token))
-	{
-		if (strlen(token) <= 0)
-			break;
-		if (!stricmp(token, name))
-		{
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[0] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[1] = -atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			offset[2] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[0] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[1] = atof(token);
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			aoffset[2] = atof(token);
-			found = true;
-			break;
-		}
-	}
-
-	gEngfuncs.COM_FreeFile(pfile2);
-	pfile = pfile2 = nullptr;
-
-	strcpy(pszPrevName, name);
-
-	return found;
-}
 
 enum calcBobMode_t
 {
@@ -2205,7 +2040,7 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 
 	if (pparams->paused <= 0)
 	{
-		gHUD.m_flCurTime += pparams->frametime;
+		g_viewinfo.m_flCurTime += pparams->frametime;
 	}
 
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);

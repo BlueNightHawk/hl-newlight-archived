@@ -199,11 +199,3 @@ void EV_MuzzleFlash()
 	// Or in the muzzle flash
 	ent->curstate.effects |= EF_MUZZLEFLASH;
 }
-
-
-// fuck you valv
-void CL_SendWeaponAnim(int iAnim, int iBody)
-{
-	gHUD.m_flAnimTime = gHUD.m_flCurTime;
-	gEngfuncs.pfnWeaponAnim(iAnim, iBody);
-}

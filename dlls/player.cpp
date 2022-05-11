@@ -3429,9 +3429,22 @@ void CBasePlayer::SelectNextItem(int iItem)
 		}
 	}
 
-	m_pLastItem = m_pActiveItem;
-	m_pNextItem = pItem;
-//	m_pActiveItem = nullptr;
+	if (m_pLastItem == pItem)
+	{
+		m_pLastItem = m_pActiveItem;
+		m_pActiveItem = pItem;
+		if (m_pActiveItem)
+		{
+			m_pActiveItem->Deploy();
+			m_pActiveItem->UpdateItemInfo();
+		}
+	}
+	else
+	{
+		m_pLastItem = m_pActiveItem;
+		m_pNextItem = pItem;
+	}
+	//	m_pActiveItem = nullptr;
 }
 
 void CBasePlayer::SelectItem(const char* pstr)
@@ -3480,9 +3493,22 @@ void CBasePlayer::SelectItem(const char* pstr)
 			m_iFOV = 0; // 0 means reset to default fov
 		}
 	}
-	m_pLastItem = m_pActiveItem;
-	m_pNextItem = pItem;
-//	m_pActiveItem = nullptr;
+	if (m_pLastItem == pItem)
+	{
+		m_pLastItem = m_pActiveItem;
+		m_pActiveItem = pItem;
+		if (m_pActiveItem)
+		{
+			m_pActiveItem->Deploy();
+			m_pActiveItem->UpdateItemInfo();
+		}
+	}
+	else
+	{
+		m_pLastItem = m_pActiveItem;
+		m_pNextItem = pItem;
+	}
+	//	m_pActiveItem = nullptr;
 }
 
 //==============================================

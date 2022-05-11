@@ -21,7 +21,9 @@
 
 extern engine_studio_api_s IEngineStudio;
 
-int LookupActivityWeight(cl_entity_s *ent, int activity, int weight)
+animutils_s cl_animutils;
+
+int animutils_s::LookupActivityWeight(cl_entity_s *ent, int activity, int weight)
 {
 	if (ent == nullptr)
 		return 0;
@@ -60,7 +62,7 @@ int LookupActivityWeight(cl_entity_s *ent, int activity, int weight)
 	return seq;
 }
 
-int LookupActivity(cl_entity_s *ent, int activity)
+int animutils_s::LookupActivity(cl_entity_s* ent, int activity)
 {
 	if (ent == nullptr)
 		return 0;
@@ -90,17 +92,17 @@ int LookupActivity(cl_entity_s *ent, int activity)
 	return seq;
 }
 
-float StudioEstimateFrame(cl_entity_s* e, mstudioseqdesc_t* pseqdesc)
+float animutils_s::StudioEstimateFrame(cl_entity_s* e, mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f = 0;
 
-	if (gEngfuncs.GetAbsoluteTime() < gHUD.m_flAnimTime)
+	if (g_viewinfo.m_flCurTime < g_viewinfo.m_flAnimTime)
 	{
 		dfdt = 0;
 	}
 	else
 	{
-		dfdt = (gEngfuncs.GetAbsoluteTime() - gHUD.m_flAnimTime) * e->curstate.framerate * pseqdesc->fps;
+		dfdt = (g_viewinfo.m_flCurTime - g_viewinfo.m_flAnimTime) * e->curstate.framerate * pseqdesc->fps;
 		//		gEngfuncs.Con_Printf("%f %f %f\n", (m_clTime - m_pCurrentEntity->curstate.animtime), m_clTime, m_pCurrentEntity->curstate.animtime);
 	}
 
@@ -132,7 +134,7 @@ float StudioEstimateFrame(cl_entity_s* e, mstudioseqdesc_t* pseqdesc)
 	return f;
 }
 
-void SetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
+void animutils_s::SetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
 {
 	studiohdr_t* pstudiohdr;
 
@@ -160,7 +162,7 @@ void MuzzleEvent(const struct cl_entity_s* entity, int i)
 	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
 }
 
-void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
+void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	int iShouldDrawLegs = (g_iDrawLegs <= 0 && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
@@ -202,11 +204,12 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[7][2] * 1.3;
 			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
 			NormalizeAngles(ptemp->entity.angles);
-			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_m4clip.mdl", 0);
+			ptemp->entity.model = GetModel("models/v_m4clip.mdl");
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM; 
 			ptemp->entity.baseline.entityType = 7;
 			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+			ptemp->clientIndex = entity->index;
 			SetBodygroup(gEngfuncs.GetViewModel(), 2, 1);
 		}	
 	}
@@ -217,13 +220,15 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 		extern Vector v_angles;
 		Vector forward, right, up;
 		AngleVectors(v_angles, forward, right, up);
-		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], Vector(g_pparams.simvel) + (up * -5) + (right * -10), g_viewinfo.actualboneangles[46], 25.0f, 1, 0);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], Vector(g_pparams.simvel) + (right * -10), g_viewinfo.actualboneangles[46], 25.0f, 1, 0);
 		if (ptemp)
 		{
-			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_glockclip.mdl", 0);
+			ptemp->entity.model = GetModel("models/v_glockclip.mdl");
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
 			ptemp->entity.baseline.entityType = 46;
+			ptemp->bounceFactor = 0.9;
+			ptemp->clientIndex = entity->index;
 			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
 			gEngfuncs.GetViewModel()->curstate.body = 1;
 		}
@@ -236,15 +241,16 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 		gEngfuncs.Con_Printf("a");
 		Vector forward, right, up;
 		AngleVectors(v_angles, forward, right, up);
-		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[10], Vector(g_pparams.simvel) + (up * -5) + (right * -10), g_viewinfo.actualboneangles[10], 25.0f, 1, 0);
+		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[10], Vector(0,0,0), g_viewinfo.actualboneangles[10], 25.0f, 1, 0);
 		if (ptemp)
 		{
 			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[10][0] * 1.3;
-			ptemp->entity.model = IEngineStudio.Mod_ForName("models/v_glshell.mdl", 0);
+			ptemp->entity.model = GetModel("models/v_glshell.mdl");
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
 			ptemp->entity.baseline.entityType = 10;
 			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+			ptemp->clientIndex = entity->index;
 			SetBodygroup(gEngfuncs.GetViewModel(), 3, 1);
 		}
 	}
@@ -260,7 +266,7 @@ void StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* e
 	}
 }
 
-int LookupActivityHeaviest(cl_entity_s* ent, int activity)
+int animutils_s::LookupActivityHeaviest(cl_entity_s* ent, int activity)
 {
 	studiohdr_t* pstudiohdr;
 	if (!ent->model)
@@ -293,7 +299,7 @@ int LookupActivityHeaviest(cl_entity_s* ent, int activity)
 
 // ripped from xash
 // required for event sounds to play correctly after changlevel animation fix
-void DispatchAnimEvents(cl_entity_s* e, float flInterval)
+void animutils_s::DispatchAnimEvents(cl_entity_s* e, float flInterval)
 {
 	mstudioseqdesc_t* pseqdesc;
 	mstudioevent_t* pevent;
@@ -352,9 +358,7 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 		if (pevent[i].event < 5000)
 			continue;
 
-		bool notsound = (pevent->event != 5004);
-
-		if (e == gEngfuncs.GetViewModel() && notsound)
+		if (e == gEngfuncs.GetViewModel() && pevent->event != 5004)
 			continue;
 
 		if ((float)pevent[i].frame > start && pevent[i].frame <= end)
@@ -364,123 +368,9 @@ void DispatchAnimEvents(cl_entity_s* e, float flInterval)
 	}
 }
 
-//
-// sprite representation in memory
-//
-typedef enum
+// fuck you valv
+void animutils_s::SendWeaponAnim(int iAnim, int iBody)
 {
-	SPR_SINGLE = 0,
-	SPR_GROUP,
-	SPR_ANGLED
-} spriteframetype_t;
-
-typedef struct mspriteframe_s
-{
-	int width;
-	int height;
-	float up, down, left, right;
-	int gl_texturenum;
-} mspriteframe_t;
-
-typedef struct
-{
-	int numframes;
-	float* intervals;
-	mspriteframe_t* frames[1];
-} mspritegroup_t;
-
-typedef struct
-{
-	spriteframetype_t type;
-	mspriteframe_t* frameptr;
-} mspriteframedesc_t;
-
-typedef struct
-{
-	short type;
-	short texFormat;
-	int maxwidth;
-	int maxheight;
-	int numframes;
-	int radius;
-	int facecull;
-	int synctype;
-	mspriteframedesc_t frames[1];
-} msprite_t;
-
-#define Q_rint(x) ((x) < 0 ? ((int)((x)-0.5f)) : ((int)((x) + 0.5f)))
-
-/*
-================
-R_GetSpriteFrame
-
-assume pModel is valid
-================
-*/
-mspriteframe_t* R_GetSpriteFrame(const model_t* pModel, int frame, float yaw)
-{
-	extern Vector v_angles;
-
-	msprite_t* psprite;
-	mspritegroup_t* pspritegroup;
-	mspriteframe_t* pspriteframe = NULL;
-	float *pintervals, fullinterval;
-	int i, numframes;
-	float targettime;
-
-	float time = gEngfuncs.GetClientTime();
-
-	psprite = (msprite_t *)pModel->cache.data;
-
-	if (frame < 0)
-	{
-		frame = 0;
-	}
-	else if (frame >= psprite->numframes)
-	{
-		if (frame > psprite->numframes)
-			gEngfuncs.Con_Printf("R_GetSpriteFrame: no such frame %d (%s)\n", frame, pModel->name);
-		frame = psprite->numframes - 1;
-	}
-
-	if (psprite->frames[frame].type == SPR_SINGLE)
-	{
-		pspriteframe = psprite->frames[frame].frameptr;
-	}
-	else if (psprite->frames[frame].type == SPR_GROUP)
-	{
-		pspritegroup = (mspritegroup_t*)psprite->frames[frame].frameptr;
-		pintervals = pspritegroup->intervals;
-		numframes = pspritegroup->numframes;
-		fullinterval = pintervals[numframes - 1];
-
-		// when loading in Mod_LoadSpriteGroup, we guaranteed all interval values
-		// are positive, so we don't have to worry about division by zero
-		targettime = time - ((int)(time / fullinterval)) * fullinterval;
-
-		for (i = 0; i < (numframes - 1); i++)
-		{
-			if (pintervals[i] > targettime)
-				break;
-		}
-		pspriteframe = pspritegroup->frames[i];
-	}
-	else if (psprite->frames[frame].type == 2)
-	{
-		int angleframe = (int)(Q_rint((v_angles[1] - yaw + 45.0f) / 360 * 8) - 4) & 7;
-
-		// e.g. doom-style sprite monsters
-		pspritegroup = (mspritegroup_t*)psprite->frames[frame].frameptr;
-		pspriteframe = pspritegroup->frames[angleframe];
-	}
-
-	return pspriteframe;
-}
-
-int R_GetSpriteTexture(const model_t* m_pSpriteModel, int frame)
-{
-	if (!m_pSpriteModel || m_pSpriteModel->type != mod_sprite || !m_pSpriteModel->cache.data)
-		return 0;
-
-	return R_GetSpriteFrame(m_pSpriteModel, frame, 0.0f)->gl_texturenum;
+	g_viewinfo.m_flAnimTime = g_viewinfo.m_flCurTime;
+	gEngfuncs.pfnWeaponAnim(iAnim, iBody);
 }

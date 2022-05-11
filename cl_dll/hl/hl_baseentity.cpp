@@ -353,3 +353,8 @@ void CBaseEntity::BrushPhysThink()
 {
 	return;
 }
+
+int UTIL_PrecacheModel(const char* szname)
+{
+	return 0;
+}

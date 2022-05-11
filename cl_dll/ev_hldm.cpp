@@ -73,14 +73,14 @@ int EV_SendWeaponAnim(int iAnim, int iBody = -1, int iWeight = 0)
 		iBody = view->curstate.body;
 
 	if (iWeight > 0)
-		iSeq = LookupActivityWeight(view, iAnim, iWeight);
+		iSeq = cl_animutils.LookupActivityWeight(view, iAnim, iWeight);
 	else
-		iSeq = LookupActivity(view, iAnim);
+		iSeq = cl_animutils.LookupActivity(view, iAnim);
 
 	if (iSeq < 0)
 		return -1;
 
-	gHUD.m_flAnimTime = gHUD.m_flCurTime;
+	g_viewinfo.m_flAnimTime = g_viewinfo.m_flCurTime;
 	gEngfuncs.pEventAPI->EV_WeaponAnimation(iSeq, iBody);
 	return iSeq;
 }

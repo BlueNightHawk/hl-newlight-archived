@@ -1042,19 +1042,19 @@ float CBasePlayerItem::GetSeqLength(int sequence)
 
 int CBasePlayerItem::LookupActivityWeight(int activity, int weight)
 {
-	return ::LookupActivityWeight(gEngfuncs.GetViewModel(), activity, weight);
+	return cl_animutils.LookupActivityWeight(gEngfuncs.GetViewModel(), activity, weight);
 }
 
 
 int CBasePlayerItem::GetActivityHeaviest(int activity)
 {
-	return ::LookupActivityHeaviest(gEngfuncs.GetViewModel(), activity);
+	return cl_animutils.LookupActivityHeaviest(gEngfuncs.GetViewModel(), activity);
 }
 
 
 int CBasePlayerItem::LookupActivity(int activity)
 {
-	return ::LookupActivity(gEngfuncs.GetViewModel(), activity);
+	return cl_animutils.LookupActivity(gEngfuncs.GetViewModel(), activity);
 }
 
 

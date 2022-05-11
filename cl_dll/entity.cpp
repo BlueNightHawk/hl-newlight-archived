@@ -372,11 +372,10 @@ void DLLEXPORT HUD_StudioEvent(const struct mstudioevent_s* event, const struct 
 {
 	//	RecClStudioEvent(event, entity);
 	
-	bool soundevent = (event->event == 5004);
-	if (entity == gEngfuncs.GetViewModel() && soundevent )
+	if (entity == gEngfuncs.GetViewModel() && (event->event == 5004))
 		return;
 
-	StudioEvent(event, entity);
+	cl_animutils.StudioEvent(event, entity);
 }
 /*
 =================
@@ -596,7 +595,7 @@ void DLLEXPORT HUD_TempEntUpdate(
 
 					gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 
-					gEngfuncs.pEventAPI->EV_PlayerTrace(pTemp->entity.prevstate.origin, pTemp->entity.origin, PM_STUDIO_BOX, -1, &pmtrace);
+					gEngfuncs.pEventAPI->EV_PlayerTrace(pTemp->entity.prevstate.origin, pTemp->entity.origin, PM_STUDIO_BOX, pTemp->clientIndex, &pmtrace);
 
 
 					if (pmtrace.fraction != 1)
@@ -621,7 +620,7 @@ void DLLEXPORT HUD_TempEntUpdate(
 
 					gEngfuncs.pEventAPI->EV_SetTraceHull(2);
 
-					gEngfuncs.pEventAPI->EV_PlayerTrace(pTemp->entity.prevstate.origin, pTemp->entity.origin, PM_STUDIO_BOX | PM_WORLD_ONLY, -1, &pmtrace);
+					gEngfuncs.pEventAPI->EV_PlayerTrace(pTemp->entity.prevstate.origin, pTemp->entity.origin, PM_STUDIO_BOX | PM_WORLD_ONLY, pTemp->clientIndex, &pmtrace);
 
 					if (pmtrace.fraction != 1)
 					{
