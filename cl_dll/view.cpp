@@ -22,6 +22,8 @@
 
 #include "discord_integration.h"
 
+#include "particleman.h"
+
 int CL_IsThirdPerson();
 void CL_CameraOffset(float* ofs);
 
@@ -2023,6 +2025,8 @@ extern int g_iFlashlight;
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
+	static CBaseParticle* pParticle = nullptr;
+
 
 	// intermission / finale rendering
 	if (0 != pparams->intermission)
@@ -2049,33 +2053,66 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	{
 		pmtrace_t tr;
 		Vector forward;
+		//AngleVectors(INVPITCH(gEngfuncs.GetViewModel()->angles), forward, NULL, NULL);
 		AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
 		Vector vecSrc, vecEnd;
-		vecSrc = pparams->vieworg;
+		vecSrc = g_viewinfo.actualbonepos[0];
 		vecEnd = vecSrc + forward * 8192;
 
 		int plindex = gEngfuncs.GetLocalPlayer()->index;
 		
 		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_STUDIO_BOX, plindex, &tr);
+		
+		float dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
+		float invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
+		float color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
+		dist = clamp(dist, 32, 200);
+		invdist = clamp(invdist, 28, 82);
+		color = clamp(color, 128, 255);
 
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
+		dlight_t* dl =	gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
 		if (dl)
 		{
 			dl->origin = tr.endpos;
-			dl->color = {255, 255, 255};
-			dl->radius = 128;
+			dl->color = {(byte)color, (byte)color, (byte)color};
+			dl->radius = clamp(dist * 1.05, 32, 100);
 			dl->decay = 512;
 			dl->die = pparams->time + pparams->frametime * 20;
 		}
 
-	}
+		physent_t* pe;
+		pe = gEngfuncs.pEventAPI->EV_GetPhysent(tr.ent);
 
+		if (!pParticle)
+		{
+			pParticle = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, GetModel("sprites/fl.spr"), dist * 1.01, invdist, "");
+		}
+		if (pParticle)
+		{
+			//	pParticle->m_flDieTime = pparams->time + pparams->frametime * 20;
+			pParticle->m_vOrigin = tr.endpos;
+			pParticle->SetLightFlag(LIGHT_NONE);
+			pParticle->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
+			VectorAngles(tr.plane.normal, pParticle->m_vAngles);
+			pParticle->m_iRendermode = kRenderTransAdd;
+			pParticle->m_flBrightness = lerp(pParticle->m_flBrightness, invdist, pparams->frametime * 15.0f);
+			pParticle->m_flSize = lerp(pParticle->m_flSize, dist * 1.01,pparams->frametime * 15.0f);
+		}
+	}
+	else
+	{
+		if (pParticle)
+		{
+			pParticle->m_flFadeSpeed = 64;
+			pParticle = nullptr;
+		}
+	}
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 
 	// buz
 	if (CVAR_GET_FLOAT("r_shadows") > 1 )
 		SetupBuffer();
-	
+
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha
 #define SF_TEST

@@ -236,6 +236,9 @@ void CBaseParticle::Draw()
 	const Vector topLeft = lowLeft + height;
 	const Vector topRight = lowRight + height;
 
+	if ((GetRenderFlags() & RENDER_DEPTHRANGE) != 0)
+		glDepthRange(0, 0);
+
 	gEngfuncs.pTriAPI->SpriteTexture(m_pTexture, m_iFrame);
 	gEngfuncs.pTriAPI->RenderMode(m_iRendermode);
 	gEngfuncs.pTriAPI->CullFace(TRI_NONE);
@@ -259,6 +262,9 @@ void CBaseParticle::Draw()
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 	gEngfuncs.pTriAPI->CullFace(TRI_FRONT);
+
+	if ((GetRenderFlags() & RENDER_DEPTHRANGE) != 0)
+		glDepthRange(0, 1);
 }
 
 void CBaseParticle::Animate(float time)
