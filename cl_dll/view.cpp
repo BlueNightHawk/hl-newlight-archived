@@ -2018,6 +2018,8 @@ extern void SetupBuffer();
 
 ref_params_s g_pparams;
 
+extern int g_iFlashlight;
+
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
@@ -2041,6 +2043,31 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	if (pparams->paused <= 0)
 	{
 		g_viewinfo.m_flCurTime += pparams->frametime;
+	}
+
+	if (g_iFlashlight != 0)
+	{
+		pmtrace_t tr;
+		Vector forward;
+		AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
+		Vector vecSrc, vecEnd;
+		vecSrc = pparams->vieworg;
+		vecEnd = vecSrc + forward * 8192;
+
+		int plindex = gEngfuncs.GetLocalPlayer()->index;
+		
+		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_STUDIO_BOX, plindex, &tr);
+
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
+		if (dl)
+		{
+			dl->origin = tr.endpos;
+			dl->color = {255, 255, 255};
+			dl->radius = 128;
+			dl->decay = 512;
+			dl->die = pparams->time + pparams->frametime * 20;
+		}
+
 	}
 
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);

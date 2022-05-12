@@ -403,7 +403,6 @@ void Precache()
 	GetModel("models/player_legs.mdl");
 	GetModel("models/player_sci_legs.mdl");
 	GetModel("models/player_sci.mdl");
-
 }
 
 // This is called every time the DLL is loaded

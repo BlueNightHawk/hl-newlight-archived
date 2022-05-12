@@ -21,9 +21,8 @@
 
 extern engine_studio_api_s IEngineStudio;
 
-#define M4_CLIP 0
-#define GL_SHELL 1
-#define GLOCK_CLIP 2
+void MuzzleEvent(const struct cl_entity_s* entity, int i);
+void DropTempMags(struct cl_entity_s* entity, int type);
 
 animutils_s cl_animutils;
 
@@ -159,90 +158,6 @@ void animutils_s::SetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
 	ent->curstate.body = (ent->curstate.body - (iCurrent * pbodypart->base) + (iValue * pbodypart->base));
 }
 
-void MuzzleEvent(const struct cl_entity_s* entity, int i)
-{
-	CL_Muzzleflash((float*)&entity->attachment[i]);
-	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
-}
-
-void DropTempMags(struct cl_entity_s* entity, int type)
-{
-	extern ref_params_s g_pparams;
-	extern Vector v_angles;
-	Vector forward, right, up, dir;
-	tempent_s* ptemp = nullptr;
-	AngleVectors(v_angles, forward, right, up);
-
-	switch (type)
-	{
-	default:
-	case M4_CLIP:
-	{
-		dir = (g_viewinfo.bonepos[7] - g_viewinfo.prevbonepos[7]).Normalize();
-		ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[7], dir * 75, g_viewinfo.actualboneangles[7], 25.0f, 1, 0);
-		if (ptemp)
-		{
-			ptemp->entity.baseline.angles[1] = g_viewinfo.actualboneangles[7][1] * 1.3;
-			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[7][2] * 1.3;
-			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
-			NormalizeAngles(ptemp->entity.angles);
-			ptemp->entity.model = GetModel("models/v_m4clip.mdl");
-			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
-			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
-			ptemp->entity.baseline.entityType = 7;
-			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
-			ptemp->clientIndex = entity->index;
-			cl_animutils.SetBodygroup(gEngfuncs.GetViewModel(), 2, 1);
-		}
-	}
-	break;
-	case GL_SHELL:
-	{
-		extern ref_params_s g_pparams;
-		extern Vector v_angles;
-		Vector forward, right, up;
-		AngleVectors(v_angles, forward, right, up);
-		Vector dir = (g_viewinfo.bonepos[10] - g_viewinfo.prevbonepos[10]).Normalize();
-
-		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[10], dir * 35, g_viewinfo.actualboneangles[10], 25.0f, 1, 0);
-		if (ptemp)
-		{
-			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[10][0] * 1.3;
-			ptemp->entity.model = GetModel("models/v_glshell.mdl");
-			ptemp->flags &= ~FTENT_COLLIDEALL;
-			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE | FTENT_COLLIDEWORLD;
-			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
-			ptemp->entity.baseline.entityType = 10;
-			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
-			ptemp->clientIndex = entity->index;
-			cl_animutils.SetBodygroup(gEngfuncs.GetViewModel(), 3, 1);
-		}
-	}
-	break;
-	case GLOCK_CLIP:
-	{
-		extern ref_params_s g_pparams;
-		extern Vector v_angles;
-		Vector forward, right, up;
-		AngleVectors(v_angles, forward, right, up);
-		tempent_s* ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], Vector(g_pparams.simvel) + (right * -10), g_viewinfo.actualboneangles[46], 25.0f, 1, 0);
-		if (ptemp)
-		{
-			ptemp->entity.model = GetModel("models/v_glockclip.mdl");
-			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
-			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
-			ptemp->entity.baseline.entityType = 46;
-			ptemp->bounceFactor = 0.9;
-			ptemp->clientIndex = entity->index;
-			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
-			gEngfuncs.GetViewModel()->curstate.body = 1;
-		}
-	}
-	break;
-	}
-}
-
 void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	int iShouldDrawLegs = (g_iDrawLegs <= 0 && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
@@ -257,6 +172,7 @@ void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct c
 			pEnt = gEngfuncs.GetViewModel();
 		else
 			pEnt = gEngfuncs.GetEntityByIndex(entity->index);
+		if (pEnt)
 		SetBodygroup(pEnt, event->event - 9000, atoi(event->options));
 		return;
 	}
@@ -289,7 +205,15 @@ void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct c
 		gEngfuncs.GetViewModel()->curstate.body = 0;
 		break;
 	case 8000:
-		gEngfuncs.GetViewModel()->curstate.skin = atoi(event->options);
+	{
+		cl_entity_s* pEnt = nullptr;
+		if (entity == gEngfuncs.GetViewModel())
+			pEnt = gEngfuncs.GetViewModel();
+		else
+			pEnt = gEngfuncs.GetEntityByIndex(entity->index);
+		if (pEnt)
+			pEnt->curstate.skin = atoi(event->options);	
+	}
 		break;
 	case 5004:
 		// Client side sound

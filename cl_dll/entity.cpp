@@ -36,6 +36,12 @@ extern Vector v_origin;
 
 bool g_iAlive = true;
 
+#define M4_CLIP 0
+#define GL_SHELL 1
+#define GLOCK_CLIP 2
+
+int g_iFlashlight = 0;
+
 /*
 ========================
 HUD_AddEntity
@@ -52,8 +58,21 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 		break;
 	case ET_PLAYER:
 	{
-		if ((ent && ent == gEngfuncs.GetLocalPlayer()) && g_iDrawLegs)
-			g_iDrawLegs = 0;
+		if ((ent && ent == gEngfuncs.GetLocalPlayer()))
+		{
+			if (g_iDrawLegs != 0)
+				g_iDrawLegs = 0;
+
+			if ((ent->curstate.effects & EF_DIMLIGHT) != 0)
+			{
+				ent->curstate.effects &= ~EF_DIMLIGHT;
+				g_iFlashlight = 1;
+			}
+			else
+			{
+				g_iFlashlight = 0;
+			}
+		}
 	}
 	case ET_BEAM:
 	case ET_TEMPENTITY:
@@ -785,6 +804,90 @@ void DLLEXPORT HUD_TempEntUpdate(
 finish:
 	// Restore state info
 	gEngfuncs.pEventAPI->EV_PopPMStates();
+}
+
+void MuzzleEvent(const struct cl_entity_s* entity, int i)
+{
+	CL_Muzzleflash((float*)&entity->attachment[i]);
+	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/pistol_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+	CreateGunSmoke((float*)&entity->attachment[i], "sprites/particles/rifle_smoke1.spr", gEngfuncs.pfnRandomFloat(25, 50), gEngfuncs.pfnRandomFloat(16, 32));
+}
+
+void DropTempMags(struct cl_entity_s* entity, int type)
+{
+	extern ref_params_s g_pparams;
+	extern Vector v_angles;
+	Vector forward, right, up, dir;
+	tempent_s* ptemp = nullptr;
+	AngleVectors(v_angles, forward, right, up);
+
+	switch (type)
+	{
+	default:
+	case M4_CLIP:
+	{
+		dir = (g_viewinfo.bonepos[7] - g_viewinfo.prevbonepos[7]).Normalize();
+		ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[7], dir * 75, g_viewinfo.actualboneangles[7], 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.baseline.angles[1] = g_viewinfo.actualboneangles[7][1] * 1.3;
+			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[7][2] * 1.3;
+			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
+			NormalizeAngles(ptemp->entity.angles);
+			ptemp->entity.model = GetModel("models/v_m4clip.mdl");
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
+			ptemp->entity.baseline.entityType = 7;
+			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+			ptemp->clientIndex = entity->index;
+		}
+	}
+	break;
+	case GL_SHELL:
+	{
+		extern ref_params_s g_pparams;
+		extern Vector v_angles;
+		Vector forward, right, up;
+		AngleVectors(v_angles, forward, right, up);
+		dir = (g_viewinfo.bonepos[10] - g_viewinfo.prevbonepos[10]).Normalize();
+
+		ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[10], dir * 35, g_viewinfo.actualboneangles[10], 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[10][0] * 1.3;
+			ptemp->entity.model = GetModel("models/v_glshell.mdl");
+			ptemp->flags &= ~FTENT_COLLIDEALL;
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE | FTENT_COLLIDEWORLD;
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
+			ptemp->entity.baseline.entityType = 10;
+			ptemp->entity.baseline.vuser1 = Vector(90, 0, 0);
+			ptemp->clientIndex = entity->index;
+		}
+	}
+	break;
+	case GLOCK_CLIP:
+	{
+		extern ref_params_s g_pparams;
+		extern Vector v_angles;
+		Vector forward, right, up;
+		AngleVectors(v_angles, forward, right, up);
+		dir = (g_viewinfo.bonepos[46] - g_viewinfo.prevbonepos[46]).Normalize();
+
+		ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], dir, Vector(0, 0, 0), 25.0f, 1, 0);
+		if (ptemp)
+		{
+			ptemp->entity.model = GetModel("models/v_glockclip.mdl");
+			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
+			ptemp->entity.angles = g_viewinfo.actualboneangles[46];
+			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
+			ptemp->entity.baseline.entityType = 46;
+			ptemp->bounceFactor = 0.9;
+			ptemp->clientIndex = entity->index;
+			ptemp->entity.baseline.vuser1 = Vector(0, 0, 0);
+		}
+	}
+	break;
+	}
 }
 
 /*

@@ -1041,15 +1041,16 @@ bool CBaseMonster::DeadTakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacke
 		}
 	}
 
-#if 1 // turn this back on when the bounding box issues are resolved.
+#if 0 // turn this back on when the bounding box issues are resolved.
 
 	pev->flags &= ~FL_ONGROUND;
-	pev->origin.z += 1;
+	pev->origin.z += 5;
 	
 	// let the damage scoot the corpse around a bit.
 	if ( !FNullEnt(pevInflictor) && (pevAttacker->solid != SOLID_TRIGGER) )
 	{
-		pev->velocity = pev->velocity + vecDir * -DamageForce( flDamage );
+		pev->velocity = pev->velocity + vecDir * -DamageForce(flDamage) + Vector(0,0,500);
+		pev->avelocity.y = UTIL_VecToAngles(pev->velocity).y;
 	}
 
 #endif
