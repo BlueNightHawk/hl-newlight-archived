@@ -355,6 +355,8 @@ void ResetCvars()
 extern model_s* GetModel(char* szname);
 void Precache()
 {
+	memset(gHUD.m_pModCache, (int)nullptr, 512);
+
 	// Preload frequently used models
 	// Might reduce stutters
 
