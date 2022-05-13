@@ -258,12 +258,6 @@ public:
 	void StudioRenderPlayerShadow(int num);
 	void StudioRenderWeaponShadow(int num);
 
-	cvar_t* r_shadows;
-	cvar_t* r_shadow_height;
-	cvar_t* r_shadow_x;
-	cvar_t* r_shadow_y;
-	cvar_t* r_shadow_alpha;
-
 	Vector vecLightDir;
 	alight_t storedlight;
 	// SHADOWS END
@@ -298,10 +292,6 @@ public:
 	void StudioDlightEffects();
 	void StudioExportBoneTransform();
 	void StudioMergeGlowModels(alight_t *lighting);
-
-	cvar_t* r_glowmodels;
-	cvar_t* r_camanims;
-	cvar_t* r_dlightfx;
 };
 
 void StudioLightAtPos(const float* pos, float* color, int& amblight, float* dir);

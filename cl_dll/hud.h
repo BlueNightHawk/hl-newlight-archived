@@ -33,12 +33,10 @@
 #include "com_model.h"
 #include "cvardef.h"
 
-extern cvar_t* hud_fade;
-
 #define DHN_DRAWZERO 1
 #define DHN_2DIGITS 2
 #define DHN_3DIGITS 4
-#define MIN_ALPHA ((hud_fade->value) ? 0 : 100)
+#define MIN_ALPHA ((nlvars.hud_fade->value) ? 0 : 100)
 
 #define HUDELEM_ACTIVE 1
 
@@ -550,8 +548,8 @@ private:
 	Rect* m_rgrcRects;							  /*[HUD_SPRITE_COUNT]*/
 	char* m_rgszSpriteNames;					  /*[HUD_SPRITE_COUNT][MAX_SPRITE_NAME_LENGTH]*/
 public:
+	struct cvar_s* cl_autowepswitch;
 	struct cvar_s* default_fov;
-	struct cvar_s* r_autofov;
 
 	HSPRITE GetSprite(int index)
 	{
@@ -626,11 +624,59 @@ public:
 	double m_flCrosshairSize;
 	float m_flRecoilTime;
 
-	cvar_t* hud_crosshair;
-	cvar_t* hud_crosshair_speed;
-
 	model_s* m_pModCache[512];
 };
+
+typedef struct nlvars_t
+{
+	struct cvar_s* r_autofov;
+	struct cvar_s* hud_crosshair;
+	struct cvar_s* hud_crosshair_speed;
+
+	struct cvar_s* cl_toggleisight;
+	struct cvar_s* hud_fade;
+
+	struct cvar_s* print_subtitles;
+	struct cvar_s* subtitles_font_scale;
+	struct cvar_s* subtitles_language;
+	struct cvar_s* subtitles_log_candidates;
+
+	struct cvar_s* cl_weaponlag;
+	struct cvar_s* cl_weaponlagscale;
+	struct cvar_s* cl_weaponlagspeed;
+
+	struct cvar_s* cl_fwdangle;
+	struct cvar_s* cl_fwdspeed;
+
+	struct cvar_s* cl_hudlag;
+
+	struct cvar_s* cl_animbone;
+
+	struct cvar_s* cl_guessanimbone;
+
+	struct cvar_s* cl_sprintanim;
+	struct cvar_s* cl_jumpanim;
+	struct cvar_s* cl_retractwpn;
+	struct cvar_s* cl_ironsight;
+
+	struct cvar_s* r_shadows;
+	struct cvar_s* r_shadow_height;
+	struct cvar_s* r_shadow_x;
+	struct cvar_s* r_shadow_y;
+	struct cvar_s* r_shadow_alpha;
+
+	struct cvar_s* r_glowmodels;
+	struct cvar_s* r_camanims;
+	struct cvar_s* r_dlightfx;
+	struct cvar_s* r_drawlegs;
+
+	struct cvar_s* cl_clientflashlight;
+	struct cvar_s* cl_fakeprojflashlight;
+
+	void InitCvars();
+} nlvars_s;
+
+extern nlvars_s nlvars;
 
 extern CHud gHUD;
 

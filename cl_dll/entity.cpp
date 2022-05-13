@@ -63,7 +63,7 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 			if (g_iDrawLegs != 0)
 				g_iDrawLegs = 0;
 
-			if ((ent->curstate.effects & EF_DIMLIGHT) != 0)
+			if ((ent->curstate.effects & EF_DIMLIGHT) != 0 && nlvars.cl_clientflashlight->value != 0)
 			{
 				ent->curstate.effects &= ~EF_DIMLIGHT;
 				g_iFlashlight = 1;
@@ -919,4 +919,80 @@ cl_entity_t DLLEXPORT* HUD_GetUserEntity(int index)
 #else
 	return NULL;
 #endif
+}
+
+void UpdateFlashlight(ref_params_t* pparams)
+{
+	//	RecClCalcRefdef(pparams);
+	static CBaseParticle* pParticle = nullptr;
+	pmtrace_t tr;
+	Vector forward;
+	Vector vecSrc, vecEnd;
+	int plindex = gEngfuncs.GetLocalPlayer()->index;
+
+	if (g_iFlashlight != 0)
+	{
+		AngleVectors(pparams->cl_viewangles, forward, NULL, NULL);
+		//AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
+		vecSrc = pparams->vieworg;
+		vecEnd = vecSrc + forward * 8192;
+
+		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_STUDIO_BOX, plindex, &tr);
+
+		float dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
+		float invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
+		float color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
+
+		dist = clamp(dist, 32, 200);
+		invdist = clamp(invdist, 28, 82);
+		color = clamp(color, 128, 255);
+
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
+		if (dl)
+		{
+			dl->origin = tr.endpos;
+			dl->color = {(byte)color, (byte)color, (byte)color};
+			dl->radius = clamp(dist * 1.05, 32, 100);
+			dl->decay = 512;
+			dl->die = pparams->time + pparams->frametime * 20;
+		}
+
+		physent_t* pe;
+		pe = gEngfuncs.pEventAPI->EV_GetPhysent(tr.ent);
+
+		if (nlvars.cl_fakeprojflashlight->value != 0)
+		{
+			if (!pParticle)
+			{
+				pParticle = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, GetModel("sprites/fl.spr"), dist * 1.01, invdist, "");
+			}
+			if (pParticle)
+			{
+				//	pParticle->m_flDieTime = pparams->time + pparams->frametime * 20;
+				pParticle->m_vOrigin = tr.endpos;
+				pParticle->SetLightFlag(LIGHT_NONE);
+				pParticle->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
+				pParticle->m_vAngles.z = g_viewinfo.actualboneangles[0][2];
+				pParticle->m_iRendermode = kRenderTransAdd;
+				pParticle->m_flBrightness = lerp(pParticle->m_flBrightness, invdist, pparams->frametime * 15.0f);
+				pParticle->m_flSize = lerp(pParticle->m_flSize, dist * 1.01, pparams->frametime * 15.0f);
+			}
+		}
+		else
+		{
+			if (pParticle)
+			{
+				pParticle->m_flFadeSpeed = 64;
+				pParticle = nullptr;
+			}
+		}
+	}
+	else
+	{
+		if (pParticle)
+		{
+			pParticle->m_flFadeSpeed = 64;
+			pParticle = nullptr;
+		}
+	}
 }

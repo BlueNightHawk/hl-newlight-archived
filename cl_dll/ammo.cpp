@@ -987,14 +987,14 @@ bool CHudAmmo::Draw(float flTime)
 
 	float scale = 3.0f;
 
-	flLerpVel = lerp(flLerpVel, (Vector(g_pparams.simvel).Length2D() / 25), gHUD.m_flTimeDelta * gHUD.hud_crosshair_speed->value);
+	flLerpVel = lerp(flLerpVel, (Vector(g_pparams.simvel).Length2D() / 25), gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value);
 
-	gHUD.m_flCrosshairSize = lerp(gHUD.m_flCrosshairSize, 0, gHUD.m_flTimeDelta * gHUD.hud_crosshair_speed->value); // return the sight to its original size. hud_crosshair_speed choose whatever you like.
+	gHUD.m_flCrosshairSize = lerp(gHUD.m_flCrosshairSize, 0, gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value); // return the sight to its original size. hud_crosshair_speed choose whatever you like.
 	gHUD.m_flCrosshairSize = clamp(gHUD.m_flCrosshairSize,0.0f,128.0f); // limit the variable
 
 	cross_size += gHUD.m_flCrosshairSize + flLerpVel + (ev_recoilangle.Length() * 2.5); // add a temporary one to the original size of the sight
 
-	if (gHUD.hud_crosshair->value != 0) // draw if hud_crosshair is 1
+	if (nlvars.hud_crosshair->value != 0) // draw if hud_crosshair is 1
 	{
 		extern float g_vLag[];
 

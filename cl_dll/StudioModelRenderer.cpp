@@ -123,8 +123,6 @@ void ClearBuffer(void)
 }
 // buz end
 
-cvar_s* r_drawlegs;
-
 extern Vector v_angles;
 
 /////////////////////
@@ -146,20 +144,6 @@ void CStudioModelRenderer::Init()
 	m_pChromeSprite = IEngineStudio.GetChromeSprite();
 
 	IEngineStudio.GetModelCounters(&m_pStudioModelCount, &m_pModelsDrawn);
-
-	// SHADOWS START
-	r_shadows = CVAR_CREATE("nl_r_shadows", "1", FCVAR_ARCHIVE);
-	r_shadow_height = CVAR_CREATE("nl_r_shadow_height", "0", 0);
-	r_shadow_x = CVAR_CREATE("nl_r_shadow_x", "0", 0);
-	r_shadow_y = CVAR_CREATE("nl_r_shadow_y", "0", 0);
-	r_shadow_alpha = CVAR_CREATE("nl_r_shadow_alpha", "0", FCVAR_ARCHIVE);
-	// SHADOWS END
-
-	r_glowmodels = CVAR_CREATE("nl_glowmodels", "1", FCVAR_ARCHIVE);
-	r_camanims = CVAR_CREATE("nl_camanims", "1", FCVAR_ARCHIVE);
-	r_dlightfx = CVAR_CREATE("nl_dlightfx", "1", FCVAR_ARCHIVE);
-
-	r_drawlegs = CVAR_CREATE("nl_drawlegs", "1", FCVAR_ARCHIVE);
 
 	// Get pointers to engine data structures
 	m_pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])IEngineStudio.StudioGetBoneTransform();
@@ -1378,7 +1362,7 @@ void CStudioModelRenderer::StudioExportBoneTransform()
 			NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
 		}
 
-		if (r_camanims->value != 0)
+		if (nlvars.r_camanims->value != 0)
 		{
 			cl_entity_t saveent = *m_pCurrentEntity;
 
@@ -1598,9 +1582,9 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 		StudioRenderModel();
 		StudioExportBoneTransform();
-		if (r_dlightfx->value != 0)
+		if (nlvars.r_dlightfx->value != 0)
 			StudioDlightEffects();
-		if (r_glowmodels->value != 0)
+		if (nlvars.r_glowmodels->value != 0)
 			StudioMergeGlowModels(&lighting);
 
 		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
@@ -2615,9 +2599,9 @@ void CStudioModelRenderer::StudioDrawPointsShadow(void)
 	glEnable(GL_STENCIL_TEST);
 
 	// magic nipples - no more shadows from lightsources because it looks bad
-	height = r_shadow_height->value + 0.1f;
-	vec_y = r_shadow_y->value;
-	vec_x = r_shadow_x->value;
+	height = nlvars.r_shadow_height->value + 0.1f;
+	vec_y = nlvars.r_shadow_y->value;
+	vec_x = nlvars.r_shadow_x->value;
 
 
 	for (k = 0; k < m_pSubModel->nummesh; k++)
@@ -2674,11 +2658,11 @@ void CStudioModelRenderer::StudioDrawShadow()
 	glDepthMask(GL_TRUE);
 
 	// magic nipples - shadows | changed r_shadows.value to -> to prevent error
-	if (r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
+	if (nlvars.r_shadows->value == 1 && m_pCurrentEntity->curstate.rendermode != kRenderTransAdd)
 	{
 		float color = intensity;
-		if (r_shadow_alpha->value < 1)
-			color = r_shadow_alpha->value;
+		if (nlvars.r_shadow_alpha->value < 1)
+			color = nlvars.r_shadow_alpha->value;
 
 		glDisable(GL_TEXTURE_2D);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -58,7 +58,7 @@ void CHud::Think()
 	}
 
 	// fov based on aspect ratio
-	if (r_autofov->value != 0)
+	if (nlvars.r_autofov->value != 0)
 	{
 	//	gEngfuncs.Con_Printf("%f \n", ((float)ScreenWidth / (float)ScreenHeight));
 		if (((float)ScreenWidth / (float)ScreenHeight) < 1.7f)
@@ -265,13 +265,11 @@ int CHud::DrawHudNumberString(int xpos, int ypos, int iMinX, int iNumber, int r,
 	sprintf(szString, "%d", iNumber);
 
 	extern float g_vLag[2];
-	extern cvar_s* cl_hudlag;
-	if (cl_hudlag->value)
+	if (nlvars.cl_hudlag->value != 0)
 	{
 		xpos += g_vLag[0];
 		ypos += g_vLag[1];
 	}
-
 #ifndef OLD_HUD
 	TRI_SprAdjustSize(&xpos, &ypos, 0, 0);
 #endif

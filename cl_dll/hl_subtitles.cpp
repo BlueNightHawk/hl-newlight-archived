@@ -1,5 +1,5 @@
-//#include "hud.h"
 #define NOCLAMP
+#include "hud.h"
 #include "cl_dll.h"
 #include "parsemsg.h"
 #include "cvardef.h"
@@ -25,7 +25,6 @@
 
 
 extern SDL_Window* window;
-extern cvar_t* subtitles_language;
 
 using namespace aux;
 
@@ -139,7 +138,7 @@ void Subtitles_ParseSubtitles(const std::string& filePath, const std::string& la
 
 std::string GetSubtitleKeyWithLanguage(const std::string& key)
 {
-	std::string language_to_use = std::string(subtitles_language->string);
+	std::string language_to_use = std::string(nlvars.subtitles_language->string);
 	auto subtitleKey = str::toUppercase(language_to_use + "_" + key);
 
 	if (subtitleMap.count(subtitleKey))

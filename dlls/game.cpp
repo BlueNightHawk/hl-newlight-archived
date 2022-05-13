@@ -454,6 +454,8 @@ cvar_t sk_player_leg3 = {"sk_player_leg3", "1"};
 
 // END Cvars for Skill Level settings
 
+cvar_t sv_holsterweapon = {"nl_holsterweapon", "1"};
+
 // Register your console variables here
 // This gets called one time when the game is initialied
 void GameDLLInit()
@@ -904,6 +906,8 @@ void GameDLLInit()
 
 	CVAR_REGISTER(&sv_bhop);
 	CVAR_REGISTER(&sv_autobhop);
+
+	CVAR_REGISTER(&sv_holsterweapon);
 
 	SERVER_COMMAND("exec skill.cfg\n");
 }

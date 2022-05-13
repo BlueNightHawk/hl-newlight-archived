@@ -37,6 +37,8 @@
 
 #include "cl_animating.h"
 
+#include "hud.h"
+
 extern engine_studio_api_s IEngineStudio;
 
 extern int g_iUser1;
@@ -75,9 +77,6 @@ CTripmine g_Tripmine;
 CSqueak g_Snark;
 
 CBasePlayerWeapon* g_pWeapon;
-
-extern cvar_t* cl_toggleisight;
-extern cvar_t* cl_autowepswitch;
 
 void CL_SendWeaponAnim(int iAnim, int iBody);
 
@@ -824,8 +823,8 @@ void HUD_WeaponsPostThink(local_state_s* from, local_state_s* to, usercmd_t* cmd
 	to->client.vuser2[0] = player.ammo_hornets;
 	to->client.ammo_rockets = player.ammo_rockets;
 
-	player.m_iToggleISight = cl_toggleisight->value;
-	player.m_iAutoWepSwitch = cl_autowepswitch->value;
+	player.m_iToggleISight = nlvars.cl_toggleisight->value;
+	player.m_iAutoWepSwitch = gHUD.cl_autowepswitch->value;
 
 	if ((player.pev->button & IN_ALT1) != 0 && player.m_pActiveItem)
 	{

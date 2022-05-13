@@ -43,6 +43,8 @@ extern IParticleMan* g_pParticleMan;
 hud_player_info_t g_PlayerInfoList[MAX_PLAYERS_HUD + 1];	// player info from the engine
 extra_player_info_t g_PlayerExtraInfo[MAX_PLAYERS_HUD + 1]; // additional player info sent directly to the client dll
 
+nlvars_s nlvars;
+
 class CHLVoiceStatusHelper : public IVoiceStatusHelper
 {
 public:
@@ -94,14 +96,6 @@ extern cvar_t* sensitivity;
 cvar_t* cl_lw = NULL;
 cvar_t* cl_rollangle = nullptr;
 cvar_t* cl_rollspeed = nullptr;
-cvar_t* cl_toggleisight = nullptr;
-cvar_t* cl_autowepswitch = nullptr;
-cvar_t* hud_fade = nullptr;
-
-cvar_t* print_subtitles = nullptr;
-cvar_t* subtitles_font_scale = nullptr;
-cvar_t* subtitles_language = nullptr;
-cvar_t* subtitles_log_candidates = nullptr;
 
 int Subtitles_SubtClear(const char* pszName, int iSize, void* pbuf);
 int g_iRestoreViewent = 0;
@@ -405,6 +399,55 @@ void Precache()
 	GetModel("models/player_sci.mdl");
 }
 
+void nlvars_s::InitCvars()
+{
+	cl_toggleisight = CVAR_CREATE("nl_toggleisight", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
+
+	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
+
+	print_subtitles = CVAR_CREATE("nl_subtitles", "2", FCVAR_ARCHIVE);
+	subtitles_font_scale = CVAR_CREATE("nl_subtitles_font_scale", "1", FCVAR_ARCHIVE);
+	subtitles_language = CVAR_CREATE("nl_subtitles_language", "en", FCVAR_ARCHIVE);
+	subtitles_log_candidates = CVAR_CREATE("nl_subtitles_log_candidates", "0", FCVAR_ARCHIVE);
+
+	hud_crosshair = CVAR_CREATE("hud_crosshair", "1", FCVAR_ARCHIVE);
+	hud_crosshair_speed = CVAR_CREATE("hud_crosshair_speed", "65", FCVAR_ARCHIVE); // speed of returning the crosshair to its original size
+
+	cl_weaponlag = CVAR_CREATE("nl_weaponlag", "2.0", 0);
+	cl_weaponlagscale = CVAR_CREATE("nl_weaponlagscale", "1", FCVAR_ARCHIVE);
+	cl_weaponlagspeed = CVAR_CREATE("nl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
+
+	cl_fwdspeed = CVAR_CREATE("nl_fwdspeed", "200", FCVAR_ARCHIVE);
+	cl_fwdangle = CVAR_CREATE("nl_fwdangle", "2", FCVAR_ARCHIVE);
+
+	cl_hudlag = CVAR_CREATE("nl_hudlag", "1", FCVAR_ARCHIVE);
+
+	cl_animbone = CVAR_CREATE("nl_animbone", "0", FCVAR_ARCHIVE);
+	cl_guessanimbone = CVAR_CREATE("nl_guessanimbone", "1", FCVAR_ARCHIVE);
+
+	cl_sprintanim = CVAR_CREATE("nl_sprintanim", "1", FCVAR_ARCHIVE);
+	cl_jumpanim = CVAR_CREATE("nl_jumpanim", "1", FCVAR_ARCHIVE);
+	cl_retractwpn = CVAR_CREATE("nl_retractwpn", "1", FCVAR_ARCHIVE);
+	cl_ironsight = CVAR_CREATE("nl_ironsight", "1", FCVAR_ARCHIVE);
+
+	// SHADOWS START
+	r_shadows = CVAR_CREATE("nl_r_shadows", "1", FCVAR_ARCHIVE);
+	r_shadow_height = CVAR_CREATE("nl_r_shadow_height", "0", 0);
+	r_shadow_x = CVAR_CREATE("nl_r_shadow_x", "0", 0);
+	r_shadow_y = CVAR_CREATE("nl_r_shadow_y", "0", 0);
+	r_shadow_alpha = CVAR_CREATE("nl_r_shadow_alpha", "0", FCVAR_ARCHIVE);
+	// SHADOWS END
+
+	r_glowmodels = CVAR_CREATE("nl_glowmodels", "1", FCVAR_ARCHIVE);
+	r_camanims = CVAR_CREATE("nl_camanims", "1", FCVAR_ARCHIVE);
+	r_dlightfx = CVAR_CREATE("nl_dlightfx", "1", FCVAR_ARCHIVE);
+
+	r_drawlegs = CVAR_CREATE("nl_drawlegs", "1", FCVAR_ARCHIVE);
+
+	cl_clientflashlight = CVAR_CREATE("nl_clientflashlight", "1", FCVAR_ARCHIVE);
+	cl_fakeprojflashlight = CVAR_CREATE("nl_fakeprojflashlight", "1", FCVAR_ARCHIVE);
+}
+
 // This is called every time the DLL is loaded
 void CHud::Init()
 {
@@ -457,29 +500,14 @@ void CHud::Init()
 
 	CVAR_CREATE("zoom_sensitivity_ratio", "1.2", 0);
 	cl_autowepswitch = CVAR_CREATE("cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
-	cl_toggleisight = CVAR_CREATE("nl_toggleisight", "1", FCVAR_ARCHIVE | FCVAR_USERINFO);
+
 	default_fov = CVAR_CREATE("default_fov", "90", FCVAR_ARCHIVE);
-	r_autofov = CVAR_CREATE("nl_autofov", "1", FCVAR_ARCHIVE);
+	nlvars.r_autofov = CVAR_CREATE("nl_autofov", "1", FCVAR_ARCHIVE);
 	m_pCvarStealMouse = CVAR_CREATE("hud_capturemouse", "1", FCVAR_ARCHIVE);
 	m_pCvarDraw = CVAR_CREATE("hud_draw", "1", FCVAR_ARCHIVE);
 	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
 	cl_rollangle = CVAR_CREATE("cl_rollangle", "2.0", FCVAR_ARCHIVE);
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
-	hud_fade = CVAR_CREATE("nl_hudfade", "1", FCVAR_ARCHIVE);
-
-	hud_crosshair = CVAR_CREATE("hud_crosshair", "1", FCVAR_ARCHIVE);		 // main cvar
-	hud_crosshair_speed = CVAR_CREATE("hud_crosshair_speed", "65", FCVAR_ARCHIVE); // speed of returning the sight to its original size
-
-	print_subtitles = gEngfuncs.pfnRegisterVariable("subtitles", "2", FCVAR_ARCHIVE);
-	subtitles_font_scale = gEngfuncs.pfnRegisterVariable("subtitles_font_scale", "1", FCVAR_ARCHIVE);
-	subtitles_language = gEngfuncs.pfnRegisterVariable("subtitles_language", "en", FCVAR_ARCHIVE);
-	subtitles_log_candidates = gEngfuncs.pfnRegisterVariable("subtitles_log_candidates", "0", FCVAR_ARCHIVE);
-
-	CacheGlowModels();
-	StoreChapterNames();
-	
-	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
-	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 
 	m_pSpriteList = NULL;
 
@@ -520,6 +548,11 @@ void CHud::Init()
 	m_scrinfo.iSize = sizeof(m_scrinfo);
 	GetScreenInfo(&m_scrinfo);
 
+	nlvars.InitCvars();
+	CacheGlowModels();
+	StoreChapterNames();
+	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
+	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 	MsgFunc_ResetHUD(0, 0, NULL);
 }
 

@@ -19,8 +19,6 @@ using std::endl;
 using std::string;
 using std::filesystem::directory_iterator;
 
-extern cvar_s* cl_animbone;
-extern cvar_s* cl_guessanimbone;
 char chapterdata[64][32][64];
 
 void ReCacheGlowModels(void)
@@ -146,7 +144,7 @@ int GetCamBoneIndex(cl_entity_s* view)
 			break;
 		}
 		// try using common gun bone names to get bone index
-		else if (cl_guessanimbone->value != 0 && (index) == -1 && strlen(pbone[i].name) > 1)
+		else if (nlvars.cl_guessanimbone->value != 0 && (index) == -1 && strlen(pbone[i].name) > 1)
 		{
 			// add checks for more names if needed
 			if (!stricmp(pbone[i].name, "gun"))
@@ -172,8 +170,8 @@ int GetCamBoneIndex(cl_entity_s* view)
 		}
 	}
 
-	if ((int)cl_animbone->value > 0)
-		index = (int)cl_animbone->value - 1;
+	if ((int)nlvars.cl_animbone->value > 0)
+		index = (int)nlvars.cl_animbone->value - 1;
 
 	return index;
 }

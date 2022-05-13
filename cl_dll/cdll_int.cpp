@@ -54,8 +54,6 @@ void IN_Commands();
 
 int g_iDrawLegs = 0;
 
-extern cvar_s* r_drawlegs;
-
 extern model_s* TRI_pModel;
 
 void HL_ImGUI_Init();
@@ -262,7 +260,7 @@ int g_screenheight, g_screenwidth;
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
-	if (r_drawlegs && r_drawlegs->value != 0)
+	if (nlvars.r_drawlegs && nlvars.r_drawlegs->value != 0)
 		g_iDrawLegs = 1;
 
 	discord_integration::on_frame();

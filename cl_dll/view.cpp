@@ -24,6 +24,8 @@
 
 #include "particleman.h"
 
+void UpdateFlashlight(ref_params_t* pparams);
+
 int CL_IsThirdPerson();
 void CL_CameraOffset(float* ofs);
 
@@ -106,24 +108,6 @@ cvar_t* cl_bob;
 cvar_t* cl_bobup;
 cvar_t* cl_waterdist;
 cvar_t* cl_chasedist;
-
-cvar_t* cl_weaponlag;
-cvar_t* cl_weaponlagscale;
-cvar_t* cl_weaponlagspeed;
-
-cvar_t* cl_fwdangle;
-cvar_t* cl_fwdspeed;
-
-cvar_t* cl_hudlag;
-
-cvar_t* cl_animbone;
-
-cvar_t* cl_guessanimbone;
-
-cvar_t* cl_sprintanim;
-cvar_t* cl_jumpanim;
-cvar_t* cl_retractwpn;
-cvar_t* cl_ironsight;
 
 Vector v_jumppunch, v_jumpangle;
 
@@ -423,7 +407,7 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 	if (!viewentity)
 		return;
 
-	if (cl_retractwpn->value == 0)
+	if (nlvars.cl_retractwpn->value == 0)
 	{
 		v_dist = lerp(v_dist, 0, pparams->frametime * 15.5f);
 
@@ -480,7 +464,7 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 
 	Vector forward, right, up;
 
-	if (cl_ironsight->value == 0 || view->model == nullptr || strlen(view->model->name) <= 0|| g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
+	if (nlvars.cl_ironsight->value == 0 || view->model == nullptr || strlen(view->model->name) <= 0 || g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
 	{
 		offset = aoffset = Vector(0, 0, 0);
 
@@ -516,7 +500,7 @@ void V_DoSprinting(struct ref_params_s* pparams, cl_entity_s* view)
 	static float l_sprintangle = 0.0f;
 	extern kbutton_t in_run;
 
-	if ((in_run.state & 1) != 0 && cl_sprintanim->value != 0)
+	if ((in_run.state & 1) != 0 && nlvars.cl_sprintanim->value != 0)
 	{
 		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
 	}
@@ -573,7 +557,7 @@ void V_DoJumping(struct ref_params_s* pparams, cl_entity_s* view)
 	g_vLag[0] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
 	g_vLag[1] += ((l_pitch > 0) ? l_pitch * 0.1 : 0) * 5;
 
-	if (cl_hudlag->value != 0)
+	if (nlvars.cl_hudlag->value != 0)
 	{
 		pparams->crosshairangle[0] += (ev_punchangle[0] + ev_oldpunchangle[0]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
 		pparams->crosshairangle[1] -= (ev_punchangle[1] + ev_oldpunchangle[1]) + ((l_pitch > 0) ? l_pitch * 0.1 : 0);
@@ -582,7 +566,7 @@ void V_DoJumping(struct ref_params_s* pparams, cl_entity_s* view)
 
 void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, Vector original_angles)
 {
-	if (cl_weaponlag->value <= 0)
+	if (nlvars.cl_weaponlag->value <= 0)
 		return;
 
 	Vector forward, right, up;
@@ -596,8 +580,8 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		g_my = 0;
 	}
 
-	l_mx = lerp(l_mx, V_max(g_flZoomMultiplier, 0.25) * (-g_mx * 0.01) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
-	l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * cl_weaponlagspeed->value);
+	l_mx = lerp(l_mx, V_max(g_flZoomMultiplier, 0.25) * (-g_mx * 0.01) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
+	l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
 
 	l_mx = clamp(l_mx, -7.5, 7.5);
 	l_my = clamp(l_my, -7.5, 7.5);
@@ -629,7 +613,7 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 	static Vector l_camangles, l_campos;
 	int index = -1;
 
-	if (g_StudioRenderer.r_camanims->value == 0)
+	if (nlvars.r_camanims->value == 0)
 	{
 		goto end;
 	}
@@ -657,7 +641,7 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		g_vLag[0] += l_camangles[1] / 3;
 		g_vLag[1] -= l_camangles[0] / 3;
 
-		if (cl_hudlag->value != 0)
+		if (nlvars.cl_hudlag->value != 0)
 		{
 			pparams->crosshairangle[0] = l_camangles[0] / 25;
 			pparams->crosshairangle[1] = -l_camangles[1] / 25;
@@ -688,7 +672,7 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		g_vLag[0] += l_camangles[1] / 3;
 		g_vLag[1] -= l_camangles[0] / 3;
 
-		if (cl_hudlag->value != 0)
+		if (nlvars.cl_hudlag->value != 0)
 		{
 			pparams->crosshairangle[0] = l_camangles[0] / 25;
 			pparams->crosshairangle[1] = -l_camangles[1] / 25;
@@ -737,7 +721,7 @@ void V_ApplyBob(struct ref_params_s* pparams, cl_entity_s* view)
 	pparams->viewangles[1] += l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
 	pparams->viewangles[2] += l_bobRight * 0.165f * V_max(g_flZoomMultiplier, 0.15);
 
-	if (cl_hudlag->value != 0)
+	if (nlvars.cl_hudlag->value != 0)
 	{
 		pparams->crosshairangle[0] -= l_bobUp * 0.165f * V_max(g_flZoomMultiplier, 0.15);
 		pparams->crosshairangle[1] -= l_bobRight * 0.085f * V_max(g_flZoomMultiplier, 0.15);
@@ -759,7 +743,7 @@ void V_ApplyVelAngles(struct ref_params_s* pparams, cl_entity_s* view, cl_entity
 
 	// calculate the forward up and right values
 	side = V_CalcAngle(viewent->angles, pparams->simvel, cl_rollangle->value, cl_rollspeed->value, YAW /*RIGHT*/);
-	forward = V_CalcAngle(viewent->angles, pparams->simvel, cl_fwdangle->value, cl_fwdspeed->value, PITCH /*FORWARD*/);
+	forward = V_CalcAngle(viewent->angles, pparams->simvel, nlvars.cl_fwdangle->value, nlvars.cl_fwdspeed->value, PITCH /*FORWARD*/);
 
 	// interpolate the values
 	l_side = lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
@@ -826,7 +810,7 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 	V_RetractWeapon(pparams, view);
 	V_CalcViewModelLag(pparams, view->origin, view->angles, view->prevstate.angles);
 	V_ApplyBob(pparams, view);
-	if (cl_jumpanim->value != 0)	
+	if (nlvars.cl_jumpanim->value != 0)	
 		V_DoJumping(pparams, view);
 	V_ModifyOrigin(pparams, view);
 
@@ -2020,13 +2004,9 @@ extern void SetupBuffer();
 
 ref_params_s g_pparams;
 
-extern int g_iFlashlight;
-
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
-	static CBaseParticle* pParticle = nullptr;
-
 
 	// intermission / finale rendering
 	if (0 != pparams->intermission)
@@ -2049,68 +2029,12 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 		g_viewinfo.m_flCurTime += pparams->frametime;
 	}
 
-	if (g_iFlashlight != 0)
-	{
-		pmtrace_t tr;
-		Vector forward;
-		//AngleVectors(INVPITCH(gEngfuncs.GetViewModel()->angles), forward, NULL, NULL);
-		AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
-		Vector vecSrc, vecEnd;
-		vecSrc = g_viewinfo.actualbonepos[0];
-		vecEnd = vecSrc + forward * 8192;
-
-		int plindex = gEngfuncs.GetLocalPlayer()->index;
-		
-		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_STUDIO_BOX, plindex, &tr);
-		
-		float dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
-		float invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
-		float color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
-		dist = clamp(dist, 32, 200);
-		invdist = clamp(invdist, 28, 82);
-		color = clamp(color, 128, 255);
-
-		dlight_t* dl =	gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
-		if (dl)
-		{
-			dl->origin = tr.endpos;
-			dl->color = {(byte)color, (byte)color, (byte)color};
-			dl->radius = clamp(dist * 1.05, 32, 100);
-			dl->decay = 512;
-			dl->die = pparams->time + pparams->frametime * 20;
-		}
-
-		physent_t* pe;
-		pe = gEngfuncs.pEventAPI->EV_GetPhysent(tr.ent);
-
-		if (!pParticle)
-		{
-			pParticle = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, GetModel("sprites/fl.spr"), dist * 1.01, invdist, "");
-		}
-		if (pParticle)
-		{
-			//	pParticle->m_flDieTime = pparams->time + pparams->frametime * 20;
-			pParticle->m_vOrigin = tr.endpos;
-			pParticle->SetLightFlag(LIGHT_NONE);
-			pParticle->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
-			VectorAngles(tr.plane.normal, pParticle->m_vAngles);
-			pParticle->m_iRendermode = kRenderTransAdd;
-			pParticle->m_flBrightness = lerp(pParticle->m_flBrightness, invdist, pparams->frametime * 15.0f);
-			pParticle->m_flSize = lerp(pParticle->m_flSize, dist * 1.01,pparams->frametime * 15.0f);
-		}
-	}
-	else
-	{
-		if (pParticle)
-		{
-			pParticle->m_flFadeSpeed = 64;
-			pParticle = nullptr;
-		}
-	}
 	//gEngfuncs.Con_Printf("%f %f \n", gHUD.m_flCurTime, gHUD.m_flAnimTime);
 
+	UpdateFlashlight(pparams);
+
 	// buz
-	if (CVAR_GET_FLOAT("r_shadows") > 1 )
+	if (nlvars.r_shadows->value >= 2)
 		SetupBuffer();
 
 	/*
@@ -2231,23 +2155,6 @@ void V_Init()
 	cl_bobup = gEngfuncs.pfnRegisterVariable("cl_bobup", "0.5", 0);
 	cl_waterdist = gEngfuncs.pfnRegisterVariable("cl_waterdist", "4", 0);
 	cl_chasedist = gEngfuncs.pfnRegisterVariable("cl_chasedist", "112", 0);
-
-	cl_weaponlag = gEngfuncs.pfnRegisterVariable("nl_weaponlag", "2.0", 0);
-	cl_weaponlagscale = gEngfuncs.pfnRegisterVariable("nl_weaponlagscale", "1", FCVAR_ARCHIVE);
-	cl_weaponlagspeed = gEngfuncs.pfnRegisterVariable("nl_weaponlagspeed", "7.5", FCVAR_ARCHIVE);
-
-	cl_fwdspeed = gEngfuncs.pfnRegisterVariable("nl_fwdspeed", "200", FCVAR_ARCHIVE);
-	cl_fwdangle = gEngfuncs.pfnRegisterVariable("nl_fwdangle", "2", FCVAR_ARCHIVE);
-
-	cl_hudlag = gEngfuncs.pfnRegisterVariable("nl_hudlag", "1", FCVAR_ARCHIVE);
-
-	cl_animbone = gEngfuncs.pfnRegisterVariable("nl_animbone", "0", FCVAR_ARCHIVE);
-	cl_guessanimbone = gEngfuncs.pfnRegisterVariable("nl_guessanimbone", "1", FCVAR_ARCHIVE);
-
-	cl_sprintanim = gEngfuncs.pfnRegisterVariable("nl_sprintanim", "1", FCVAR_ARCHIVE);
-	cl_jumpanim = gEngfuncs.pfnRegisterVariable("nl_jumpanim", "1", FCVAR_ARCHIVE);
-	cl_retractwpn = gEngfuncs.pfnRegisterVariable("nl_retractwpn", "1", FCVAR_ARCHIVE);
-	cl_ironsight = gEngfuncs.pfnRegisterVariable("nl_ironsight", "1", FCVAR_ARCHIVE);
 
 	g_pparams.paused = 1;
 }

@@ -125,8 +125,7 @@ inline int TextMessageDrawChar(int x, int y, int number, int r, int g, int b)
 inline int DrawConsoleString(int x, int y, const char* string)
 {
 	extern float g_vLag[2];
-	extern cvar_s* cl_hudlag;
-	if (cl_hudlag->value)
+	if (nlvars.cl_hudlag->value != 0)
 	{
 		x += g_vLag[0];
 		y += g_vLag[1];

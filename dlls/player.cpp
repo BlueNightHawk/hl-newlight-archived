@@ -4208,7 +4208,8 @@ void CBasePlayer::ItemPostFrame()
 	if (m_pTank != NULL)
 		return;
 
-	if (m_pNextItem && m_flNextAttack < UTIL_WeaponTimeBase() && !m_pHeldItem)
+	extern cvar_t sv_holsterweapon;
+	if (m_pNextItem && !m_pHeldItem && ( m_flNextAttack < UTIL_WeaponTimeBase() || sv_holsterweapon.value == 0))
 	{
 	//	ALERT(at_console, "%f \n", m_flNextAttack - UTIL_WeaponTimeBase());
 		m_pActiveItem = m_pNextItem;
