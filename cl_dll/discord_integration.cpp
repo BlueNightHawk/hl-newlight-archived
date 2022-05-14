@@ -14,21 +14,19 @@
 
 using namespace std::literals;
 
-extern char chapterdata[64][32][64];
-
 char* GetChapterName(char *name, char *rpc)
 {
 	for (int i = 0; i < 64; i++)
 	{
 		for (int j = 2; j < 32; j++)
 		{
-			if (strlen(chapterdata[i][j]) < 1)
+			if (strlen(nlfs.chapterdata[i][j]) < 1)
 				break;
 
-			if (!stricmp(chapterdata[i][j], name))
+			if (!stricmp(nlfs.chapterdata[i][j], name))
 			{
-				strcpy(rpc, chapterdata[i][1]);
-				return chapterdata[i][0];
+				strcpy(rpc, nlfs.chapterdata[i][1]);
+				return nlfs.chapterdata[i][0];
 			}
 		}
 	}

@@ -16,16 +16,15 @@
 #pragma once
 
 #include "event_flags.h"
+#include "nl_defs.h"
 
 // Must be provided by user of this code
 // Holds engine functionality callbacks
 inline enginefuncs_t g_engfuncs;
 
-int UTIL_PrecacheModel(const char* szname);
-
 // The actual engine callbacks
 #define GETPLAYERUSERID (*g_engfuncs.pfnGetPlayerUserId)
-#define PRECACHE_MODEL (UTIL_PrecacheModel)
+#define PRECACHE_MODEL (nlutils.PrecacheModel)
 #define PRECACHE_SOUND (*g_engfuncs.pfnPrecacheSound)
 #define PRECACHE_GENERIC (*g_engfuncs.pfnPrecacheGeneric)
 #define SET_MODEL (*g_engfuncs.pfnSetModel)

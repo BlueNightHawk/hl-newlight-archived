@@ -76,6 +76,9 @@
     <Filter Include="Header Files\imgui">
       <UniqueIdentifier>{c5d0fd02-0fa4-4592-97d9-719545a15e3d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\cl_dll\newlight">
+      <UniqueIdentifier>{5e114c8a-45ac-49fe-b793-b2bba2f16d4d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\dlls\crossbow.cpp">
@@ -336,23 +339,8 @@
     <ClCompile Include="..\..\cl_dll\particleman\particle_presets.cpp">
       <Filter>Source Files\cl_dll\particleman</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\cl_dll\cl_animation.cpp">
-      <Filter>Source Files\cl_dll</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\cl_dll\filesystem.cpp">
-      <Filter>Source Files\cl_dll</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\cl_dll\discord_integration.cpp">
       <Filter>Source Files\cl_dll\discord</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\cl_dll\init_imgui.cpp">
-      <Filter>Source Files\cl_dll</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\cl_dll\hl_subtitles.cpp">
-      <Filter>Source Files\cl_dll</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\game_shared\fs_aux.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui.cpp">
       <Filter>Source Files\imgui</Filter>
@@ -365,6 +353,24 @@
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui_impl_sdl.cpp">
       <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\cl_animation.cpp">
+      <Filter>Source Files\cl_dll\newlight</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\filesystem.cpp">
+      <Filter>Source Files\cl_dll\newlight</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\hl_subtitles.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\init_imgui.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\game_shared\fs_aux.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\game_shared\nl_utils.cpp">
+      <Filter>Source Files\cl_dll\newlight</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -676,6 +682,9 @@
     </ClInclude>
     <ClInclude Include="..\..\cl_dll\cl_filesystem.h">
       <Filter>Header Files\cl_dll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\game_shared\nl_defs.h">
+      <Filter>Header Files\game_shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

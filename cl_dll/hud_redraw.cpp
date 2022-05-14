@@ -90,7 +90,7 @@ void CHud::Think()
 		m_flTargetFov += 14;
 	}
 
-	m_iFOV = lerp(m_iFOV, m_flTargetFov, gHUD.m_flTimeDelta * m_flTargetFov * 0.1);
+	m_iFOV = nlutils.lerp(m_iFOV, m_flTargetFov, gHUD.m_flTimeDelta * m_flTargetFov * 0.1);
 
 	// the clients fov is actually set in the client data update section of the hud
 

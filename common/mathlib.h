@@ -123,42 +123,6 @@ int InvertMatrix(const float* m, float* out);
 int BoxOnPlaneSide(const Vector& emins, const Vector& emaxs, struct mplane_s* plane);
 float anglemod(float a);
 
-// SHADOWS START
-void Matrix3x4_VectorTransform(const float in[3][4], const float v[3], float out[3]);
-void Matrix3x4_VectorITransform(const float in[3][4], const float v[3], float out[3]);
-// SHADOWS END
-
-void MatrixAngles(const float matrix[3][4], float* angles); // !!!!
-void MatrixAngles(const float matrix[3][4], Vector& angles, Vector& position);
-
-void AngleMatrix(const Vector& angles, float mat[3][4]);
-void AngleMatrix(Vector const& angles, const Vector& position, float matrix[3][4]);
-
-void MatrixGetColumn(const float in[3][4], int column, Vector& out);
-void MatrixSetColumn(const Vector& in, int column, float out[3][4]);
-
-void VectorAngles(const Vector& forward, const Vector& pseudoup, Vector& angles);
-
-void VectorNormalizeFast(Vector& vec);
-
-float lerp(float start, float end, float frac);
-
-// Math routines done in optimized assembly math package routines
-void inline SinCos(float radians, float* sine, float* cosine)
-{
-	*sine = sin(radians);
-	*cosine = cos(radians);
-}
-
-inline Vector LerpVector(const float* start, const float* end, float frac)
-{
-	Vector out;
-	for (int i = 0; i < 3; i++)
-		out[i] = lerp(start[i], end[i], frac);
-
-	return out;
-}
-
 #define INVPITCH(x) Vector(-x[0], x[1], x[2])
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)                                                                 \

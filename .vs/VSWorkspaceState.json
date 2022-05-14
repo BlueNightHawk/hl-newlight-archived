@@ -5,9 +5,7 @@
     "\\cl_dll\\particleman",
     "\\dlls",
     "\\pm_shared",
-    "\\projects",
-    "\\projects\\vs2019"
+    "\\projects"
   ],
-  "SelectedNode": "\\cl_dll\\cl_animation.cpp",
   "PreviewInSolutionExplorer": false
 }

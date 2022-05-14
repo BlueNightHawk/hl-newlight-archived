@@ -72,6 +72,8 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 			{
 				g_iFlashlight = 0;
 			}
+			if (nlvars.r_drawlegs->value == 0)
+				return 0;
 		}
 	}
 	case ET_BEAM:
@@ -724,7 +726,7 @@ void DLLEXPORT HUD_TempEntUpdate(
 								{
 									if (i == 1)
 										continue;
-									pTemp->entity.angles[i] = lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
+									pTemp->entity.angles[i] = nlutils.lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
 								}
 							}
 							else
@@ -748,7 +750,7 @@ void DLLEXPORT HUD_TempEntUpdate(
 						{
 							if (i == 1)
 								continue;
-							pTemp->entity.angles[i] = lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
+							pTemp->entity.angles[i] = nlutils.lerp(pTemp->entity.angles[i], pTemp->entity.baseline.vuser1[i], frametime * 15.0f);
 						}					
 					}
 				}
@@ -834,7 +836,7 @@ void DropTempMags(struct cl_entity_s* entity, int type)
 			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[7][2] * 1.3;
 			ptemp->entity.baseline.angles[2] = g_viewinfo.actualboneangles[7][0] * 1.3;
 			NormalizeAngles(ptemp->entity.angles);
-			ptemp->entity.model = GetModel("models/v_m4clip.mdl");
+			ptemp->entity.model = nlutils.GetModel("models/v_m4clip.mdl");
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
 			ptemp->entity.baseline.entityType = 7;
@@ -855,7 +857,7 @@ void DropTempMags(struct cl_entity_s* entity, int type)
 		if (ptemp)
 		{
 			ptemp->entity.baseline.angles[0] = g_viewinfo.actualboneangles[10][0] * 1.3;
-			ptemp->entity.model = GetModel("models/v_glshell.mdl");
+			ptemp->entity.model = nlutils.GetModel("models/v_glshell.mdl");
 			ptemp->flags &= ~FTENT_COLLIDEALL;
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE | FTENT_COLLIDEWORLD;
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
@@ -876,7 +878,7 @@ void DropTempMags(struct cl_entity_s* entity, int type)
 		ptemp = gEngfuncs.pEfxAPI->R_TempModel(g_viewinfo.actualbonepos[46], dir, Vector(0, 0, 0), 25.0f, 1, 0);
 		if (ptemp)
 		{
-			ptemp->entity.model = GetModel("models/v_glockclip.mdl");
+			ptemp->entity.model = nlutils.GetModel("models/v_glockclip.mdl");
 			ptemp->flags |= FTENT_MODTRANSFORM | FTENT_ROTATE;
 			ptemp->entity.angles = g_viewinfo.actualboneangles[46];
 			ptemp->entity.baseline.effects = FTENT_MODTRANSFORM;
@@ -928,26 +930,33 @@ void UpdateFlashlight(ref_params_t* pparams)
 	pmtrace_t tr;
 	Vector forward;
 	Vector vecSrc, vecEnd;
+	dlight_t* dl = nullptr;
 	int plindex = gEngfuncs.GetLocalPlayer()->index;
+
+	float dist = 100;
+	float invdist = 1;
+	float color = 255;
 
 	if (g_iFlashlight != 0)
 	{
-		AngleVectors(pparams->cl_viewangles, forward, NULL, NULL);
+		AngleVectors(pparams->viewangles, forward, NULL, NULL);
 		//AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
 		vecSrc = pparams->vieworg;
 		vecEnd = vecSrc + forward * 8192;
 
 		gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE | PM_STUDIO_BOX, plindex, &tr);
 
-		float dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
-		float invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
-		float color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
+		if (nlvars.cl_fakeprojflashlight->value != 0)
+		{
+			dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
+			invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
+			color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
 
-		dist = clamp(dist, 32, 200);
-		invdist = clamp(invdist, 28, 82);
-		color = clamp(color, 128, 255);
-
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
+			dist = clamp(dist, 32, 200);
+			invdist = clamp(invdist, 28, 82);
+			color = clamp(color, 128, 255);
+		}
+		dl = gEngfuncs.pEfxAPI->CL_AllocDlight(plindex);
 		if (dl)
 		{
 			dl->origin = tr.endpos;
@@ -957,25 +966,21 @@ void UpdateFlashlight(ref_params_t* pparams)
 			dl->die = pparams->time + pparams->frametime * 20;
 		}
 
-		physent_t* pe;
-		pe = gEngfuncs.pEventAPI->EV_GetPhysent(tr.ent);
-
 		if (nlvars.cl_fakeprojflashlight->value != 0)
 		{
 			if (!pParticle)
 			{
-				pParticle = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, GetModel("sprites/fl.spr"), dist * 1.01, invdist, "");
+				pParticle = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, nlutils.GetModel("sprites/fl.spr"), dist * 1.01, invdist, "");
 			}
 			if (pParticle)
 			{
-				//	pParticle->m_flDieTime = pparams->time + pparams->frametime * 20;
 				pParticle->m_vOrigin = tr.endpos;
 				pParticle->SetLightFlag(LIGHT_NONE);
 				pParticle->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
-				pParticle->m_vAngles.z = g_viewinfo.actualboneangles[0][2];
+				pParticle->m_vAngles.z = pparams->viewangles[2];
 				pParticle->m_iRendermode = kRenderTransAdd;
-				pParticle->m_flBrightness = lerp(pParticle->m_flBrightness, invdist, pparams->frametime * 15.0f);
-				pParticle->m_flSize = lerp(pParticle->m_flSize, dist * 1.01, pparams->frametime * 15.0f);
+				pParticle->m_flBrightness = nlutils.lerp(pParticle->m_flBrightness, invdist, pparams->frametime * 15.0f);
+				pParticle->m_flSize = nlutils.lerp(pParticle->m_flSize, dist * 1.01, pparams->frametime * 15.0f);
 			}
 		}
 		else

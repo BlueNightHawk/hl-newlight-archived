@@ -14,12 +14,12 @@
 
 extern engine_studio_api_s IEngineStudio;
 
+nlfs_s nlfs;
+
 using std::cin;
 using std::endl;
 using std::string;
 using std::filesystem::directory_iterator;
-
-char chapterdata[64][32][64];
 
 void ReCacheGlowModels(void)
 {
@@ -58,7 +58,7 @@ void CacheGlowModels(void)
 }
 
 // for viewmodel only
-int GetBoneIndexByName(char* name)
+int nlfs_s::GetBoneIndexByName(char* name)
 {
 	mstudiobone_t* pbone = nullptr;
 	int index = -1;
@@ -76,7 +76,7 @@ int GetBoneIndexByName(char* name)
 }
 
 // get camanim bone index from file
-int GetAnimBoneFromFile(char* name)
+int nlfs_s::GetAnimBoneFromFile(char* name)
 {
 	static int prevboneindex = -1;
 	static char pszPrevName[100] = {"\0"};
@@ -122,7 +122,7 @@ int GetAnimBoneFromFile(char* name)
 	return index;
 }
 
-int GetCamBoneIndex(cl_entity_s* view)
+int nlfs_s::GetCamBoneIndex(cl_entity_s* view)
 {
 	int index = -1;
 
@@ -177,7 +177,7 @@ int GetCamBoneIndex(cl_entity_s* view)
 }
 
 // get offsets from text file
-bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
+bool nlfs_s::GetOffsetFromFile(char* name, float* offset, float* aoffset)
 {
 	static char pszPrevName[100] = {"\0"};
 
@@ -225,7 +225,7 @@ bool GetOffsetFromFile(char* name, float* offset, float* aoffset)
 	return found;
 }
 
-void StoreChapterNames()
+void nlfs_s::StoreChapterNames()
 {
 	char *pfile, *pfile2;
 	pfile = pfile2 = (char*)gEngfuncs.COM_LoadFile("maps/chapterlist.txt", 5, NULL);
@@ -272,7 +272,7 @@ void StoreChapterNames()
 	pfile = pfile2 = nullptr;
 }
 
-void GetFullPath(char* path, char* mod = nullptr)
+void nlfs_s::GetFullPath(char* path, char* mod)
 {
 	char fullpath[256] = {""};
 	string dir = std::filesystem::current_path().string();
@@ -285,40 +285,4 @@ void GetFullPath(char* path, char* mod = nullptr)
 	strcat(fullpath, "\\");
 
 	strcpy(path, fullpath);
-}
-
-model_s* GetModel(char* szname)
-{
-	char path[256];
-	GetFullPath(path);
-	strcat(path, szname);
-
-	if (!std::filesystem::exists(path))
-	{
-		GetFullPath(path, "valve");
-		strcat(path, szname);
-		if (!std::filesystem::exists(path))
-		{
-			gEngfuncs.Con_Printf("Missing model : %s \n", szname);
-			return IEngineStudio.Mod_ForName("models/testsphere.mdl", 0);
-		}
-	}
-
-	for (int i = 0; i < 512; i++)
-	{
-		model_s* pMdl = gHUD.m_pModCache[i];
-		if (pMdl && pMdl->name && !stricmp(pMdl->name, szname))
-		{
-			return pMdl;
-		}
-		else if (pMdl)
-			continue;
-		else
-		{
-			gHUD.m_pModCache[i] = IEngineStudio.Mod_ForName(szname, 0);
-			return gHUD.m_pModCache[i];
-		}
-	}
-	gEngfuncs.Con_Printf("Model cache overflow : %s \n", szname);
-	return IEngineStudio.Mod_ForName("models/testsphere.mdl", 0);
 }

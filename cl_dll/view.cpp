@@ -409,7 +409,7 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 
 	if (nlvars.cl_retractwpn->value == 0)
 	{
-		v_dist = lerp(v_dist, 0, pparams->frametime * 15.5f);
+		v_dist = nlutils.lerp(v_dist, 0, pparams->frametime * 15.5f);
 
 		view->angles[0] += v_dist * 12.25;
 		view->angles[1] -= v_dist * 4.5;
@@ -446,7 +446,7 @@ void V_RetractWeapon(struct ref_params_s* pparams, cl_entity_s* view)
 
 	gEngfuncs.pEventAPI->EV_PopPMStates();
 
-	v_dist = lerp(v_dist, -(tr.fraction - 1) * 0.65 * g_flZoomMultiplier, pparams->frametime * 15.5f);
+	v_dist = nlutils.lerp(v_dist, -(tr.fraction - 1) * 0.65 * g_flZoomMultiplier, pparams->frametime * 15.5f);
 	
 	view->angles[0] += v_dist * 12.25;
 	view->angles[1] -= v_dist * 4.5;
@@ -464,13 +464,13 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 
 	Vector forward, right, up;
 
-	if (nlvars.cl_ironsight->value == 0 || view->model == nullptr || strlen(view->model->name) <= 0 || g_viewinfo.phdr == NULL || GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
+	if (nlvars.cl_ironsight->value == 0 || view->model == nullptr || strlen(view->model->name) <= 0 || g_viewinfo.phdr == NULL || nlfs.GetOffsetFromFile(view->model->name + 7, (float*)&offset, (float*)&aoffset) == false)
 	{
 		offset = aoffset = Vector(0, 0, 0);
 
-		vecLerpOrg = LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 17.0f);
-		vecLerpAng = LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 17.0f);
-		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
+		vecLerpOrg = nlutils.LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 17.0f);
+		vecLerpAng = nlutils.LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 17.0f);
+		g_flZoomMultiplier = nlutils.lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
 
 		view->origin = view->origin + Vector(pparams->forward) * vecLerpOrg[0] + Vector(pparams->right) * vecLerpOrg[1] + Vector(pparams->up) * vecLerpOrg[2];
 		view->angles = view->angles + vecLerpAng;
@@ -479,15 +479,15 @@ void V_ModifyOrigin(struct ref_params_s* pparams, cl_entity_s* view)
 
 	if (gHUD.m_flTargetFov < gHUD.default_fov->value)
 	{
-		vecLerpOrg = LerpVector(vecLerpOrg, offset, pparams->frametime * 8.0f);
-		vecLerpAng = LerpVector(vecLerpAng, aoffset, pparams->frametime * 8.0f);
-		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 0, pparams->frametime * 17.0f);
+		vecLerpOrg = nlutils.LerpVector(vecLerpOrg, offset, pparams->frametime * 8.0f);
+		vecLerpAng = nlutils.LerpVector(vecLerpAng, aoffset, pparams->frametime * 8.0f);
+		g_flZoomMultiplier = nlutils.lerp(g_flZoomMultiplier, 0, pparams->frametime * 17.0f);
 	}
 	else
 	{
-		vecLerpOrg = LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 8.0f);
-		vecLerpAng = LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 8.0f);
-		g_flZoomMultiplier = lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
+		vecLerpOrg = nlutils.LerpVector(vecLerpOrg, Vector(0, 0, 0), pparams->frametime * 8.0f);
+		vecLerpAng = nlutils.LerpVector(vecLerpAng, Vector(0, 0, 0), pparams->frametime * 8.0f);
+		g_flZoomMultiplier = nlutils.lerp(g_flZoomMultiplier, 1, pparams->frametime * 17.0f);
 	}
 
 	AngleVectors(INVPITCH(view->angles), forward, right, up);
@@ -502,11 +502,11 @@ void V_DoSprinting(struct ref_params_s* pparams, cl_entity_s* view)
 
 	if ((in_run.state & 1) != 0 && nlvars.cl_sprintanim->value != 0)
 	{
-		l_sprintangle = lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
+		l_sprintangle = nlutils.lerp(l_sprintangle, 1.01, pparams->frametime * 7.4f);
 	}
 	else
 	{
-		l_sprintangle = lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
+		l_sprintangle = nlutils.lerp(l_sprintangle, 0, pparams->frametime * 10.0f);
 	}
 
 	view->angles[0] -= l_sprintangle * 10 * g_flZoomMultiplier;
@@ -529,7 +529,7 @@ void V_DoJumping(struct ref_params_s* pparams, cl_entity_s* view)
 	if ((pparams->onground <= 0) && pparams->waterlevel == 0)
 		pitch = clamp(pparams->simvel[2], -500, 100);
 
-	l_pitch = lerp(l_pitch, pitch * 0.055 * g_flZoomMultiplier, pparams->frametime * 9.0f);
+	l_pitch = nlutils.lerp(l_pitch, pitch * 0.055 * g_flZoomMultiplier, pparams->frametime * 9.0f);
 
 	// camera shake
 	if (pparams->onground <= 0)
@@ -580,8 +580,8 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 		g_my = 0;
 	}
 
-	l_mx = lerp(l_mx, V_max(g_flZoomMultiplier, 0.25) * (-g_mx * 0.01) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
-	l_my = lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
+	l_mx = nlutils.lerp(l_mx, V_max(g_flZoomMultiplier, 0.25) * (-g_mx * 0.01) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
+	l_my = nlutils.lerp(l_my, V_max(g_flZoomMultiplier, 0.25) * (g_my * 0.02) * nlvars.cl_weaponlagscale->value * (1.0f / pparams->frametime * 0.01), pparams->frametime * nlvars.cl_weaponlagspeed->value);
 
 	l_mx = clamp(l_mx, -7.5, 7.5);
 	l_my = clamp(l_my, -7.5, 7.5);
@@ -599,7 +599,7 @@ void V_CalcViewModelLag(ref_params_t* pparams, Vector& origin, Vector& angles, V
 	pparams->viewangles[2] += l_mx * 0.15;
 
 	AngleVectors(Vector(-original_angles[0], original_angles[1], original_angles[2]), forward, right, up);
-	pitch = lerp(pitch, -original_angles[PITCH] * g_flZoomMultiplier, pparams->frametime * 8.5f);
+	pitch = nlutils.lerp(pitch, -original_angles[PITCH] * g_flZoomMultiplier, pparams->frametime * 8.5f);
 
 	origin = origin - Vector(pparams->right) * (l_mx * 0.4) - Vector(pparams->up) * (l_my * 0.4);
 
@@ -620,7 +620,7 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 
 	if (view->model != nullptr && strlen(view->model->name) != 0 && g_viewinfo.phdr != NULL)
 	{
-		index = GetCamBoneIndex(view);
+		index = nlfs.GetCamBoneIndex(view);
 
 		if (index < 0)
 		{
@@ -633,8 +633,8 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 		// smoothly reset to 0
 		for (int i = 0; i < 3; i++)
 		{
-			l_camangles[i] = lerp(l_camangles[i], 0, pparams->frametime * 17.0f);
-			l_campos[i] = lerp(l_campos[i], 0, pparams->frametime * 17.0f);
+			l_camangles[i] = nlutils.lerp(l_camangles[i], 0, pparams->frametime * 17.0f);
+			l_campos[i] = nlutils.lerp(l_campos[i], 0, pparams->frametime * 17.0f);
 			pparams->viewangles[i] += l_camangles[i] / 25;
 			pparams->vieworg[i] += l_campos[i] / 10;
 		}
@@ -662,8 +662,8 @@ void V_CamAnims(struct ref_params_s* pparams, cl_entity_s* view)
 
 		for (int i = 0; i < 3; i++)
 		{
-			l_camangles[i] = lerp(l_camangles[i], result[i] * 1.2 * V_max(g_flZoomMultiplier, 0.5), pparams->frametime * 17.0f);
-			l_campos[i] = lerp(l_campos[i], result2[i] * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
+			l_camangles[i] = nlutils.lerp(l_camangles[i], result[i] * 1.2 * V_max(g_flZoomMultiplier, 0.5), pparams->frametime * 17.0f);
+			l_campos[i] = nlutils.lerp(l_campos[i], result2[i] * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
 
 			pparams->viewangles[i] += l_camangles[i] / 25;
 			pparams->vieworg[i] += l_campos[i] / 10;
@@ -705,8 +705,8 @@ void V_ApplyBob(struct ref_params_s* pparams, cl_entity_s* view)
 	V_CalcBob(pparams, 1.0f, VB_SIN, bobTimes[0], bobRight, lastTimes[0]);
 	V_CalcBob(pparams, 2.0f, VB_COS, bobTimes[1], bobUp, lastTimes[1]);
 
-	l_bobRight = lerp(l_bobRight, bobRight * 1.2f, pparams->frametime * 17.0f);
-	l_bobUp = lerp(l_bobUp, bobUp * 1.2f, pparams->frametime * 17.0f);
+	l_bobRight = nlutils.lerp(l_bobRight, bobRight * 1.2f, pparams->frametime * 17.0f);
+	l_bobUp = nlutils.lerp(l_bobUp, bobUp * 1.2f, pparams->frametime * 17.0f);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -746,8 +746,8 @@ void V_ApplyVelAngles(struct ref_params_s* pparams, cl_entity_s* view, cl_entity
 	forward = V_CalcAngle(viewent->angles, pparams->simvel, nlvars.cl_fwdangle->value, nlvars.cl_fwdspeed->value, PITCH /*FORWARD*/);
 
 	// interpolate the values
-	l_side = lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
-	l_forward = lerp(l_forward, forward * 0.8 * g_flZoomMultiplier, pparams->frametime * 9.0f);
+	l_side = nlutils.lerp(l_side, side * 1.2 * g_flZoomMultiplier, pparams->frametime * 17.0f);
+	l_forward = nlutils.lerp(l_forward, forward * 0.8 * g_flZoomMultiplier, pparams->frametime * 9.0f);
 
 	// apply the values
 	view->origin = view->origin - vforward * fabs(l_forward);
@@ -924,7 +924,7 @@ void V_CalcNormalRefdef(struct ref_params_s* pparams)
 	{
 		// only roll the view if the player is dead and the viewheight[2] is nonzero
 		// this is so deadcam in multiplayer will work.
-		l_deadangle = lerp(l_deadangle, 80, pparams->frametime * 15.0f); // dead view angle
+		l_deadangle = nlutils.lerp(l_deadangle, 80, pparams->frametime * 15.0f); // dead view angle
 		pparams->cl_viewangles[0] = lastAngles[0];
 		pparams->cl_viewangles[1] = lastAngles[1];
 		pparams->cl_viewangles[ROLL] = l_deadangle;

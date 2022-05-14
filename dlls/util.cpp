@@ -2632,39 +2632,3 @@ void UTIL_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* fin
 	NormalizeAngles(finalAngle);
 }
 
-void GetFullPath(char *path, char *mod = nullptr)
-{
-	char fullpath[256] = {""};
-	char gamedir[64];
-	GET_GAME_DIR(gamedir);
-	string dir = std::filesystem::current_path().string();
-	strcpy(fullpath, dir.c_str());
-	strcat(fullpath, "\\");
-	if (mod != nullptr)
-		strcat(fullpath, mod);
-	else
-		strcat(fullpath, gamedir);
-	strcat(fullpath, "\\");
-
-	strcpy(path, fullpath);
-}
-
-int UTIL_PrecacheModel(const char* szname)
-{
-	char path[256];
-	GetFullPath(path);
-	strcat(path, szname);
-
-	if (!std::filesystem::exists(path) && strlen(szname) > 5)
-	{
-		GetFullPath(path, "valve");
-		strcat(path, szname);
-		if (!std::filesystem::exists(path))
-		{
-			ALERT(at_console, "Missing model : %s \n", szname);
-			return (*g_engfuncs.pfnPrecacheModel)("models/testsphere.mdl");
-		}
-	}
-
-	return (*g_engfuncs.pfnPrecacheModel)(szname);
-}

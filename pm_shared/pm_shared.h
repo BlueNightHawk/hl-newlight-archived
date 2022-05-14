@@ -19,6 +19,8 @@
 
 #pragma once
 
+#define PM_SHARED
+
 struct playermove_s;
 
 void PM_Init(playermove_s* ppmove);

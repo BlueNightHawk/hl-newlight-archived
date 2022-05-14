@@ -12,6 +12,7 @@
 *   without written permission from Valve LLC.
 *
 ****/
+#define NODES_H
 #include "activity.h"
 #include "extdll.h"
 #include "util.h"

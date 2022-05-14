@@ -63,7 +63,7 @@ char GetTexType(int idx, pmtrace_t* ptr, float* vecSrc, float* vecEnd);
 
 CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framerate, float speed, float scale, float brightness)
 {
-	model_s* spr = GetModel(szModelName);
+	model_s* spr = nlutils.GetModel(szModelName);
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(pTrace->endpos + pTrace->plane.normal * 5, pTrace->plane.normal, spr, scale, brightness, "");
 
 	if (pParticle)
@@ -87,7 +87,7 @@ CBaseParticle* CreateWallpuff(pmtrace_t* pTrace, char* szModelName, float framer
 
 CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float speed, Vector vel, float scale, float brightness)
 {
-	model_s* spr = GetModel(szModelName);
+	model_s* spr = nlutils.GetModel(szModelName);
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(pTrace->endpos + pTrace->plane.normal * 5, pTrace->plane.normal, spr, scale, brightness, "");
 
 	if (pParticle)
@@ -107,7 +107,7 @@ CBaseParticle* CreateCollideParticle(pmtrace_t* pTrace, char* szModelName, float
 
 CBaseParticle* CreateGunSmoke(const Vector org, char* szModelName, float scale, float brightness)
 {
-	model_s* spr = GetModel(szModelName);
+	model_s* spr = nlutils.GetModel(szModelName);
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(org, Vector(0,0,0), spr, scale, brightness, "");
 
 	if (pParticle)
@@ -245,7 +245,7 @@ void WallPuffCluster(pmtrace_t* pTrace, char mat)
 
 CBaseParticle* CreateSmoke(Vector origin, char *szName, float scale, float brightness, float life, float framerate)
 {
-	model_s* spr = GetModel(szName);
+	model_s* spr = nlutils.GetModel(szName);
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(origin, Vector(0, 0, 0), spr, scale, brightness, "");
 
 	if (pParticle)
@@ -267,7 +267,7 @@ void SmokeCallback(CBaseParticle* ent)
 {
 	pmtrace_t tr = *gEngfuncs.PM_TraceLine(ent->m_vOrigin, ent->m_vOrigin - Vector(0, 0, 4), PM_TRACELINE_ANYVISIBLE, 2, -1);
 
-	model_s* spr = GetModel("sprites/blood.spr");
+	model_s* spr = nlutils.GetModel("sprites/blood.spr");
 
 	if (ent->m_flNextCallback > gEngfuncs.GetClientTime())
 		return;
@@ -319,7 +319,7 @@ void FireballTouch(CBaseParticle* ent, pmtrace_s* pTrace)
 	if (angles[0] != 90 || (angles.y + angles.z) != 0)
 		return;
 
-	model_s* spr = GetModel("sprites/fire.spr");
+	model_s* spr = nlutils.GetModel("sprites/fire.spr");
 
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(ent->m_vOrigin + pTrace->plane.normal * 5, pTrace->plane.normal, spr, gEngfuncs.pfnRandomFloat(10, 20), 255, "");
 
@@ -507,7 +507,7 @@ void BloodDropCallback(CBaseParticle *ent)
 	}
 
 	pmtrace_t tr;
-	model_s* spr = GetModel("sprites/blood.spr");
+	model_s* spr = nlutils.GetModel("sprites/blood.spr");
 
 	ent->m_vOrigin = owner->origin;
 
@@ -572,7 +572,7 @@ void BloodDroplets(int index, int color)
 	if (!ent)
 		return;
 
-	model_s* spr = GetModel("sprites/blooddrop.spr");
+	model_s* spr = nlutils.GetModel("sprites/blooddrop.spr");
 
 	CBaseParticle* pParticle = g_pParticleMan->CreateParticle(ent->origin, ent->angles, spr, 0.1, 0, "");
 

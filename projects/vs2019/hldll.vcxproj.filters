@@ -369,6 +369,9 @@
     <ClCompile Include="..\..\dlls\viewmodel.cpp">
       <Filter>Source Files\dlls</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\game_shared\nl_utils.cpp">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\dlls\doors.h">
@@ -622,6 +625,9 @@
     </ClInclude>
     <ClInclude Include="..\..\public\interface.h">
       <Filter>Header Files\public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\game_shared\nl_defs.h">
+      <Filter>Header Files\game_shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

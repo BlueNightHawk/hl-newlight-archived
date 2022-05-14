@@ -29,6 +29,8 @@
 #include <stdlib.h> // atoi
 #include <ctype.h>	// isspace
 
+#include "nl_defs.h"
+
 #ifdef CLIENT_DLL
 // Spectator Mode
 bool iJumpSpectator;
@@ -1144,7 +1146,7 @@ void PM_WalkMove()
 
 	if (bIsSprinting && ((pmove->flags & FL_DUCKING) == 0))
 	{
-		pmove->fuser4 = lerp(pmove->fuser4, 1, pmove->frametime * 0.01f);
+		pmove->fuser4 = nlutils.lerp(pmove->fuser4, 1, pmove->frametime * 0.01f);
 	}
 	else
 	{

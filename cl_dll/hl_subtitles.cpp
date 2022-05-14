@@ -196,7 +196,7 @@ void Subtitles_Draw()
 	bool willDrawAtLeastOneSubtitle = false;
 
 	float time = gEngfuncs.GetClientTime();
-	float fontScale = gEngfuncs.pfnGetCvarFloat("subtitles_font_scale");
+	float fontScale = nlvars.subtitles_font_scale->value;
 	if (fontScale < 1.0f)
 	{
 		fontScale = 1.0f;
@@ -244,7 +244,7 @@ void Subtitles_Draw()
 		}
 		else
 		{
-			subtitle.alpha = lerp(subtitle.alpha, 0.0f, g_pparams.frametime * 6.5f);
+			subtitle.alpha = nlutils.lerp(subtitle.alpha, 0.0f, g_pparams.frametime * 6.5f);
 			willDrawAtLeastOneSubtitle = true;
 		}
 		i++;
@@ -258,8 +258,8 @@ void Subtitles_Draw()
 	if (l_FrameWidth == 0)
 		l_FrameWidth = LowestWidth;
 
-	l_FrameHeight = lerp(l_FrameHeight, FrameHeight + 7.5 * numsubstodraw2, g_pparams.frametime * 13.5f);
-	l_FrameWidth = lerp(l_FrameWidth, RealWidth, g_pparams.frametime * 15.5f);
+	l_FrameHeight = nlutils.lerp(l_FrameHeight, FrameHeight + 7.5 * numsubstodraw2, g_pparams.frametime * 13.5f);
+	l_FrameWidth = nlutils.lerp(l_FrameWidth, RealWidth, g_pparams.frametime * 15.5f);
 
 	ImGui::SetNextWindowPos(ImVec2(ScreenWidth / 2.0f - l_FrameWidth / 2.0f, ScreenHeight / 1.3f), 0);
 	ImGui::SetNextWindowSize(ImVec2(l_FrameWidth, l_FrameHeight));
@@ -291,10 +291,10 @@ void Subtitles_Draw()
 
 		if ((subtitle.duration - 0.25f) <= time)
 		{
-			subtitle.alpha = lerp(subtitle.alpha, 0, g_pparams.frametime * 8.5f);
+			subtitle.alpha = nlutils.lerp(subtitle.alpha, 0, g_pparams.frametime * 8.5f);
 		}
 		else
-			subtitle.alpha = lerp(subtitle.alpha, 1, g_pparams.frametime * 8.5f);
+			subtitle.alpha = nlutils.lerp(subtitle.alpha, 1, g_pparams.frametime * 8.5f);
 
 		if (prevduration < subtitle.duration)
 		{
@@ -316,10 +316,10 @@ void Subtitles_Draw()
 	auto& subtitle = pair->second;
 	if ((subtitle.duration - 0.6) <= time || numsubstodraw == 0 || numsubstodraw2 == 0)
 	{
-		style->Alpha = lerp(style->Alpha, 0, g_pparams.frametime * 6.5f);
+		style->Alpha = nlutils.lerp(style->Alpha, 0, g_pparams.frametime * 6.5f);
 	}
 	else
-		style->Alpha = lerp(style->Alpha, 1, g_pparams.frametime * 6.5f);
+		style->Alpha = nlutils.lerp(style->Alpha, 1, g_pparams.frametime * 6.5f);
 	
 	ImGui::SetWindowFontScale(fontScale);
 	ImGui::End();
@@ -374,8 +374,7 @@ const SubtitleColor Subtitles_GetSubtitleColorByKey(const std::string& key)
 
 void Subtitles_Push(const std::string& key, int ignoreLongDistances, const Vector& pos)
 {
-
-	float print_subtitles_cvar = gEngfuncs.pfnGetCvarFloat("subtitles");
+	float print_subtitles_cvar = nlvars.print_subtitles->value;
 	if (print_subtitles_cvar <= 0.0f)
 	{
 		return;
@@ -406,12 +405,12 @@ int Subtitles_OnSound(const char* pszName, int iSize, void* pbuf)
 	BEGIN_READ(pbuf, iSize);
 
 	std::string key = READ_STRING();
-	int ignoreLongDistances = READ_BYTE();
+	bool ignoreLongDistances = READ_BYTE();
 	float x = READ_COORD();
 	float y = READ_COORD();
 	float z = READ_COORD();
 	
-	if (gEngfuncs.pfnGetCvarFloat("subtitles_log_candidates") >= 1.0f)
+	if (nlvars.subtitles_log_candidates->value >= 1.0f)
 	{
 		gEngfuncs.Con_DPrintf("RECEIVED SUBTITLE CANDIDATE: %s\n", key.c_str());
 	}

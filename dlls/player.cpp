@@ -41,6 +41,8 @@
 #include "UserMessages.h"
 #include "client.h"
 
+#include "nl_defs.h"
+
 // #define DUCKFIX
 
 extern void CopyToBodyQue(entvars_t* pev);
@@ -1810,9 +1812,9 @@ void CBasePlayer::UpdateHeldItem()
 	m_pHeldItem->pev->avelocity = Vector(0, 0, 0);
 
 	float yaw = m_pHeldItem->pev->angles.y;
-	m_pHeldItem->pev->angles.x = lerp(m_pHeldItem->pev->angles.x, 0, gpGlobals->frametime * 17.0f);
+	m_pHeldItem->pev->angles.x = nlutils.lerp(m_pHeldItem->pev->angles.x, 0, gpGlobals->frametime * 17.0f);
 	m_pHeldItem->pev->angles.y = yaw;
-	m_pHeldItem->pev->angles.z = lerp(m_pHeldItem->pev->angles.z, 0, gpGlobals->frametime * 17.0f);
+	m_pHeldItem->pev->angles.z = nlutils.lerp(m_pHeldItem->pev->angles.z, 0, gpGlobals->frametime * 17.0f);
 
 	m_pHeldItem->m_bHeld = true;
 

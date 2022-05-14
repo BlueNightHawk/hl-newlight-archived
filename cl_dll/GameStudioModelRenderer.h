@@ -18,5 +18,3 @@ class CGameStudioModelRenderer : public CStudioModelRenderer
 public:
 	CGameStudioModelRenderer();
 };
-
-model_s* GetModel(char* szname);

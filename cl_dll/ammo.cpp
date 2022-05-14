@@ -372,7 +372,7 @@ void CHudAmmo::Think()
 	{
 		if ((int)gHUD.m_flTargetFov >= (int)gHUD.default_fov->value - 1)
 		{
-			m_flCrosshairColor = lerp(m_flCrosshairColor, 0, gHUD.m_flTimeDelta * 10.0f);
+			m_flCrosshairColor = nlutils.lerp(m_flCrosshairColor, 0, gHUD.m_flTimeDelta * 10.0f);
 			// normal crosshairs
 			if (m_fOnTarget && 0 != m_pWeapon->hAutoaim)
 				SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, color, color, color);
@@ -381,7 +381,7 @@ void CHudAmmo::Think()
 		}
 		else
 		{
-			m_flCrosshairColor = lerp(m_flCrosshairColor, 1, gHUD.m_flTimeDelta * 10.0f);
+			m_flCrosshairColor = nlutils.lerp(m_flCrosshairColor, 1, gHUD.m_flTimeDelta * 10.0f);
 			if (m_flCrosshairColor > 0.5)
 			{
 				static Rect nullrc;
@@ -987,9 +987,9 @@ bool CHudAmmo::Draw(float flTime)
 
 	float scale = 3.0f;
 
-	flLerpVel = lerp(flLerpVel, (Vector(g_pparams.simvel).Length2D() / 25), gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value);
+	flLerpVel = nlutils.lerp(flLerpVel, (Vector(g_pparams.simvel).Length2D() / 25), gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value);
 
-	gHUD.m_flCrosshairSize = lerp(gHUD.m_flCrosshairSize, 0, gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value); // return the sight to its original size. hud_crosshair_speed choose whatever you like.
+	gHUD.m_flCrosshairSize = nlutils.lerp(gHUD.m_flCrosshairSize, 0, gHUD.m_flTimeDelta * nlvars.hud_crosshair_speed->value); // return the sight to its original size. hud_crosshair_speed choose whatever you like.
 	gHUD.m_flCrosshairSize = clamp(gHUD.m_flCrosshairSize,0.0f,128.0f); // limit the variable
 
 	cross_size += gHUD.m_flCrosshairSize + flLerpVel + (ev_recoilangle.Length() * 2.5); // add a temporary one to the original size of the sight

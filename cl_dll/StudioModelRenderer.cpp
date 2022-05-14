@@ -1245,9 +1245,11 @@ void CStudioModelRenderer::StudioMergeBones(model_t* m_pSubModel)
 
 void CStudioModelRenderer::StudioDlightEffects()
 {
+	int index = m_pCurrentEntity->index + 1;
+
 	if (!stricmp(m_pCurrentEntity->model->name, "models/w_battery.mdl"))
 	{
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 		if (dl)
 		{
 			dl->origin = m_pCurrentEntity->origin;
@@ -1259,7 +1261,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 	}
 	else if (!stricmp(m_pCurrentEntity->model->name, "models/w_flare.mdl"))
 	{
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 		if (dl)
 		{
 			dl->origin = m_pCurrentEntity->origin;
@@ -1271,7 +1273,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 	}
 	else if (!stricmp(m_pCurrentEntity->model->name, "models/rpgrocket.mdl"))
 	{
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 		if (dl)
 		{
 			dl->origin = m_pCurrentEntity->origin;
@@ -1283,7 +1285,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 	}
 	else if (!stricmp(m_pCurrentEntity->model->name, "models/w_gauss.mdl"))
 	{
-		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+		dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 		if (dl)
 		{
 			dl->origin = m_pCurrentEntity->origin;
@@ -1307,7 +1309,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 			}
 			else
 			{
-				dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+				dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 				Vector forward;
 				AngleVectors(g_viewinfo.actualboneangles[50], forward, NULL, NULL);
 				if (dl)
@@ -1322,7 +1324,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 		}
 		else if (!stricmp(m_pCurrentEntity->model->name, "models/v_gauss.mdl"))
 		{
-			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(m_pCurrentEntity->index);
+			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocDlight(index);
 			Vector forward, right;
 			AngleVectors(g_viewinfo.actualboneangles[1], forward, right, NULL);
 			if (dl)
@@ -1336,7 +1338,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 		}
 		else if (!stricmp(m_pCurrentEntity->model->name, "models/v_rpg.mdl"))
 		{
-			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocElight(m_pCurrentEntity->index);
+			dlight_t* dl = gEngfuncs.pEfxAPI->CL_AllocElight(index);
 			Vector forward, right;
 			AngleVectors(g_viewinfo.actualboneangles[50], forward, right, NULL);
 
@@ -1358,7 +1360,7 @@ void CStudioModelRenderer::StudioExportBoneTransform()
 	{
 		for (int i = 0; i < m_pStudioHeader->numbones; i++)
 		{
-			MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
+			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
 			NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
 		}
 
@@ -1382,7 +1384,7 @@ void CStudioModelRenderer::StudioExportBoneTransform()
 			StudioSetupBones();
 			for (int i = 0; i < m_pStudioHeader->numbones; i++)
 			{
-				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+				nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
 				NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
 			}
 			temp = *gEngfuncs.GetViewModel();
@@ -1399,7 +1401,7 @@ void CStudioModelRenderer::StudioExportBoneTransform()
 			StudioSetupBones();
 			for (int i = 0; i < m_pStudioHeader->numbones; i++)
 			{
-				MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
+				nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
 				NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
 			}
 			m_pCurrentEntity = gEngfuncs.GetViewModel();
@@ -1419,7 +1421,7 @@ void CStudioModelRenderer::StudioMergeGlowModels(alight_t *lighting)
 
 			cl_entity_t saveent = *m_pCurrentEntity;
 
-			model_t* lightmodel = GetModel(modname);
+			model_t* lightmodel = nlutils.GetModel(modname);
 
 			m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(lightmodel);
 			IEngineStudio.StudioSetHeader(m_pStudioHeader);
@@ -1529,9 +1531,9 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			for (int i = 0; i < m_pStudioHeader->numbones; i++)
 			{
 				if (i == m_pCurrentEntity->baseline.entityType)
-					AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[m_pCurrentEntity->baseline.entityType]);
+					nlutils.AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[m_pCurrentEntity->baseline.entityType]);
 				else
-					AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[i]);
+					nlutils.AngleMatrix(m_pCurrentEntity->angles, m_pCurrentEntity->origin, (*m_pbonetransform)[i]);
 			}
 		}
 	}
@@ -1824,7 +1826,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 			{
 				gEngfuncs.COM_FreeFile(pfile);
 				pfile = nullptr;
-				m_pRenderModel = GetModel(modelname);
+				m_pRenderModel = nlutils.GetModel(modelname);
 			}
 			else
 				m_pRenderModel = NULL;
@@ -1832,17 +1834,17 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 			if (!m_pRenderModel)
 			{
-				m_pRenderModel = GetModel("models/player_legs.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player_legs.mdl");
 			}
 		}
 		else
 		{
 			if (gHUD.HasSuit() != 0)
-				m_pRenderModel = GetModel("models/player_legs.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player_legs.mdl");
 			else
 			{
-				m_pCurrentEntity->model = GetModel("models/player_sci.mdl");
-				m_pRenderModel = GetModel("models/player_sci_legs.mdl");
+				m_pCurrentEntity->model = nlutils.GetModel("models/player_sci.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player_sci_legs.mdl");
 			}
 		}
 		if (v_angles[0] < 0)
@@ -1857,10 +1859,10 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		else
 		{
 			if (gHUD.HasSuit())
-				m_pRenderModel = GetModel("models/player.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player.mdl");
 			else
 			{
-				m_pCurrentEntity->model = GetModel("models/player_sci.mdl");
+				m_pCurrentEntity->model = nlutils.GetModel("models/player_sci.mdl");
 			}
 		}
 	}
@@ -2083,7 +2085,7 @@ void CStudioModelRenderer::StudioLightAtPos(const float* pos, float* color, int&
 	// setup a fake entity
 	static cl_entity_t temp;
 	VectorCopy(pos, temp.origin);
-	temp.model = GetModel("models/v_9mmhandgun.mdl");
+	temp.model = nlutils.GetModel("models/v_9mmhandgun.mdl");
 
 	m_pCurrentEntity = &temp;
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
@@ -2386,10 +2388,10 @@ void CStudioModelRenderer::StudioRenderPlayerShadow(int num)
 		else
 		{
 			if (gHUD.HasSuit())
-				m_pRenderModel = GetModel("models/player.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player.mdl");
 			else
 			{
-				m_pRenderModel = GetModel("models/player_sci.mdl");
+				m_pRenderModel = nlutils.GetModel("models/player_sci.mdl");
 			}
 		}
 		if (m_pRenderModel != NULL)
@@ -2542,7 +2544,7 @@ void CStudioModelRenderer::StudioGetVerts(void)
 
 	for (int i = 0; i < m_pSubModel->numverts; i++)
 	{
-		Matrix3x4_VectorTransform((*m_pbonetransform)[pvertbone[i]], pstudioverts[i], verts[i]);
+		nlutils.Matrix3x4_VectorTransform((*m_pbonetransform)[pvertbone[i]], pstudioverts[i], verts[i]);
 	}
 }
 
@@ -2653,7 +2655,7 @@ void CStudioModelRenderer::StudioDrawShadow()
 	int amblight = storedlight.ambientlight;
 	float intensity = 0.0;
 
-	intensity = m_pCurrentEntity->baseline.fuser4 = lerp(m_pCurrentEntity->baseline.fuser4, ((float)amblight / 128), gHUD.m_flTimeDelta * 17.9f);
+	intensity = m_pCurrentEntity->baseline.fuser4 = nlutils.lerp(m_pCurrentEntity->baseline.fuser4, ((float)amblight / 128), gHUD.m_flTimeDelta * 17.9f);
 
 	glDepthMask(GL_TRUE);
 

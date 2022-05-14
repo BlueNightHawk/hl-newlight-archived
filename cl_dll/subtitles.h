@@ -6,6 +6,7 @@
 #include "..\imgui\imgui.h"
 #include "..\imgui\imgui_impl_sdl.h"
 #include <vector>
+#include "nl_defs.h"
 
 struct SubtitleOutput {
 	float delay;
@@ -15,11 +16,6 @@ struct SubtitleOutput {
 	Vector pos;
 	std::string text;
 	float alpha;
-	void SetAlpha(float target)
-	{
-		extern ref_params_t g_pparams;
-		alpha = lerp(alpha, target, g_pparams.frametime * 5);
-	}
 };
 
 struct SubtitleColor {

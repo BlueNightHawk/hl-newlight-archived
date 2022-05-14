@@ -40,10 +40,10 @@
 
 extern IParticleMan* g_pParticleMan;
 
+nlvars_t nlvars;
+
 hud_player_info_t g_PlayerInfoList[MAX_PLAYERS_HUD + 1];	// player info from the engine
 extra_player_info_t g_PlayerExtraInfo[MAX_PLAYERS_HUD + 1]; // additional player info sent directly to the client dll
-
-nlvars_s nlvars;
 
 class CHLVoiceStatusHelper : public IVoiceStatusHelper
 {
@@ -346,7 +346,6 @@ void ResetCvars()
 	CVAR_SET("nl_drawlegs", 1);
 }
 
-extern model_s* GetModel(char* szname);
 void Precache()
 {
 	memset(gHUD.m_pModCache, (int)nullptr, 512);
@@ -365,38 +364,40 @@ void Precache()
 
 		strcat(mdlname, tempstr);
 
-		GetModel(mdlname);
+		nlutils.GetModel(mdlname);
 	}
-	GetModel("models/v_m4clip.mdl");
-	GetModel("models/v_glockclip.mdl");
-	GetModel("models/v_glshell.mdl");
+	nlutils.GetModel("models/v_m4clip.mdl");
+	nlutils.GetModel("models/v_glockclip.mdl");
+	nlutils.GetModel("models/v_glshell.mdl");
 
-	GetModel("sprites/particles/debris_concrete.spr");
-	GetModel("sprites/particles/debris_concrete1.spr");
-	GetModel("sprites/particles/debris_concrete2.spr");
-	GetModel("sprites/particles/debris_concrete3.spr");
-	GetModel("sprites/particles/debris_dirt.spr");
-	GetModel("sprites/particles/debris_glass.spr");
-	GetModel("sprites/particles/smallspark.spr");
-	GetModel("sprites/particles/debris_snow.spr");
-	GetModel("sprites/particles/debris_snow1.spr");
-	GetModel("sprites/particles/debris_snow2.spr");
-	GetModel("sprites/particles/debris_snow3.spr");
-	GetModel("sprites/particles/debris_wood.spr");
-	GetModel("sprites/particles/debris_wood1.spr");
-	GetModel("sprites/particles/debris_wood2.spr");
-	GetModel("sprites/particles/debris_wood3.spr");
+	nlutils.GetModel("sprites/particles/debris_concrete.spr");
+	nlutils.GetModel("sprites/particles/debris_concrete1.spr");
+	nlutils.GetModel("sprites/particles/debris_concrete2.spr");
+	nlutils.GetModel("sprites/particles/debris_concrete3.spr");
+	nlutils.GetModel("sprites/particles/debris_dirt.spr");
+	nlutils.GetModel("sprites/particles/debris_glass.spr");
+	nlutils.GetModel("sprites/particles/smallspark.spr");
+	nlutils.GetModel("sprites/particles/debris_snow.spr");
+	nlutils.GetModel("sprites/particles/debris_snow1.spr");
+	nlutils.GetModel("sprites/particles/debris_snow2.spr");
+	nlutils.GetModel("sprites/particles/debris_snow3.spr");
+	nlutils.GetModel("sprites/particles/debris_wood.spr");
+	nlutils.GetModel("sprites/particles/debris_wood1.spr");
+	nlutils.GetModel("sprites/particles/debris_wood2.spr");
+	nlutils.GetModel("sprites/particles/debris_wood3.spr");
 
-	GetModel("sprites/blood.spr");
-	GetModel("sprites/fire.spr");
-	GetModel("sprites/blooddrop.spr");
-	GetModel("sprites/steam1.spr");
-	GetModel("sprites/particles/smokepuff.spr");
-	GetModel("sprites/particles/pistol_smoke1.spr");
-	GetModel("sprites/hotglow.spr");
-	GetModel("models/player_legs.mdl");
-	GetModel("models/player_sci_legs.mdl");
-	GetModel("models/player_sci.mdl");
+	nlutils.GetModel("sprites/blood.spr");
+	nlutils.GetModel("sprites/fire.spr");
+	nlutils.GetModel("sprites/blooddrop.spr");
+	nlutils.GetModel("sprites/steam1.spr");
+	nlutils.GetModel("sprites/particles/smokepuff.spr");
+	nlutils.GetModel("sprites/particles/pistol_smoke1.spr");
+	nlutils.GetModel("sprites/hotglow.spr");
+	nlutils.GetModel("models/player_legs.mdl");
+	nlutils.GetModel("models/player_sci_legs.mdl");
+	nlutils.GetModel("models/player_sci.mdl");
+
+	nlutils.GetModel("sprites/fl.spr");
 }
 
 void nlvars_s::InitCvars()
@@ -550,7 +551,7 @@ void CHud::Init()
 
 	nlvars.InitCvars();
 	CacheGlowModels();
-	StoreChapterNames();
+	nlfs.StoreChapterNames();
 	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
 	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 	MsgFunc_ResetHUD(0, 0, NULL);

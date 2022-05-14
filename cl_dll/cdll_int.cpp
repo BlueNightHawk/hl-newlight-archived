@@ -260,8 +260,7 @@ int g_screenheight, g_screenwidth;
 void DLLEXPORT HUD_Frame(double time)
 {
 	//	RecClHudFrame(time);
-	if (nlvars.r_drawlegs && nlvars.r_drawlegs->value != 0)
-		g_iDrawLegs = 1;
+	g_iDrawLegs = 1;
 
 	discord_integration::on_frame();
 

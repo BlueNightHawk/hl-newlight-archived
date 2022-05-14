@@ -20,34 +20,6 @@ typedef struct animutils_s
 	void SendWeaponAnim(int iAnim, int iBody);
 } animutils_t;
 
-typedef struct viewinfo_s
-{
-	Vector attachment_forward[4];
-	Vector attachment_right[4];
-	Vector attachment_up[4];
-
-	Vector actualbonepos[MAXSTUDIOBONES];
-	Vector actualboneangles[MAXSTUDIOBONES];
-
-	Vector bonepos[MAXSTUDIOBONES];
-	Vector boneangles[MAXSTUDIOBONES];
-
-	Vector prevbonepos[MAXSTUDIOBONES];
-	Vector prevboneangles[MAXSTUDIOBONES];
-
-	studiohdr_t* phdr;
-
-	alight_s vmodel_lighting;
-
-	// stuff specifically for viewmodel
-	double m_flAnimTime;
-	double m_flCurFrame;
-	double m_flCurTime;
-
-	int m_iPrevSeq;
-} vminfo_t;
-
-extern viewinfo_s g_viewinfo;
 extern animutils_s cl_animutils;
 
 #endif
