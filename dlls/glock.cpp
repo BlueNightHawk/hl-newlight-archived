@@ -88,6 +88,14 @@ bool CGlock::Deploy()
 		SetBody(2, 0);
 	}
 
+	if (m_pPlayer->HasWeaponBit(WEAPON_SILENCER))
+	{
+		if (!m_pPlayer->m_bNotFirstDraw[WEAPON_SILENCER] && !m_bSilencerOn)
+		{
+			m_flSilencerTime = UTIL_WeaponTimeBase() + 0.5;
+		}
+	}
+
 	return bDeploy;
 }
 
@@ -130,6 +138,11 @@ void CGlock::Holster()
 	if (m_pPlayer->m_iFOV != 0)
 	{
 		ThirdAttack();
+	}
+
+	if (m_pPlayer->HasWeaponBit(WEAPON_SILENCER))
+	{
+		m_pPlayer->m_bNotFirstDraw[WEAPON_SILENCER] = true;
 	}
 
 	m_bSilencerState = false;
@@ -275,6 +288,15 @@ void CGlock::ItemPostFrame()
 		else
 		{
 			SetBody(2, 0);
+		}
+
+		if (m_pPlayer->HasWeaponBit(WEAPON_SILENCER))
+		{
+			if (!m_pPlayer->m_bNotFirstDraw[WEAPON_SILENCER] && !m_bSilencerOn && m_flSilencerTime < UTIL_WeaponTimeBase())
+			{
+				SecondaryAttack();
+				m_pPlayer->m_bNotFirstDraw[WEAPON_SILENCER] = true;
+			}
 		}
 	}
 
