@@ -308,14 +308,6 @@ void CRpg::Reload()
 		return;
 	}
 
-#ifndef CLIENT_DLL
-	if (m_pSpot && m_fSpotActive)
-	{
-		m_pSpot->Suspend(2.1);
-		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 2.1;
-	}
-#endif
-
 	if (m_iClip == 0)
 	{
 		const bool iResult = DefaultReload(RPG_MAX_CLIP, ACT_RELOAD, 2);
@@ -450,13 +442,7 @@ void CRpg::PrimaryAttack()
 		// firing RPG no longer turns on the designator. ALT fire is a toggle switch for the LTD.
 		// Ken signed up for this as a global change (sjb)
 
-		int flags;
-#if defined(CLIENT_WEAPONS)
-		flags = FEV_NOTHOST;
-#else
-		flags = 0;
-#endif
-
+		int flags = 0;
 		PLAYBACK_EVENT(flags, m_pPlayer->edict(), m_usRpg);
 
 		m_iClip--;
@@ -527,6 +513,8 @@ void CRpg::UpdateSpot()
 		{
 			m_pSpot = CLaserSpot::CreateSpot();
 		}
+
+		m_pSpot->pev->owner = ENT(m_pPlayer->pev);
 
 		UTIL_MakeVectors(m_pPlayer->pev->v_angle);
 		Vector vecSrc = m_pPlayer->GetGunPosition();

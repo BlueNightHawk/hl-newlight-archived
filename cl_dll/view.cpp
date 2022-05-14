@@ -24,6 +24,10 @@
 
 #include "particleman.h"
 
+
+ref_params_s g_pparams;
+extern void SetupBuffer();
+extern void UpdateLaserSpot(int index);
 void UpdateFlashlight(ref_params_t* pparams);
 
 int CL_IsThirdPerson();
@@ -124,6 +128,8 @@ cvar_t v_iroll_level = {"v_iroll_level", "0.1", 0, 0.1};
 cvar_t v_ipitch_level = {"v_ipitch_level", "0.3", 0, 0.3};
 
 float v_idlescale; // used by TFC for concussion grenade effect
+
+void V_SmoothInterpolateAngles(float* startAngle, float* endAngle, float* finalAngle, float degreesPerSec);
 
 #define PUNCH_DAMPING 10.0f // bigger number makes the response more damped, smaller is less damped
 // currently the system will overshoot, with larger damping values it won't
@@ -814,6 +820,7 @@ void V_CalcViewAngles(struct ref_params_s* pparams, cl_entity_s* view)
 		V_DoJumping(pparams, view);
 	V_ModifyOrigin(pparams, view);
 
+	UpdateLaserSpot(-1);
 	// apply angles
 	VectorCopy(view->angles, view->curstate.angles);
 	VectorCopy(view->angles, view->prevstate.angles);
@@ -2000,14 +2007,13 @@ void V_CalcSpectatorRefdef(struct ref_params_s* pparams)
 	VectorCopy(v_angles, pparams->viewangles)
 		VectorCopy(v_origin, pparams->vieworg);
 }
-extern void SetupBuffer();
-
-ref_params_s g_pparams;
 
 void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 {
 	//	RecClCalcRefdef(pparams);
 
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+	extern CBaseParticle* g_pLaserSpot;
 	// intermission / finale rendering
 	if (0 != pparams->intermission)
 	{

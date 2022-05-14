@@ -147,12 +147,7 @@ void CMP5::PrimaryAttack()
 		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_2DEGREES, 8192, BULLET_PLAYER_MP5, 2, 0, m_pPlayer->pev, m_pPlayer->random_seed);
 	}
 
-	int flags;
-#if defined(CLIENT_WEAPONS)
-	flags = FEV_NOTHOST;
-#else
-	flags = 0;
-#endif
+	int flags = 0;
 
 	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), m_usMP5, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, m_pPlayer->m_vecRecoil[0] * 1000, 0, 0, 0);
 
@@ -230,12 +225,7 @@ void CMP5::SecondaryAttack()
 
 	m_bReloadLauncher = true;
 
-	int flags;
-#if defined(CLIENT_WEAPONS)
-	flags = FEV_NOTHOST;
-#else
-	flags = 0;
-#endif
+	int flags = 0;
 
 	PLAYBACK_EVENT(flags, m_pPlayer->edict(), m_usMP52);
 

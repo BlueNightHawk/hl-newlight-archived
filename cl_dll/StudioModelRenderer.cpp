@@ -1355,6 +1355,7 @@ void CStudioModelRenderer::StudioDlightEffects()
 }
 void CStudioModelRenderer::StudioExportBoneTransform()
 {
+	extern void UpdateLaserSpot(int index);
 	// get bone angles and calculate base angles using fake entity
 	if (m_pCurrentEntity == gEngfuncs.GetViewModel())
 	{
@@ -1363,6 +1364,7 @@ void CStudioModelRenderer::StudioExportBoneTransform()
 			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
 			NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
 		}
+		UpdateLaserSpot(-1);
 
 		if (nlvars.r_camanims->value != 0)
 		{
@@ -1452,6 +1454,7 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	alight_t lighting;
 	Vector dir;
 
+	if ((flags & STUDIO_ENTITY) == 0)
 	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
 	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
@@ -1590,7 +1593,9 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 			StudioMergeGlowModels(&lighting);
 
 		if (m_pCurrentEntity == gEngfuncs.GetViewModel())
+		{
 			g_viewinfo.m_iPrevSeq = m_pCurrentEntity->curstate.sequence;
+		}
 	}
 
 	return true;
@@ -3101,4 +3106,80 @@ void CStudioModelRenderer::GetShadowVector(myvec3_t& vecOut)
 	}
 
 	VectorNormalize(vecOut);
+}
+
+void CStudioModelRenderer::StudioForceExportBoneTransform()
+{
+	cl_entity_s* view = gEngfuncs.GetViewModel();
+
+	if (!view || !view->model)
+		return;
+
+	studiohdr_t* savedhdr = m_pStudioHeader;
+
+	float(*psavedtransform)[MAXSTUDIOBONES][3][4] = m_pbonetransform;
+
+	// get bone angles and calculate base angles using fake entity
+	m_pCurrentEntity = view;
+	m_pRenderModel = m_pCurrentEntity->model;
+	m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
+	if (!m_pStudioHeader)
+		return;
+
+	IEngineStudio.StudioSetHeader(m_pStudioHeader);
+	IEngineStudio.SetRenderModel(m_pRenderModel);
+
+	StudioSetUpTransform(false);
+	StudioSetupBones();
+	StudioSaveBones();
+
+	StudioCalcAttachments();
+
+	for (int i = 0; i < m_pStudioHeader->numbones; i++)
+	{
+		nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
+		NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
+	}
+
+	if (nlvars.r_camanims->value != 0)
+	{
+		g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
+
+		cl_entity_s temp = *gEngfuncs.GetViewModel();
+		temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+		temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+		m_pCurrentEntity = &temp;
+		temp.index = -555;
+
+		StudioSetupBones();
+		StudioSaveBones();
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
+		}
+		temp = *gEngfuncs.GetViewModel();
+		temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
+		temp.origin = temp.curstate.origin = Vector(0, 0, 0);
+		temp.curstate.sequence = 0;
+		temp.index = -555;
+		temp.curstate.frame = 0;
+		temp.curstate.animtime = 0;
+		temp.latched.prevframe = 0;
+		m_pCurrentEntity = &temp;
+
+		StudioSetupBones();
+		StudioSaveBones();
+		for (int i = 0; i < m_pStudioHeader->numbones; i++)
+		{
+			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
+			NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
+		}
+	}
+	if (IEngineStudio.GetCurrentEntity())
+	{
+		m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
+		m_pbonetransform = psavedtransform;
+		//		StudioDrawModel(STUDIO_ENTITY);
+	}
 }

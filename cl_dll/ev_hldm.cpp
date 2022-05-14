@@ -349,7 +349,7 @@ void EV_HLDM_GunshotDecalTrace(pmtrace_t* pTrace, char* decalName, bool playsoun
 	// Only decal brush models such as the world etc.
 	if (decalName && '\0' != decalName[0] && pe && (pe->solid == SOLID_BSP || pe->movetype == MOVETYPE_PUSHSTEP))
 	{
-		if (CVAR_GET_FLOAT("r_decals"))
+		if (gEngfuncs.pfnGetCvarFloat("r_decals"))
 		{
 			gEngfuncs.pEfxAPI->R_DecalShoot(
 				gEngfuncs.pEfxAPI->Draw_DecalIndex(gEngfuncs.pEfxAPI->Draw_DecalIndexFromName(decalName)),

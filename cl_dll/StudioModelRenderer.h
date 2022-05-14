@@ -291,6 +291,7 @@ public:
 public:
 	void StudioDlightEffects();
 	void StudioExportBoneTransform();
+	void StudioForceExportBoneTransform();
 	void StudioMergeGlowModels(alight_t *lighting);
 };
 

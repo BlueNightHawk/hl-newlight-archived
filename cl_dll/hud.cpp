@@ -506,7 +506,17 @@ void CHud::Init()
 	nlvars.r_autofov = CVAR_CREATE("nl_autofov", "1", FCVAR_ARCHIVE);
 	m_pCvarStealMouse = CVAR_CREATE("hud_capturemouse", "1", FCVAR_ARCHIVE);
 	m_pCvarDraw = CVAR_CREATE("hud_draw", "1", FCVAR_ARCHIVE);
+
 	cl_lw = gEngfuncs.pfnGetCvarPointer("cl_lw");
+	// Remove the cl_lw cvar
+	if (cl_lw)
+	{
+		gEngfuncs.Cvar_SetValue("cl_lw", 1);
+		cl_lw->name = "\0";
+		cl_lw->value = 1;
+		cl_lw->string = "1";
+	}
+
 	cl_rollangle = CVAR_CREATE("cl_rollangle", "2.0", FCVAR_ARCHIVE);
 	cl_rollspeed = CVAR_CREATE("cl_rollspeed", "200", FCVAR_ARCHIVE);
 

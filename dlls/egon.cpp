@@ -145,12 +145,7 @@ void CEgon::Attack()
 	Vector vecAiming = gpGlobals->v_forward;
 	Vector vecSrc = m_pPlayer->GetGunPosition();
 
-	int flags;
-#if defined(CLIENT_WEAPONS)
-	flags = FEV_NOTHOST;
-#else
-	flags = 0;
-#endif
+	int flags = 0;
 
 	switch (m_fireState)
 	{

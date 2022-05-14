@@ -626,6 +626,11 @@ public:
 	float m_flRecoilTime;
 
 	model_s* m_pModCache[512];
+
+	bool m_bFlashlight;
+
+	class CBaseParticle* m_pLaserSpot;
+	float m_flSpotDieTime;
 };
 
 extern CHud gHUD;

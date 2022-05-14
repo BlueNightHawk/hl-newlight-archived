@@ -5,7 +5,9 @@
     "\\cl_dll\\particleman",
     "\\dlls",
     "\\pm_shared",
-    "\\projects"
+    "\\projects",
+    "\\projects\\vs2019"
   ],
+  "SelectedNode": "\\cl_dll\\entity.cpp",
   "PreviewInSolutionExplorer": false
 }

@@ -29,8 +29,6 @@
 extern BEAM* pBeam;
 extern BEAM* pBeam2;
 extern TEMPENTITY* pFlare; // Vit_amiN: egon's energy flare
-void HUD_GetLastOrg(float* org);
-
 void UpdateBeams()
 {
 	Vector forward, vecSrc, vecEnd, origin, angles, right, up;
@@ -43,7 +41,9 @@ void UpdateBeams()
 	gEngfuncs.GetViewAngles((float*)angles);
 
 	// Determine our last predicted origin
-	HUD_GetLastOrg((float*)&origin);
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight(view_ofs);
+	origin = pthisplayer->origin + view_ofs;
+	// HUD_GetLastOrg((float*)&origin);
 
 	AngleVectors(angles, forward, right, up);
 

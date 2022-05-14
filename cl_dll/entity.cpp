@@ -40,7 +40,7 @@ bool g_iAlive = true;
 #define GL_SHELL 1
 #define GLOCK_CLIP 2
 
-int g_iFlashlight = 0;
+void UpdateLaserSpot(int index);
 
 /*
 ========================
@@ -55,6 +55,18 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 	switch (type)
 	{
 	case ET_NORMAL:
+		if (ent->curstate.owner == gEngfuncs.GetLocalPlayer()->index)
+		{
+			if (ent->model && ent->model->type == mod_sprite)
+			{
+				if (stricmp(ent->model->name, "sprites/laserdot.spr") < 1)
+				{
+					gHUD.m_flSpotDieTime = gEngfuncs.GetClientTime();
+					UpdateLaserSpot(ent->index);
+					return 0;
+				}
+			}
+		}
 		break;
 	case ET_PLAYER:
 	{
@@ -66,11 +78,11 @@ int DLLEXPORT HUD_AddEntity(int type, struct cl_entity_s* ent, const char* model
 			if ((ent->curstate.effects & EF_DIMLIGHT) != 0 && nlvars.cl_clientflashlight->value != 0)
 			{
 				ent->curstate.effects &= ~EF_DIMLIGHT;
-				g_iFlashlight = 1;
+				gHUD.m_bFlashlight = true;
 			}
 			else
 			{
-				g_iFlashlight = 0;
+				gHUD.m_bFlashlight = false;
 			}
 			if (nlvars.r_drawlegs->value == 0)
 				return 0;
@@ -334,8 +346,6 @@ void Beams()
 }
 #endif
 
-extern void HUD_PostFrame();
-
 /*
 =========================
 HUD_CreateEntities
@@ -362,8 +372,6 @@ void DLLEXPORT HUD_CreateEntities()
 
 	// Add in any game specific objects
 	Game_AddObjects();
-
-	HUD_PostFrame();
 
 	GetClientVoiceMgr()->CreateEntities();
 }
@@ -937,7 +945,7 @@ void UpdateFlashlight(ref_params_t* pparams)
 	float invdist = 1;
 	float color = 255;
 
-	if (g_iFlashlight != 0)
+	if (gHUD.m_bFlashlight)
 	{
 		AngleVectors(pparams->viewangles, forward, NULL, NULL);
 		//AngleVectors(g_viewinfo.actualboneangles[0], forward, NULL, NULL);
@@ -999,5 +1007,101 @@ void UpdateFlashlight(ref_params_t* pparams)
 			pParticle->m_flFadeSpeed = 64;
 			pParticle = nullptr;
 		}
+	}
+}
+
+void UpdateLaserSpot(int index)
+{
+	int m_iBeam = gEngfuncs.pEventAPI->EV_FindModelIndex("sprites/smoke.spr");
+	static BEAM* pBeam = nullptr;
+
+	if (gHUD.m_flSpotDieTime < gEngfuncs.GetClientTime() || !gEngfuncs.GetViewModel()->model ||
+		!gEngfuncs.GetViewModel()->model->name || stricmp(gEngfuncs.GetViewModel()->model->name, "models/v_rpg.mdl") > 0)
+	{
+		if (gHUD.m_pLaserSpot)
+		{
+			gHUD.m_pLaserSpot->m_flDieTime = 0.01;
+			gHUD.m_pLaserSpot = nullptr;
+		}
+		if (pBeam)
+		{
+			pBeam->die = 0.0f;
+			pBeam = nullptr;
+		}
+		gHUD.m_flSpotDieTime = 0.0f;
+		return;
+	}
+
+	extern ref_params_t g_pparams;
+	pmtrace_t tr;
+	Vector forward;
+	Vector angles;
+	Vector vecSrc, vecEnd;
+	VectorCopy(g_viewinfo.actualboneangles[47], angles);
+	dlight_t* dl = nullptr;
+	int plindex = gEngfuncs.GetLocalPlayer()->index;
+
+	static int laserindex = index;
+	if (index != -1)
+		laserindex = index;
+
+	AngleVectors(angles, forward, NULL, NULL);
+	vecSrc = gEngfuncs.GetViewModel()->attachment[0];
+	vecEnd = vecSrc + forward * 8192;
+
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE, plindex, &tr);
+
+	if (nlvars.r_dlightfx->value != 0)
+		dl = gEngfuncs.pEfxAPI->CL_AllocElight(laserindex + 1);
+	if (dl)
+	{
+		dl->origin = tr.endpos;
+		dl->color = {(byte)255, (byte)0, (byte)0};
+		dl->radius = 25;
+		dl->decay = 512;
+		dl->die = g_pparams.time + g_pparams.frametime * 20;
+	}
+
+	if (!gHUD.m_pLaserSpot)
+	{
+		gHUD.m_pLaserSpot = g_pParticleMan->CreateParticle(tr.endpos, tr.plane.normal, nlutils.GetModel("sprites/laserdot.spr"), 15, 255, "laserspot");
+	}
+	if (gHUD.m_pLaserSpot)
+	{
+		if (gHUD.m_pLaserSpot->m_flDieTime != 0 && gHUD.m_pLaserSpot->m_flDieTime < gEngfuncs.GetClientTime())
+		{
+			gHUD.m_pLaserSpot = nullptr;
+			return;
+		}
+		gHUD.m_pLaserSpot->m_vOrigin = tr.endpos;
+		gHUD.m_pLaserSpot->SetLightFlag(LIGHT_NONE);
+		gHUD.m_pLaserSpot->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
+		gHUD.m_pLaserSpot->m_vAngles.z = g_pparams.viewangles[2];
+		gHUD.m_pLaserSpot->m_iRendermode = kRenderTransAdd;
+		gHUD.m_pLaserSpot->m_flDieTime = gEngfuncs.GetClientTime() + 0.1f;
+	}
+
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecSrc + forward * 64, PM_GLASS_IGNORE, plindex, &tr);
+
+	if (!pBeam)
+	{
+		pBeam = gEngfuncs.pEfxAPI->R_BeamEntPoint(
+			gEngfuncs.GetViewModel()->index | 0x1000,
+			tr.endpos,
+			m_iBeam,
+			9999,
+			0.25,
+			0.0,
+			64,
+			0,
+			0,
+			0,
+			255,
+			0,
+			0);
+	}
+	if (pBeam)
+	{
+		pBeam->target = tr.endpos;
 	}
 }

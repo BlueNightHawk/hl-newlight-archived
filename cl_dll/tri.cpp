@@ -69,6 +69,8 @@ model_s* TRI_pModel;
 
 // buz start
 
+extern void UpdateLaserSpot(int index);
+
 void ClearBuffer(void);
 extern bool g_bShadows;
 
