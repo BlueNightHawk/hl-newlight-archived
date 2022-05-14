@@ -36,8 +36,6 @@ void DLLEXPORT HUD_PostRunCmd(struct local_state_s* from, struct local_state_s* 
 {
 	//	RecClPostRunCmd(from, to, cmd, runfuncs, time, random_seed);
 
-	g_runfuncs = runfuncs != 0;
-
 	static bool initialized = false;
 	if (!initialized)
 	{

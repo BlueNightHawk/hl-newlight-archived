@@ -3576,6 +3576,14 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 {
 	edict_t* pent;
 
+	bool bSilencedGlock = false;
+
+	if (!stricmp(pszName, "weapon_silencer"))
+	{
+		pszName = "weapon_9mmhandgun";
+		bSilencedGlock = true;
+	}
+
 	int istr = MAKE_STRING(pszName);
 
 	pent = CREATE_NAMED_ENTITY(istr);
@@ -3584,10 +3592,19 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 		ALERT(at_console, "NULL Ent in GiveNamedItem!\n");
 		return;
 	}
+
 	VARS(pent)->origin = pev->origin;
 	pent->v.spawnflags |= SF_NORESPAWN;
 
 	DispatchSpawn(pent);
+	if (bSilencedGlock)
+	{
+		CGlock* pEnt = (CGlock*)CBaseEntity::Instance(pent);
+		if (pEnt)
+		{
+			pEnt->m_bSilencerOn = true;
+		}
+	}
 	DispatchTouch(pent, ENT(pev));
 }
 
@@ -4144,11 +4161,10 @@ void CBasePlayer::ItemPostFrame()
 		return;
 	}
 
-	if (gpGlobals->time < m_flNextAttack)
+	if (gpGlobals->time > m_flNextAttack)
 	{
-		return;
+		ImpulseCommands();
 	}
-	ImpulseCommands();
 
 	if (!m_pActiveItem)
 		return;

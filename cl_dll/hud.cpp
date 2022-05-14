@@ -156,6 +156,12 @@ int __MsgFunc_Particles(const char* pszName, int iSize, void* pbuf)
 	return static_cast<int>(gHUD.MsgFunc_Particles(pszName, iSize, pbuf));
 }
 
+int __MsgFunc_RenderInfo(const char* pszName, int iSize, void* pbuf)
+{
+	return static_cast<int>(gHUD.MsgFunc_RenderInfo(pszName, iSize, pbuf));
+}
+
+
 // TFFree Command Menu
 void __CmdFunc_OpenCommandMenu()
 {
@@ -490,6 +496,7 @@ void CHud::Init()
 
 	HOOK_MESSAGE(WAnim);
 	HOOK_MESSAGE(Particles);
+	HOOK_MESSAGE(RenderInfo);
 
 	g_viewinfo.m_iPrevSeq = -1;
 

@@ -158,6 +158,27 @@ void animutils_s::SetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
 	ent->curstate.body = (ent->curstate.body - (iCurrent * pbodypart->base) + (iValue * pbodypart->base));
 }
 
+int animutils_s::GetBodygroup(cl_entity_t* ent, int iGroup, int iValue)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(ent->model);
+	if (!pstudiohdr)
+		return -1;
+
+	if (iGroup > pstudiohdr->numbodyparts)
+		return -1;
+
+	mstudiobodyparts_t* pbodypart = (mstudiobodyparts_t*)((byte*)pstudiohdr + pstudiohdr->bodypartindex) + iGroup;
+
+	if (iValue >= pbodypart->nummodels)
+		return -1;
+
+	int iCurrent = (ent->curstate.body / pbodypart->base) % pbodypart->nummodels;
+
+	return (ent->curstate.body - (iCurrent * pbodypart->base) + (iValue * pbodypart->base));
+}
+
 void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct cl_entity_s* entity)
 {
 	int iShouldDrawLegs = (g_iDrawLegs <= 0 && entity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
@@ -175,6 +196,12 @@ void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct c
 		if (pEnt)
 		SetBodygroup(pEnt, event->event - 9000, atoi(event->options));
 		return;
+	}
+
+	if (stricmp(entity->model->name, "models/v_9mmhandgun.mdl") < 1 && entity->curstate.body == GetBodygroup((cl_entity_s*)entity, 2, 1))
+	{
+		if (event->event < 6000 && event->event != 5002)
+			return;
 	}
 
 	switch (event->event)

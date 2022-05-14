@@ -81,6 +81,8 @@ public:
 	void IdleSound() override;
 	CUSTOM_SCHEDULES;
 
+	void Killed(entvars_t* pevAttacker, int iGib) override;
+
 	bool Save(CSave& save) override;
 	bool Restore(CRestore& restore) override;
 	static TYPEDESCRIPTION m_SaveData[];
@@ -122,6 +124,27 @@ TYPEDESCRIPTION CHAssassin::m_SaveData[] =
 
 IMPLEMENT_SAVERESTORE(CHAssassin, CBaseMonster);
 
+void CHAssassin::Killed(entvars_t* pevAttacker, int iGib)
+{
+	if (pev->body < 1)
+	{ // drop the gun!
+		Vector vecGunPos;
+		Vector vecGunAngles;
+
+		pev->body = 1;
+
+		GetAttachment(0, vecGunPos, vecGunAngles);
+
+		CGlock* pGun = (CGlock *)DropItem("weapon_9mmhandgun", vecGunPos, vecGunAngles);
+		if (pGun)
+		{
+			pGun->m_bSilencerOn = true;
+			pGun->pev->body = 1;
+		}
+	}
+
+	CBaseMonster::Killed(pevAttacker, iGib);
+}
 
 //=========================================================
 // DieSound

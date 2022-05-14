@@ -579,6 +579,27 @@ int GetBodygroup(void* pmodel, entvars_t* pev, int iGroup)
 	return iCurrent;
 }
 
+int GetBodygroup(void* pmodel, entvars_t* pev, int iGroup, int iBody)
+{
+	studiohdr_t* pstudiohdr;
+
+	pstudiohdr = (studiohdr_t*)pmodel;
+	if (!pstudiohdr)
+		return 0;
+
+	if (iGroup > pstudiohdr->numbodyparts)
+		return 0;
+
+	mstudiobodyparts_t* pbodypart = (mstudiobodyparts_t*)((byte*)pstudiohdr + pstudiohdr->bodypartindex) + iGroup;
+
+	if (pbodypart->nummodels <= 1)
+		return 0;
+
+	int iCurrent = (pev->body / pbodypart->base) % pbodypart->nummodels;
+
+	return (pev->body - (iCurrent * pbodypart->base) + (iBody * pbodypart->base));
+}
+
 float StudioEstimateFrame(entvars_s *pev, mstudioseqdesc_t* pseqdesc)
 {
 	double dfdt, f;

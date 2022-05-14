@@ -108,9 +108,6 @@
     <ClCompile Include="..\..\cl_dll\cdll_int.cpp">
       <Filter>Source Files\cl_dll</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\cl_dll\com_weapons.cpp">
-      <Filter>Source Files\cl_dll</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\cl_dll\message.cpp">
       <Filter>Source Files\cl_dll</Filter>
     </ClCompile>

@@ -18,6 +18,10 @@
 #include "effects.h"
 #include "weaponinfo.h"
 
+#include "player.h"
+
+#include "animation.h"
+
 class CBasePlayer;
 
 void DeactivateSatchels(CBasePlayer* pOwner);
@@ -197,6 +201,17 @@ typedef struct
 
 inline int giAmmoIndex = 0;
 
+// server side viewmodel entity
+class CViewModel : public CBaseAnimating
+{
+public:
+	void Precache() override;
+	void Spawn() override;
+	void EXPORT UpdateThink();
+
+	CBasePlayer* m_pPlayer;
+};
+
 void AddAmmoNameToAmmoRegistry(const char* szAmmoname);
 
 // Items that the player has in their inventory that they can use
@@ -285,6 +300,23 @@ public:
 	}
 
 	virtual float SpreadMultiplier() { return 1.0f; }
+
+	CViewModel* ViewModel()
+	{
+		static CViewModel fallback;
+		if (!m_pPlayer->m_pViewModel)
+			return &fallback;
+		return m_pPlayer->m_pViewModel;
+	}
+	void SetBody(int iGroup, int iBody) 
+	{
+		::SetBodygroup(GET_MODEL_PTR(ViewModel()->edict()), pev, iGroup, iBody);
+	}
+	int GetBody(int iGroup, int iBody)
+	{
+		return ::GetBodygroup(GET_MODEL_PTR(ViewModel()->edict()), pev, iGroup, iBody);
+	}
+	int m_iRenderState;
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 };
@@ -369,17 +401,6 @@ public:
 	// hle time creep vars
 	float m_flPrevPrimaryAttack;
 	float m_flLastFireTime;
-};
-
-// server side viewmodel entity
-class CViewModel : public CBaseAnimating
-{
-public:
-	void Precache() override;
-	void Spawn() override;
-	void EXPORT UpdateThink();
-
-	CBasePlayer* m_pPlayer;
 };
 
 class CBasePlayerAmmo : public CBaseEntity
@@ -512,6 +533,11 @@ enum glock_e
 class CGlock : public CBasePlayerWeapon
 {
 public:
+#ifndef CLIENT_DLL
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+#endif
 	void Spawn() override;
 	void Precache() override;
 	int iItemSlot() override { return 2; }
@@ -525,9 +551,15 @@ public:
 	void WeaponIdle() override;
 	void Holster() override;
 
+	void ItemPostFrame() override; // called each frame by the player PostThink
+
+	float m_flSilencerTime;
+	float m_flBodySwitchTime;
+	bool m_bSilencerOn;
+	bool m_bSilencerState;
+
 private:
 	int m_iShell;
-
 
 	unsigned short m_usFireGlock1;
 	unsigned short m_usFireGlock2;

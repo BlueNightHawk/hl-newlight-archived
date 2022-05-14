@@ -62,4 +62,6 @@ inline int gmsgOnSound = 0;
 inline int gmsgSubtClear = 0;
 inline int gmsgSubtRemove = 0;
 
+inline int gmsgRenderInfo = 0;
+
 void LinkUserMessages();

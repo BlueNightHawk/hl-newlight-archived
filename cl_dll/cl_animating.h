@@ -18,6 +18,8 @@ typedef struct animutils_s
 	void SetBodygroup(cl_entity_t* ent, int iGroup, int iValue);
 
 	void SendWeaponAnim(int iAnim, int iBody);
+
+	int GetBodygroup(cl_entity_t* ent, int iGroup, int iValue);
 } animutils_t;
 
 extern animutils_s cl_animutils;

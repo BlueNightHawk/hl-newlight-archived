@@ -248,6 +248,7 @@ public:
 	void ClearWeaponBit(int id);
 
 	bool HasSuit() const;
+	bool HasWeaponBit(int iId) const;
 	void SetHasSuit(bool hasSuit);
 
 	// JOHN:  sends custom messages if player HUD data has changed  (eg health, ammo)
@@ -382,6 +383,11 @@ inline void CBasePlayer::SetWeaponBit(int id)
 inline void CBasePlayer::ClearWeaponBit(int id)
 {
 	m_WeaponBits &= ~(1ULL << id);
+}
+
+inline bool CBasePlayer::HasWeaponBit(int iId) const
+{
+	return (m_WeaponBits & (1ULL << iId)) != 0;
 }
 
 inline bool CBasePlayer::HasSuit() const

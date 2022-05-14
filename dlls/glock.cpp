@@ -32,6 +32,8 @@ void CGlock::Spawn()
 
 	m_iDefaultAmmo = GLOCK_DEFAULT_GIVE;
 
+	pev->body = 0;
+
 	FallInit(); // get ready to fall down.
 }
 
@@ -75,13 +77,50 @@ bool CGlock::GetItemInfo(ItemInfo* p)
 bool CGlock::Deploy()
 {
 	// pev->body = 1;
-	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", 0, "onehanded");
+	bool bDeploy = DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", 0, "onehanded");
+
+	if (m_bSilencerOn)
+	{
+		SetBody(2, 1);
+	}
+	else
+	{
+		SetBody(2, 0);
+	}
+
+	return bDeploy;
 }
 
 void CGlock::SecondaryAttack()
 {
-	return;
-	//	GlockFire(0.1, 0.2, false);
+	if (!m_pPlayer->HasWeaponBit(WEAPON_SILENCER))
+	{
+		return;
+	}
+
+	if ((m_pPlayer->m_iBtnAttackBits & IN_ATTACK2) != 0)
+		return;
+
+	int iAnim = 0;
+
+	if (pev->body != GetBody(2, 0))
+	{
+		iAnim = SendWeaponAnim(ACT_SPECIAL_ATTACK1, -1, 2);
+		m_flBodySwitchTime = gpGlobals->time + 1.7;
+		m_flSilencerTime = gpGlobals->time + 1.8;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay(2.35);
+	}
+	else
+	{
+		iAnim = SendWeaponAnim(ACT_SPECIAL_ATTACK1, -1, 1);
+		m_flBodySwitchTime = gpGlobals->time + 0.5;
+		m_flSilencerTime = gpGlobals->time + 2.95;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay(2.95);
+	}
+
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetSeqLength(iAnim);
+	m_bSilencerState = true;
+	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK2;
 }
 
 void CGlock::Holster()
@@ -90,8 +129,13 @@ void CGlock::Holster()
 
 	if (m_pPlayer->m_iFOV != 0)
 	{
-		SecondaryAttack();
+		ThirdAttack();
 	}
+
+	m_bSilencerState = false;
+	m_flSilencerTime = gpGlobals->time;
+	m_flBodySwitchTime = gpGlobals->time;
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = 0.0f;
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	SendWeaponAnim(ACT_DISARM);
@@ -128,7 +172,7 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	// silenced
-	if (pev->body == 1)
+	if (m_bSilencerOn)
 	{
 		m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
 		m_pPlayer->m_iWeaponFlash = DIM_GUN_FLASH;
@@ -156,7 +200,7 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 	Vector vecDir;
 	vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, Vector(flSpread, flSpread, flSpread), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed);
 
-	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, m_pPlayer->m_vecRecoil[0] * 1000, 0, (m_iClip == 0) ? 1 : 0, 0);
+	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, m_pPlayer->m_vecRecoil[0] * 1000, 0, (m_iClip == 0) ? 1 : 0, m_bSilencerOn);
 
 	m_pPlayer->m_iBtnAttackBits |= IN_ATTACK;
 
@@ -197,6 +241,44 @@ void CGlock::Reload()
 			SendWeaponAnim(ACT_IDLE, -1, 1);
 		}
 	}
+}
+
+void CGlock::ItemPostFrame()
+{
+	if (m_bSilencerState)
+	{
+		if (m_flBodySwitchTime < gpGlobals->time)
+		{
+			if (m_bSilencerOn)
+			{
+				SetBody(2, 0);
+			}
+			else
+			{
+				SetBody(2, 1);
+			}
+			m_flBodySwitchTime = 0;
+		}
+		if (m_flSilencerTime < gpGlobals->time)
+		{
+			m_bSilencerState = false;
+			m_bSilencerOn = !m_bSilencerOn;
+			m_flSilencerTime = 0;
+		}
+	}
+	else	
+	{
+		if (m_bSilencerOn)
+		{
+			SetBody(2, 1);
+		}
+		else
+		{
+			SetBody(2, 0);
+		}
+	}
+
+	CBasePlayerWeapon::ItemPostFrame();
 }
 
 

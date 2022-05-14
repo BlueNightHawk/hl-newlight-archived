@@ -177,7 +177,7 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 	else if (model && stricmp(modname, model))
 		view->model = gEngfuncs.CL_LoadModel(model, &view->index);
 
-	EV_SendWeaponAnim(iAnim, iBody, iWeight);
+	EV_SendWeaponAnim(iAnim, view->curstate.body, iWeight);
 	return true;
 }
 
@@ -185,7 +185,6 @@ bool CHud::MsgFunc_Particles(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
 
-	
 	int m_iPreset = READ_BYTE();
 
 	switch (m_iPreset)
@@ -215,9 +214,36 @@ bool CHud::MsgFunc_Particles(const char* pszName, int iSize, void* pbuf)
 		BloodDroplets(index, bloodcol);
 	}
 	break;
-	}
+	}	
 	
+	return true;
+}
 
-	
+bool CHud::MsgFunc_RenderInfo(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	cl_entity_s *view = gEngfuncs.GetViewModel();
+
+	color24 colRenderColor;
+	int iBody = READ_SHORT();
+	int iSkin = READ_SHORT();
+	int iRenderMode = READ_BYTE();
+	int iRenderFx = READ_BYTE();
+	int iRenderAmt = READ_BYTE();
+	colRenderColor.r = (byte)READ_BYTE();
+	colRenderColor.g = (byte)READ_BYTE();
+	colRenderColor.b = (byte)READ_BYTE();
+
+	if (!view)
+		return false;
+
+	view->curstate.body = iBody;
+	view->curstate.skin = iSkin;
+	view->curstate.rendermode = iRenderMode;
+	view->curstate.renderfx = iRenderFx;
+	view->curstate.renderamt = iRenderAmt;
+	view->curstate.rendercolor = colRenderColor;
+
 	return true;
 }

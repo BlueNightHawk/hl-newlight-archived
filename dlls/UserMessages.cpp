@@ -72,4 +72,6 @@ void LinkUserMessages()
 	gmsgSubtClear = REG_USER_MSG("SubtClear", 0);
 	gmsgSubtRemove = REG_USER_MSG("SubtRemove", -1);
 	gmsgOnSound = REG_USER_MSG("OnSound", -1);
+
+	gmsgRenderInfo = REG_USER_MSG("RenderInfo", -1);
 }

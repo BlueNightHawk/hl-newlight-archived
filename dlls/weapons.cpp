@@ -600,9 +600,18 @@ void CBasePlayerItem::DefaultTouch(CBaseEntity* pOther)
 
 	CBasePlayer* pPlayer = (CBasePlayer*)pOther;
 
+	bool bIsSilencedGlock = (stricmp(STRING(pev->classname), "weapon_9mmhandgun") < 1 && ((CGlock*)this)->m_bSilencerOn == true);
+	bool bHasSilencer = pPlayer->HasWeaponBit(WEAPON_SILENCER);
+
 	// can I have this?
 	if (!g_pGameRules->CanHavePlayerItem(pPlayer, this))
 	{
+		if (bIsSilencedGlock && !bHasSilencer)
+		{
+			pPlayer->SetWeaponBit(WEAPON_SILENCER);
+			pev->body = 0;
+			((CGlock*)this)->m_bSilencerOn = false;
+		}
 		if (gEvilImpulse101)
 		{
 			UTIL_Remove(this);
@@ -614,6 +623,19 @@ void CBasePlayerItem::DefaultTouch(CBaseEntity* pOther)
 	{
 		AttachToPlayer(pPlayer);
 		EMIT_SOUND(ENT(pPlayer->pev), CHAN_ITEM, "items/gunpickup2.wav", 1, ATTN_NORM);
+		if (bIsSilencedGlock && !bHasSilencer)
+		{
+			pPlayer->SetWeaponBit(WEAPON_SILENCER);
+		}
+	}
+	else
+	{
+		if (bIsSilencedGlock && !bHasSilencer)
+		{
+			pPlayer->SetWeaponBit(WEAPON_SILENCER);
+			pev->body = 0;
+			((CGlock*)this)->m_bSilencerOn = false;
+		}
 	}
 
 	SUB_UseTargets(pOther, USE_TOGGLE, 0); // UNDONE: when should this happen?
@@ -659,6 +681,7 @@ void CBasePlayerItem::Holster()
 
 void CBasePlayerItem::AttachToPlayer(CBasePlayer* pPlayer)
 {
+	pev->body = 0;
 	pev->movetype = MOVETYPE_FOLLOW;
 	pev->solid = SOLID_NOT;
 	pev->aiment = pPlayer->edict();
@@ -749,6 +772,23 @@ bool CBasePlayerWeapon::UpdateClientData(CBasePlayer* pPlayer)
 			state = 1;
 	}
 
+	int iRenderState = pev->body + pev->skin + (int)pev->rendercolor.Length() + pev->renderamt + pev->renderfx + pev->rendermode;
+
+	if (iRenderState != m_iRenderState)
+	{
+		MESSAGE_BEGIN(MSG_ONE, gmsgRenderInfo, g_vecZero, m_pPlayer->pev);
+			WRITE_SHORT(pev->body);
+			WRITE_SHORT(pev->skin);
+			WRITE_BYTE(pev->rendermode);
+			WRITE_BYTE(pev->renderfx);
+			WRITE_BYTE(pev->renderamt);
+			WRITE_BYTE((byte)pev->rendercolor.x);
+			WRITE_BYTE((byte)pev->rendercolor.y);
+			WRITE_BYTE((byte)pev->rendercolor.z);
+		MESSAGE_END();
+		m_iRenderState = iRenderState;
+		//ALERT(at_console, "msg sent \n");
+	}
 	// Forcing send of all data!
 	if (!pPlayer->m_fWeapon)
 	{
@@ -879,6 +919,9 @@ void CBasePlayerWeapon::ThirdAttack()
 
 void CBasePlayerWeapon::ItemPostFrame()
 {
+	if (m_pPlayer->m_flNextAttack > gpGlobals->time)
+		return;
+
 	if ((m_fInReload) && (m_pPlayer->m_flNextAttack <= UTIL_WeaponTimeBase()))
 	{
 		// complete the reload.
@@ -1773,61 +1816,70 @@ void CBasePlayerWeapon::PrintState()
 
 
 TYPEDESCRIPTION CRpg::m_SaveData[] =
-	{
-		DEFINE_FIELD(CRpg, m_fSpotActive, FIELD_BOOLEAN),
-		DEFINE_FIELD(CRpg, m_cActiveRockets, FIELD_INTEGER),
+{
+	DEFINE_FIELD(CRpg, m_fSpotActive, FIELD_BOOLEAN),
+	DEFINE_FIELD(CRpg, m_cActiveRockets, FIELD_INTEGER),
 };
 IMPLEMENT_SAVERESTORE(CRpg, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CRpgRocket::m_SaveData[] =
-	{
-		DEFINE_FIELD(CRpgRocket, m_flIgniteTime, FIELD_TIME),
-		DEFINE_FIELD(CRpgRocket, m_pLauncher, FIELD_EHANDLE),
+{
+	DEFINE_FIELD(CRpgRocket, m_flIgniteTime, FIELD_TIME),
+	DEFINE_FIELD(CRpgRocket, m_pLauncher, FIELD_EHANDLE),
 };
 IMPLEMENT_SAVERESTORE(CRpgRocket, CGrenade);
 
 TYPEDESCRIPTION CShotgun::m_SaveData[] =
-	{
-		DEFINE_FIELD(CShotgun, m_flNextReload, FIELD_TIME),
-		DEFINE_FIELD(CShotgun, m_fInSpecialReload, FIELD_INTEGER),
-		DEFINE_FIELD(CShotgun, m_flNextReload, FIELD_TIME),
-		// DEFINE_FIELD( CShotgun, m_iShell, FIELD_INTEGER ),
-		DEFINE_FIELD(CShotgun, m_flPumpTime, FIELD_TIME),
+{	
+	DEFINE_FIELD(CShotgun, m_flNextReload, FIELD_TIME),
+	DEFINE_FIELD(CShotgun, m_fInSpecialReload, FIELD_INTEGER),
+	DEFINE_FIELD(CShotgun, m_flNextReload, FIELD_TIME),
+	// DEFINE_FIELD( CShotgun, m_iShell, FIELD_INTEGER ),
+	DEFINE_FIELD(CShotgun, m_flPumpTime, FIELD_TIME),
 };
 IMPLEMENT_SAVERESTORE(CShotgun, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CGauss::m_SaveData[] =
-	{
-		DEFINE_FIELD(CGauss, m_fInAttack, FIELD_INTEGER),
-		//	DEFINE_FIELD( CGauss, m_flStartCharge, FIELD_TIME ),
-		//	DEFINE_FIELD( CGauss, m_flPlayAftershock, FIELD_TIME ),
-		//	DEFINE_FIELD( CGauss, m_flNextAmmoBurn, FIELD_TIME ),
-		DEFINE_FIELD(CGauss, m_fPrimaryFire, FIELD_BOOLEAN),
+{
+	DEFINE_FIELD(CGauss, m_fInAttack, FIELD_INTEGER),
+	//	DEFINE_FIELD( CGauss, m_flStartCharge, FIELD_TIME ),
+	//	DEFINE_FIELD( CGauss, m_flPlayAftershock, FIELD_TIME ),
+	//	DEFINE_FIELD( CGauss, m_flNextAmmoBurn, FIELD_TIME ),
+	DEFINE_FIELD(CGauss, m_fPrimaryFire, FIELD_BOOLEAN),
 };
 IMPLEMENT_SAVERESTORE(CGauss, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CEgon::m_SaveData[] =
-	{
-		//	DEFINE_FIELD( CEgon, m_pBeam, FIELD_CLASSPTR ),
-		//	DEFINE_FIELD( CEgon, m_pNoise, FIELD_CLASSPTR ),
-		//	DEFINE_FIELD( CEgon, m_pSprite, FIELD_CLASSPTR ),
-		DEFINE_FIELD(CEgon, m_shootTime, FIELD_TIME),
-		DEFINE_FIELD(CEgon, m_fireState, FIELD_INTEGER),
-		DEFINE_FIELD(CEgon, m_fireMode, FIELD_INTEGER),
-		DEFINE_FIELD(CEgon, m_shakeTime, FIELD_TIME),
-		DEFINE_FIELD(CEgon, m_flAmmoUseTime, FIELD_TIME),
+{
+	//	DEFINE_FIELD( CEgon, m_pBeam, FIELD_CLASSPTR ),
+	//	DEFINE_FIELD( CEgon, m_pNoise, FIELD_CLASSPTR ),
+	//	DEFINE_FIELD( CEgon, m_pSprite, FIELD_CLASSPTR ),
+	DEFINE_FIELD(CEgon, m_shootTime, FIELD_TIME),
+	DEFINE_FIELD(CEgon, m_fireState, FIELD_INTEGER),
+	DEFINE_FIELD(CEgon, m_fireMode, FIELD_INTEGER),
+	DEFINE_FIELD(CEgon, m_shakeTime, FIELD_TIME),
+	DEFINE_FIELD(CEgon, m_flAmmoUseTime, FIELD_TIME),
 };
 IMPLEMENT_SAVERESTORE(CEgon, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CSatchel::m_SaveData[] =
-	{
-		DEFINE_FIELD(CSatchel, m_chargeReady, FIELD_INTEGER),
+{
+	DEFINE_FIELD(CSatchel, m_chargeReady, FIELD_INTEGER),
 };
 IMPLEMENT_SAVERESTORE(CSatchel, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CMP5::m_SaveData[] =
-	{
-		DEFINE_FIELD(CMP5, m_bReloadLauncher, FIELD_BOOLEAN),
-		DEFINE_FIELD(CMP5, m_bReloadingLauncher, FIELD_BOOLEAN),
+{
+	DEFINE_FIELD(CMP5, m_bReloadLauncher, FIELD_BOOLEAN),
+	DEFINE_FIELD(CMP5, m_bReloadingLauncher, FIELD_BOOLEAN),
 };
 IMPLEMENT_SAVERESTORE(CMP5, CBasePlayerWeapon);
+
+TYPEDESCRIPTION CGlock::m_SaveData[] =
+{
+	DEFINE_FIELD(CGlock, m_flBodySwitchTime, FIELD_FLOAT),
+	DEFINE_FIELD(CGlock, m_flSilencerTime, FIELD_FLOAT),
+	DEFINE_FIELD(CGlock, m_bSilencerOn, FIELD_BOOLEAN),
+	DEFINE_FIELD(CGlock, m_bSilencerState, FIELD_BOOLEAN),
+};
+IMPLEMENT_SAVERESTORE(CGlock, CBasePlayerWeapon);
