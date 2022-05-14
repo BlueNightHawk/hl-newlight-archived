@@ -1501,7 +1501,7 @@ void CBasePlayer::PlayerUse()
 			}
 			m_pHeldItem->m_bHeld = false;
 			m_pHeldItem = nullptr;
-			m_flNextAttack = 0.2;
+			m_flNextAttack = UTIL_WeaponTimeBase() + 0.2;
 			return;
 		}
 	}
@@ -1570,7 +1570,7 @@ void CBasePlayer::PlayerUse()
 			{
 				if ((pObject->ObjectCaps() & (FCAP_BRUSHHOLDABLE & FCAP_CONTINUOUS_USE)) == 0)
 				{
-					if (m_flNextAttack > 0)
+					if (m_flNextAttack > UTIL_WeaponTimeBase())
 					{
 						continue;
 					}
@@ -4137,15 +4137,12 @@ void CBasePlayer::ItemPostFrame()
 	extern cvar_t sv_holsterweapon;
 	if (m_pNextItem && !m_pHeldItem && ( m_flNextAttack < UTIL_WeaponTimeBase() || sv_holsterweapon.value == 0))
 	{
-	//	ALERT(at_console, "%f \n", m_flNextAttack - UTIL_WeaponTimeBase());
 		m_pActiveItem = m_pNextItem;
 		m_pActiveItem->Deploy();
 		m_pActiveItem->UpdateItemInfo();
 		m_pNextItem = nullptr;
 		return;
 	}
-
-
 
 	if (gpGlobals->time < m_flNextAttack)
 	{
