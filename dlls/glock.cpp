@@ -229,9 +229,21 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 
 void CGlock::Reload()
 {
-	if (m_pPlayer->ammo_9mm <= 0)
+	if (m_bSilencerState)
 		return;
 
+	if (m_pPlayer->ammo_9mm <= 0)
+	{
+		if (LookupActivity(ACT_USE) < 0)
+		{
+			SendWeaponAnim(ACT_IDLE, -1, 2);
+		}
+		else
+		{
+			SendWeaponAnim(ACT_IDLE, -1, 1);
+		}
+		return;
+	}
 	bool iResult;
 
 	if (m_iClip == 0)

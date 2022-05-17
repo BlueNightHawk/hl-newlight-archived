@@ -24,8 +24,9 @@ SDL_Window* window = NULL;
 
 int HL_ImGUI_ProcessEvent(void* data, SDL_Event* event);
 void HL_ImGUI_Draw();
-
-// To draw imgui on top of Half-Life, we take a detour from certain engine's function into HL_ImGUI_Draw function
+void MainMenuGUI_DrawMainWindow();
+void MainMenuGUI_Init();
+	// To draw imgui on top of Half-Life, we take a detour from certain engine's function into HL_ImGUI_Draw function
 void HL_ImGUI_Init()
 {
 
@@ -133,6 +134,7 @@ void HL_ImGUI_Init()
 	io.Fonts->AddFontFromFileTTF(FS_ResolveModPath("resource\\DroidSans.ttf").c_str(), 16, &config, icon_ranges_cyrillic);
 
 	Subtitles_Init();
+	MainMenuGUI_Init();
 }
 
 void HL_ImGUI_Deinit()
@@ -145,6 +147,8 @@ void HL_ImGUI_Deinit()
 	SDL_DelEventWatch(HL_ImGUI_ProcessEvent, NULL);
 }
 
+bool g_iChapMenuOpen = false;
+
 void HL_ImGUI_Draw()
 {
 	extern ref_params_s g_pparams;
@@ -153,6 +157,8 @@ void HL_ImGUI_Draw()
 	if (g_pparams.paused)
 	{
 		SDL_ShowCursor(1);
+		if (g_iChapMenuOpen)
+			MainMenuGUI_DrawMainWindow();
 	}
 	else
 	{

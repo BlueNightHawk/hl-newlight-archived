@@ -455,6 +455,13 @@ void nlvars_s::InitCvars()
 	cl_fakeprojflashlight = CVAR_CREATE("nl_fakeprojflashlight", "1", FCVAR_ARCHIVE);
 }
 
+extern bool g_iChapMenuOpen;
+
+void ChapterSelect()
+{
+	g_iChapMenuOpen = !g_iChapMenuOpen;
+}
+
 // This is called every time the DLL is loaded
 void CHud::Init()
 {
@@ -571,6 +578,7 @@ void CHud::Init()
 	nlfs.StoreChapterNames();
 	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
 	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
+	gEngfuncs.pfnAddCommand("togglechapterselect", ChapterSelect);
 	MsgFunc_ResetHUD(0, 0, NULL);
 }
 

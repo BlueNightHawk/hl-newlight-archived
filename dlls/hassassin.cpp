@@ -54,7 +54,7 @@ enum
 #define ASSASSIN_AE_SHOOT1 1
 #define ASSASSIN_AE_TOSS1 2
 #define ASSASSIN_AE_JUMP 3
-
+#define ASSASSIN_AE_KICK 4
 
 #define bits_MEMORY_BADJUMP (bits_MEMORY_CUSTOM1)
 
@@ -71,7 +71,7 @@ public:
 	Schedule_t* GetSchedule() override;
 	Schedule_t* GetScheduleOfType(int Type) override;
 	bool CheckMeleeAttack1(float flDot, float flDist) override; // jump
-	// bool CheckMeleeAttack2 ( float flDot, float flDist ) override;
+	bool CheckMeleeAttack2 ( float flDot, float flDist ) override;
 	bool CheckRangeAttack1(float flDot, float flDist) override; // shoot
 	bool CheckRangeAttack2(float flDot, float flDist) override; // throw grenade
 	void StartTask(Task_t* pTask) override;
@@ -80,6 +80,8 @@ public:
 	void DeathSound() override;
 	void IdleSound() override;
 	CUSTOM_SCHEDULES;
+
+	CBaseEntity* Kick();
 
 	void Killed(entvars_t* pevAttacker, int iGib) override;
 
@@ -192,6 +194,12 @@ void CHAssassin::SetYawSpeed()
 
 	switch (m_Activity)
 	{
+	case ACT_MELEE_ATTACK1:
+		ys = 120;
+		break;
+	case ACT_MELEE_ATTACK2:
+		ys = 120;
+		break;
 	case ACT_TURN_LEFT:
 	case ACT_TURN_RIGHT:
 		ys = 360;
@@ -204,6 +212,28 @@ void CHAssassin::SetYawSpeed()
 	pev->yaw_speed = ys;
 }
 
+
+//=========================================================
+//=========================================================
+CBaseEntity* CHAssassin::Kick()
+{
+	TraceResult tr;
+
+	UTIL_MakeVectors(pev->angles);
+	Vector vecStart = pev->origin;
+	vecStart.z += pev->size.z * 0.5;
+	Vector vecEnd = vecStart + (gpGlobals->v_forward * 70);
+
+	UTIL_TraceHull(vecStart, vecEnd, dont_ignore_monsters, head_hull, ENT(pev), &tr);
+
+	if (tr.pHit)
+	{
+		CBaseEntity* pEntity = CBaseEntity::Instance(tr.pHit);
+		return pEntity;
+	}
+
+	return NULL;
+}
 
 //=========================================================
 // Shoot
@@ -288,6 +318,33 @@ void CHAssassin::HandleAnimEvent(MonsterEvent_t* pEvent)
 		m_flNextJump = gpGlobals->time + 3.0;
 	}
 		return;
+	case ASSASSIN_AE_KICK:
+	{
+		CBaseEntity* pHurt = Kick();
+
+		if (pHurt)
+		{
+			// SOUND HERE!
+			UTIL_MakeVectors(pev->angles);
+			pHurt->pev->punchangle.x = 15;
+			pHurt->pev->velocity = pHurt->pev->velocity + gpGlobals->v_forward * 100 + gpGlobals->v_up * 50;
+			pHurt->TakeDamage(pev, pev, gSkillData.hgruntDmgKick, DMG_CLUB);
+			switch (RANDOM_LONG(0,2))
+			{
+			default:
+			case 0:
+				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "zombie/claw_strike1.wav", 1, ATTN_NORM);
+				break;
+			case 1:
+				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "zombie/claw_strike1.wav", 1, ATTN_NORM);
+				break;
+			case 2:
+				EMIT_SOUND(ENT(pev), CHAN_WEAPON, "zombie/claw_strike1.wav", 1, ATTN_NORM);
+				break;
+			}
+		}
+	}
+	break;
 	default:
 		CBaseMonster::HandleAnimEvent(pEvent);
 		break;
@@ -335,6 +392,12 @@ void CHAssassin::Precache()
 
 	PRECACHE_SOUND("debris/beamstart1.wav");
 
+	PRECACHE_SOUND("zombie/claw_miss2.wav"); // because we use the basemonster SWIPE animation event
+
+	PRECACHE_SOUND("zombie/claw_strike1.wav");
+	PRECACHE_SOUND("zombie/claw_strike2.wav");
+	PRECACHE_SOUND("zombie/claw_strike3.wav");
+
 	m_iShell = PRECACHE_MODEL("models/shell.mdl"); // brass shell
 }
 
@@ -366,6 +429,7 @@ Schedule_t slAssassinFail[] =
 				bits_COND_CAN_RANGE_ATTACK1 |
 				bits_COND_CAN_RANGE_ATTACK2 |
 				bits_COND_CAN_MELEE_ATTACK1 |
+				bits_COND_CAN_MELEE_ATTACK2 |
 				bits_COND_HEAR_SOUND,
 
 			bits_SOUND_DANGER |
@@ -651,6 +715,32 @@ bool CHAssassin::CheckMeleeAttack1(float flDot, float flDist)
 }
 
 //=========================================================
+// CheckMeleeAttack1
+//=========================================================
+bool CHAssassin::CheckMeleeAttack2(float flDot, float flDist)
+{
+	CBaseMonster* pEnemy = nullptr;
+
+	if (m_hEnemy != NULL)
+	{
+		pEnemy = m_hEnemy->MyMonsterPointer();
+	}
+
+	if (!pEnemy)
+	{
+		return false;
+	}
+
+	if (flDist <= 64 && flDot >= 0.7 &&
+		pEnemy->Classify() != CLASS_ALIEN_BIOWEAPON &&
+		pEnemy->Classify() != CLASS_PLAYER_BIOWEAPON)
+	{
+		return true;
+	}
+	return false;
+}
+
+//=========================================================
 // CheckRangeAttack1  - drop a cap in their ass
 //
 //=========================================================
@@ -921,6 +1011,11 @@ Schedule_t* CHAssassin::GetSchedule()
 		{
 			// ALERT( at_console, "melee attack 1\n");
 			return GetScheduleOfType(SCHED_MELEE_ATTACK1);
+		}
+
+		if (HasConditions(bits_COND_CAN_MELEE_ATTACK2))
+		{
+			return GetScheduleOfType(SCHED_MELEE_ATTACK2);
 		}
 
 		// throw grenade

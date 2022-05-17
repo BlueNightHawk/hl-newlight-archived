@@ -76,6 +76,12 @@
     <Filter Include="Source Files\cl_dll\newlight">
       <UniqueIdentifier>{5e114c8a-45ac-49fe-b793-b2bba2f16d4d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\cl_dll\mainmenu">
+      <UniqueIdentifier>{e8fd5012-8388-43a2-9d57-b6bae809fdfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\cl_dll\mainmenu">
+      <UniqueIdentifier>{9cb9d5cc-08fe-48b1-b03d-44ffcf2d62a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\cl_dll\ev_hldm.cpp">
@@ -317,6 +323,9 @@
     </ClCompile>
     <ClCompile Include="..\..\game_shared\nl_utils.cpp">
       <Filter>Source Files\cl_dll\newlight</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cl_dll\mainmenu.cpp">
+      <Filter>Source Files\cl_dll\mainmenu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -631,6 +640,12 @@
     </ClInclude>
     <ClInclude Include="..\..\game_shared\nl_defs.h">
       <Filter>Header Files\game_shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cl_dll\mainmenu.h">
+      <Filter>Header Files\cl_dll\mainmenu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cl_dll\stb_image.h">
+      <Filter>Header Files\cl_dll\mainmenu</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

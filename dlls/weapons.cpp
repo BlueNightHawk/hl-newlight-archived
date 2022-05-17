@@ -1877,8 +1877,8 @@ IMPLEMENT_SAVERESTORE(CMP5, CBasePlayerWeapon);
 
 TYPEDESCRIPTION CGlock::m_SaveData[] =
 {
-	DEFINE_FIELD(CGlock, m_flBodySwitchTime, FIELD_FLOAT),
-	DEFINE_FIELD(CGlock, m_flSilencerTime, FIELD_FLOAT),
+	DEFINE_FIELD(CGlock, m_flBodySwitchTime, FIELD_TIME),
+	DEFINE_FIELD(CGlock, m_flSilencerTime, FIELD_TIME),
 	DEFINE_FIELD(CGlock, m_bSilencerOn, FIELD_BOOLEAN),
 	DEFINE_FIELD(CGlock, m_bSilencerState, FIELD_BOOLEAN),
 };

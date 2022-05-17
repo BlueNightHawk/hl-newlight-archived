@@ -145,6 +145,7 @@
     <ClCompile Include="..\..\cl_dll\inputw32.cpp" />
     <ClCompile Include="..\..\cl_dll\interpolation.cpp" />
     <ClCompile Include="..\..\cl_dll\in_camera.cpp" />
+    <ClCompile Include="..\..\cl_dll\mainmenu.cpp" />
     <ClCompile Include="..\..\cl_dll\menu.cpp" />
     <ClCompile Include="..\..\cl_dll\message.cpp" />
     <ClCompile Include="..\..\cl_dll\particleman\CBaseParticle.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="..\..\cl_dll\interpolation.h" />
     <ClInclude Include="..\..\cl_dll\in_defs.h" />
     <ClInclude Include="..\..\cl_dll\kbutton.h" />
+    <ClInclude Include="..\..\cl_dll\mainmenu.h" />
     <ClInclude Include="..\..\cl_dll\particleman\CBaseParticle.h" />
     <ClInclude Include="..\..\cl_dll\particleman\CFrustum.h" />
     <ClInclude Include="..\..\cl_dll\particleman\IParticleMan_Active.h" />
@@ -222,6 +224,7 @@
     <ClInclude Include="..\..\cl_dll\particleman\particleman_internal.h" />
     <ClInclude Include="..\..\cl_dll\particleman\CMiniMem.h" />
     <ClInclude Include="..\..\cl_dll\particle_presets.h" />
+    <ClInclude Include="..\..\cl_dll\stb_image.h" />
     <ClInclude Include="..\..\cl_dll\StudioModelRenderer.h" />
     <ClInclude Include="..\..\cl_dll\tri.h" />
     <ClInclude Include="..\..\cl_dll\vgui_int.h" />

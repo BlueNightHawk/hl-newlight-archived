@@ -29,6 +29,8 @@
 extern BEAM* pBeam;
 extern BEAM* pBeam2;
 extern TEMPENTITY* pFlare; // Vit_amiN: egon's energy flare
+
+extern void CalcViewmodelAttachments();
 void UpdateBeams()
 {
 	Vector forward, vecSrc, vecEnd, origin, angles, right, up;
@@ -37,13 +39,13 @@ void UpdateBeams()
 	cl_entity_t* pthisplayer = gEngfuncs.GetLocalPlayer();
 	int idx = pthisplayer->index;
 
+	CalcViewmodelAttachments();
+
 	// Get our exact viewangles from engine
 	gEngfuncs.GetViewAngles((float*)angles);
 
-	// Determine our last predicted origin
 	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight(view_ofs);
 	origin = pthisplayer->origin + view_ofs;
-	// HUD_GetLastOrg((float*)&origin);
 
 	AngleVectors(angles, forward, right, up);
 

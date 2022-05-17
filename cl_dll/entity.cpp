@@ -1049,7 +1049,7 @@ void UpdateLaserSpot(int index)
 	vecSrc = gEngfuncs.GetViewModel()->attachment[0];
 	vecEnd = vecSrc + forward * 8192;
 
-	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_GLASS_IGNORE, plindex, &tr);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(vecSrc, vecEnd, PM_NORMAL | PM_GLASS_IGNORE, plindex, &tr);
 
 	if (nlvars.r_dlightfx->value != 0)
 		dl = gEngfuncs.pEfxAPI->CL_AllocElight(laserindex + 1);

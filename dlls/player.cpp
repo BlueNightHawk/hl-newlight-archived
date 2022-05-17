@@ -117,7 +117,7 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_FIELD(CBasePlayer, m_flIdleTime, FIELD_TIME),
 
 		DEFINE_ARRAY(CBasePlayer, m_bNotFirstDraw, FIELD_BOOLEAN, MAX_WEAPONS),
-		DEFINE_FIELD(CBasePlayer, m_flNextAttack, FIELD_FLOAT),
+		DEFINE_FIELD(CBasePlayer, m_flNextAttack, FIELD_TIME),
 
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
@@ -715,6 +715,7 @@ void CBasePlayer::PackDeadPlayerItems()
 
 void CBasePlayer::RemoveAllItems(bool removeSuit)
 {
+	bool hadSilencer = HasWeaponBit(WEAPON_SILENCER);
 	if (m_pActiveItem)
 	{
 		ResetAutoaim();
@@ -727,6 +728,7 @@ void CBasePlayer::RemoveAllItems(bool removeSuit)
 	}
 
 	m_pLastItem = NULL;
+	m_pNextItem = NULL;
 
 	if (m_pTank != NULL)
 	{
@@ -757,8 +759,16 @@ void CBasePlayer::RemoveAllItems(bool removeSuit)
 	//Re-add suit bit if needed.
 	SetHasSuit(!removeSuit);
 
+	for (i = 0; i < MAX_WEAPONS; i++)
+		m_bNotFirstDraw[i] = false;
+
+	if (hadSilencer)
+		SetWeaponBit(WEAPON_SILENCER);
+
 	for (i = 0; i < MAX_AMMO_SLOTS; i++)
 		m_rgAmmo[i] = 0;
+
+	m_flNextAttack = 0;
 
 	UpdateClientData();
 }
@@ -4126,7 +4136,7 @@ Called every frame by the player PreThink
 */
 void CBasePlayer::ItemPreFrame()
 {
-	if (gpGlobals->time < m_flNextAttack)
+	if (UTIL_WeaponTimeBase() < m_flNextAttack)
 	{
 		return;
 	}
@@ -4161,7 +4171,7 @@ void CBasePlayer::ItemPostFrame()
 		return;
 	}
 
-	if (gpGlobals->time > m_flNextAttack)
+	if (UTIL_WeaponTimeBase() > m_flNextAttack)
 	{
 		ImpulseCommands();
 	}
@@ -5164,7 +5174,9 @@ void CStripWeapons::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE 
 	}
 
 	if (pPlayer)
+	{
 		pPlayer->RemoveAllItems(false);
+	}
 }
 
 

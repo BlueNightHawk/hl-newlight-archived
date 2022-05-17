@@ -3108,78 +3108,50 @@ void CStudioModelRenderer::GetShadowVector(myvec3_t& vecOut)
 	VectorNormalize(vecOut);
 }
 
-void CStudioModelRenderer::StudioForceExportBoneTransform()
+void CalcViewmodelAttachments()
 {
-	cl_entity_s* view = gEngfuncs.GetViewModel();
+	int i;
+	mstudioattachment_t* pattachment;
+	Vector forward, right, up, bonepos;
+	float d = 0;
 
+	cl_entity_s* view = gEngfuncs.GetViewModel();
 	if (!view || !view->model)
 		return;
 
-	studiohdr_t* savedhdr = m_pStudioHeader;
+	static float(*plighttransform)[MAXSTUDIOBONES][3][4] = (float(*)[MAXSTUDIOBONES][3][4])IEngineStudio.StudioGetLightTransform();
 
-	float(*psavedtransform)[MAXSTUDIOBONES][3][4] = m_pbonetransform;
+	studiohdr_t* pHdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(view->model);
 
-	// get bone angles and calculate base angles using fake entity
-	m_pCurrentEntity = view;
-	m_pRenderModel = m_pCurrentEntity->model;
-	m_pStudioHeader = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pRenderModel);
-	if (!m_pStudioHeader)
-		return;
-
-	IEngineStudio.StudioSetHeader(m_pStudioHeader);
-	IEngineStudio.SetRenderModel(m_pRenderModel);
-
-	StudioSetUpTransform(false);
-	StudioSetupBones();
-	StudioSaveBones();
-
-	StudioCalcAttachments();
-
-	for (int i = 0; i < m_pStudioHeader->numbones; i++)
+	if (pHdr->numattachments > 4)
 	{
-		nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.actualboneangles[i], g_viewinfo.actualbonepos[i]);
-		NormalizeAngles((float*)&g_viewinfo.actualboneangles[i]);
+		gEngfuncs.Con_DPrintf("Too many attachments on %s\n", view->model->name);
 	}
 
-	if (nlvars.r_camanims->value != 0)
+	// calculate attachment points
+	pattachment = (mstudioattachment_t*)((byte*)pHdr + pHdr->attachmentindex);
+	for (i = 0; i < pHdr->numattachments; i++)
 	{
-		g_viewinfo.phdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(m_pCurrentEntity->model);
+		VectorTransform(pattachment[i].org, (*plighttransform)[pattachment[i].bone], view->attachment[i]);
 
-		cl_entity_s temp = *gEngfuncs.GetViewModel();
-		temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
-		temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-		m_pCurrentEntity = &temp;
-		temp.index = -555;
+		bonepos[0] = (*plighttransform)[pattachment[i].bone][0][3];
+		bonepos[1] = (*plighttransform)[pattachment[i].bone][1][3];
+		bonepos[2] = (*plighttransform)[pattachment[i].bone][2][3];
 
-		StudioSetupBones();
-		StudioSaveBones();
-		for (int i = 0; i < m_pStudioHeader->numbones; i++)
-		{
-			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.boneangles[i], g_viewinfo.bonepos[i]);
-			NormalizeAngles((float*)&g_viewinfo.boneangles[i]);
-		}
-		temp = *gEngfuncs.GetViewModel();
-		temp.angles = temp.curstate.angles = Vector(0, temp.angles[1], 0);
-		temp.origin = temp.curstate.origin = Vector(0, 0, 0);
-		temp.curstate.sequence = 0;
-		temp.index = -555;
-		temp.curstate.frame = 0;
-		temp.curstate.animtime = 0;
-		temp.latched.prevframe = 0;
-		m_pCurrentEntity = &temp;
+		VectorSubtract(view->attachment[i], bonepos, forward); // get forward
+		VectorNormalize(forward);
+		right[0] = forward[2];
+		right[1] = -forward[0];
+		right[2] = forward[1];
 
-		StudioSetupBones();
-		StudioSaveBones();
-		for (int i = 0; i < m_pStudioHeader->numbones; i++)
-		{
-			nlutils.MatrixAngles((*m_pbonetransform)[i], g_viewinfo.prevboneangles[i], g_viewinfo.prevbonepos[i]);
-			NormalizeAngles((float*)&g_viewinfo.prevboneangles[i]);
-		}
-	}
-	if (IEngineStudio.GetCurrentEntity())
-	{
-		m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
-		m_pbonetransform = psavedtransform;
-		//		StudioDrawModel(STUDIO_ENTITY);
+		d = DotProduct(forward, right);
+
+		VectorMA(right, -d, forward, right); // get right
+		VectorNormalize(right);
+		CrossProduct(right, forward, up); // get up
+
+		g_viewinfo.attachment_forward[i] = forward;
+		g_viewinfo.attachment_up[i] = up;
+		g_viewinfo.attachment_right[i] = right;
 	}
 }

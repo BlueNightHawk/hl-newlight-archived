@@ -94,6 +94,7 @@ typedef struct nlfs_t
 	void StoreChapterNames();
 
 	void GetFullPath(char* path, char* mod = nullptr);
+	int ParseChapters();
 } nlfs_s;
 
 #endif

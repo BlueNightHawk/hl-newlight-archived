@@ -268,6 +268,13 @@ void Subtitles_Draw()
 
 	style->WindowRounding = 5.0f;
 	style->WindowTitleAlign = ImVec2(0.5, 0.5);
+	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.86f);
+	style->Colors[ImGuiCol_TitleBg] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+	style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+	style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+	style->Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+	style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
 
 	for (auto& pair : subtitlesToDraw)
 	{

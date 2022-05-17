@@ -200,8 +200,11 @@ void animutils_s::StudioEvent(const struct mstudioevent_s* event, const struct c
 
 	if (stricmp(entity->model->name, "models/v_9mmhandgun.mdl") < 1 && entity->curstate.body == GetBodygroup((cl_entity_s*)entity, 2, 1))
 	{
-		if (event->event < 6000 && event->event != 5002)
-			return;
+		if (event->event < 6000)
+		{
+			if (event->event != 5002 && event->event != 5004)
+				return;
+		}
 	}
 
 	switch (event->event)
