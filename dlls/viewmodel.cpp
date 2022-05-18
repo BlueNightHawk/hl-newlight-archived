@@ -37,6 +37,7 @@ void CViewModel::Spawn()
 void CViewModel::Precache()
 {
 	PRECACHE_MODEL("models/v_hands.mdl");
+	PRECACHE_MODEL("models/v_fall.mdl");
 }
 
 void CViewModel::UpdateThink()

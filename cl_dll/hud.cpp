@@ -38,6 +38,9 @@
 
 #include "cl_filesystem.h"
 
+#include "PlatformHeaders.h"
+#include <WinUser.h>
+
 extern IParticleMan* g_pParticleMan;
 
 nlvars_t nlvars;
@@ -462,6 +465,12 @@ void ChapterSelect()
 	g_iChapMenuOpen = !g_iChapMenuOpen;
 }
 
+void CloseChapterSelect()
+{
+	g_iChapMenuOpen = false;
+}
+
+
 // This is called every time the DLL is loaded
 void CHud::Init()
 {
@@ -579,6 +588,7 @@ void CHud::Init()
 	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
 	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 	gEngfuncs.pfnAddCommand("togglechapterselect", ChapterSelect);
+	gEngfuncs.pfnAddCommand("closechapterselect", CloseChapterSelect);
 	MsgFunc_ResetHUD(0, 0, NULL);
 }
 

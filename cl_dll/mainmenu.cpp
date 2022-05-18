@@ -111,7 +111,10 @@ int nlfs_s::ParseChapters()
 		}
 		else if (reading)
 		{
-			strcpy(g_textures[i].chaptermap, token);
+			if (strlen(g_textures[i].chaptermap) == 0)
+				strcpy(g_textures[i].chaptermap, token);
+
+			reading = false;
 		}
 	}
 

@@ -157,6 +157,14 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 	BEGIN_READ(pbuf, iSize);
 
 	const int iAnim = READ_SHORT();
+
+	if (iAnim == -10)
+	{
+		g_viewinfo.m_flAnimTime = g_viewinfo.m_flCurTime = gEngfuncs.GetClientTime();
+		g_viewinfo.m_flCurFrame = 0;
+		return true;
+	}
+
 	int iBody = READ_SHORT();
 	const int iWeight = READ_SHORT();
 	const char* model = READ_STRING();

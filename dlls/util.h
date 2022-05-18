@@ -592,3 +592,6 @@ struct CallOnDestroy
 		Function();
 	}
 };
+
+
+char* COM_Parse(char* data, char* com_token);

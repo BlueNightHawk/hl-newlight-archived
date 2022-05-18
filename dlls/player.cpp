@@ -119,6 +119,13 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 		DEFINE_ARRAY(CBasePlayer, m_bNotFirstDraw, FIELD_BOOLEAN, MAX_WEAPONS),
 		DEFINE_FIELD(CBasePlayer, m_flNextAttack, FIELD_TIME),
 
+
+		DEFINE_FIELD(CBasePlayer, m_bGiveWeapons, FIELD_BOOLEAN),
+		DEFINE_FIELD(CBasePlayer, m_iDoXenIntro, FIELD_INTEGER),
+
+		DEFINE_FIELD(CBasePlayer, m_flXenIntroTime, FIELD_TIME),
+		
+		
 		//DEFINE_FIELD( CBasePlayer, m_fDeadTime, FIELD_FLOAT ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_fGameHUDInitialized, FIELD_INTEGER ), // only used in multiplayer games
 		//DEFINE_FIELD( CBasePlayer, m_flStopExtraSoundTime, FIELD_TIME ),
@@ -150,7 +157,73 @@ TYPEDESCRIPTION CBasePlayer::m_playerSaveData[] =
 
 LINK_ENTITY_TO_CLASS(player, CBasePlayer);
 
+struct chapterwpns_s
+{
+	char mapname[64];
+	char weapons[64][64];
+} chapterwpns[64];
 
+void ParseSpawnWeapons()
+{
+	char *pfile, *pfile2;
+	pfile = pfile2 = (char*)LOAD_FILE_FOR_ME("resource/chapters.txt", NULL);
+	char token[500];
+	char tempmap[500];
+	int reading = 0;
+	int i = -1;
+	int j = -1;
+
+	if (pfile == nullptr)
+	{
+		return;
+	}
+
+	while (pfile = COM_Parse(pfile, token))
+	{
+		if (strlen(token) <= 0)
+			break;
+
+		if (!stricmp(token, "title"))
+		{
+			COM_Parse(pfile, token);
+			COM_Parse(pfile, token);
+		}
+		else if (!stricmp(token, "{"))
+		{
+			if (reading == 0)
+			{
+				reading = 1;
+
+				COM_Parse(pfile, token);
+				strcpy(tempmap, token);
+			}
+		}
+		else if (!stricmp(token, "}"))
+		{
+			if (reading == 2)
+			{
+				strcpy(chapterwpns[i].mapname, tempmap);		
+			}
+			strcpy(tempmap, "\0");
+			reading = 0;
+			j = 0;
+		}
+		else if (!stricmp(token, "weapons"))
+		{
+			reading = 2;
+			i++;
+		}
+		else if (reading == 2)
+		{
+			strcpy(chapterwpns[i].weapons[j], token);
+			ALERT(at_console, "%s %i %i %s \n", token, i, j, tempmap);
+			j++;
+		}
+	}
+
+	FREE_FILE(pfile2);
+	pfile = pfile2 = nullptr;
+}
 
 void CBasePlayer::Pain()
 {
@@ -3211,6 +3284,8 @@ void CBasePlayer::Spawn()
 	m_flIdleTime = gpGlobals->time + 20.0; // first animation after 20 seconds
 	m_fSequenceFinished = true;			   // animation is over, first just hold the weapon
 
+	m_bGiveWeapons = true;
+
 	memset(&m_bNotFirstDraw, (int)false, MAX_WEAPONS);
 
 	m_iBtnAttackBits = 0;
@@ -3607,7 +3682,7 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 	pent->v.spawnflags |= SF_NORESPAWN;
 
 	DispatchSpawn(pent);
-	if (bSilencedGlock)
+	if (bSilencedGlock && !FNullEnt(pent))
 	{
 		CGlock* pEnt = (CGlock*)CBaseEntity::Instance(pent);
 		if (pEnt)
@@ -3615,6 +3690,7 @@ void CBasePlayer::GiveNamedItem(const char* pszName)
 			pEnt->m_bSilencerOn = true;
 		}
 	}
+
 	DispatchTouch(pent, ENT(pev));
 }
 
@@ -4546,6 +4622,91 @@ void CBasePlayer::UpdateClientData()
 	{
 		UpdateStatusBar();
 		m_flNextSBarUpdateTime = gpGlobals->time + 0.2;
+	}
+
+	if (m_iDoXenIntro != 0 && m_flXenIntroTime < gpGlobals->time)
+	{
+		if (m_iDoXenIntro == 2)
+		{
+			m_iDoXenIntro = 0;
+		}
+		else
+		{
+
+			if (m_pActiveItem)
+			{
+				m_pActiveItem->Holster();
+				m_pLastItem = m_pActiveItem;
+				m_pActiveItem = nullptr;
+			}
+			m_iDoXenIntro = 2;
+			MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, NULL, pev);
+			WRITE_SHORT(0); // sequence number
+			WRITE_SHORT(0); // weaponmodel bodygroup.
+			WRITE_SHORT(0);
+			WRITE_STRING("models/v_fall.mdl");
+			MESSAGE_END();
+			pev->viewmodel = MAKE_STRING("models/v_fall.mdl");
+		}
+	}
+
+	if (m_bGiveWeapons)
+	{
+		MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, g_vecZero, pev);
+		WRITE_SHORT(-10);
+		MESSAGE_END();
+
+		// HACK to open the elevator door in office complex
+		if (!stricmp(STRING(gpGlobals->mapname), "c1a2"))
+		{
+			edict_t* pentTarget = NULL;
+
+			while ((pentTarget = FIND_ENTITY_BY_TARGETNAME(pentTarget, "startele1")) != nullptr)
+			{
+				if (FNullEnt(pentTarget))
+					break;
+
+				CBaseEntity* pTarget = CBaseEntity::Instance(pentTarget);
+
+				if (pTarget)
+					pTarget->Use(m_hActivator, this, USE_TOGGLE, 0);
+			}
+		}
+		else if (!stricmp(STRING(gpGlobals->mapname), "c4a1"))
+		{
+			m_iDoXenIntro = 1;
+			m_flXenIntroTime = gpGlobals->time + 0.5f;
+			if (m_pActiveItem)
+			{
+				m_pActiveItem->Holster();
+				m_pLastItem = m_pActiveItem;
+				m_pActiveItem = nullptr;
+			}
+		}
+		gEvilImpulse101 = true;
+		for (int i = 0; i < 64; i++)
+		{
+			if (strlen(chapterwpns[i].mapname) == 0)
+				break;
+
+			if (!stricmp(chapterwpns[i].mapname, STRING(gpGlobals->mapname)))
+			{
+				for (int j = 0; j < 64; j++)
+				{
+					if (strlen(chapterwpns[i].weapons[j]) == 0)
+						break;
+					if (!stricmp("item_suit", chapterwpns[i].weapons[j]))				
+					{
+						SetHasSuit(true);
+						continue;
+					}
+					GiveNamedItem(chapterwpns[i].weapons[j]);
+				}
+				break;
+			}
+		}
+		gEvilImpulse101 = false;
+		m_bGiveWeapons = false;
 	}
 
 	//Handled anything that needs resetting

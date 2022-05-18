@@ -373,6 +373,11 @@ public:
 	float m_flRecoilTime;
 
 	int m_iBtnAttackBits;
+
+	bool m_bGiveWeapons;
+
+	int m_iDoXenIntro;
+	float m_flXenIntroTime;
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

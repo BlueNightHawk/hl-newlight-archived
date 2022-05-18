@@ -46,6 +46,7 @@ DLL_GLOBAL unsigned int g_ulFrameCount;
 extern void CopyToBodyQue(entvars_t* pev);
 
 void LinkUserMessages();
+void ParseSpawnWeapons();
 
 /*
  * used by kill command and disconnect command
@@ -721,6 +722,8 @@ void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 
 	// Link user messages here to make sure first client can get them...
 	LinkUserMessages();
+
+	ParseSpawnWeapons();
 }
 
 
