@@ -2454,7 +2454,7 @@ void CStudioModelRenderer::StudioRenderWeaponShadow(int num)
 	if (num > 0)
 		return;
 
-	if (m_pCurrentEntity->baseline.weaponmodel)
+	if (m_pCurrentEntity->baseline.weaponmodel != 0)
 	{
 		cl_entity_t saveent = *m_pCurrentEntity;
 

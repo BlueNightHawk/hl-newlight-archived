@@ -25,7 +25,9 @@ SDL_Window* window = NULL;
 int HL_ImGUI_ProcessEvent(void* data, SDL_Event* event);
 void HL_ImGUI_Draw();
 void MainMenuGUI_DrawMainWindow();
-void MainMenuGUI_Init();
+void MainMenuGUI_Init(int recache);
+
+
 	// To draw imgui on top of Half-Life, we take a detour from certain engine's function into HL_ImGUI_Draw function
 void HL_ImGUI_Init()
 {
@@ -134,7 +136,7 @@ void HL_ImGUI_Init()
 	io.Fonts->AddFontFromFileTTF(FS_ResolveModPath("resource\\DroidSans.ttf").c_str(), 16, &config, icon_ranges_cyrillic);
 
 	Subtitles_Init();
-	MainMenuGUI_Init();
+	MainMenuGUI_Init(1);
 }
 
 void HL_ImGUI_Deinit()
@@ -149,16 +151,53 @@ void HL_ImGUI_Deinit()
 
 bool g_iChapMenuOpen = false;
 
+void ResetStyle()
+{
+	ImGuiStyle* style = &ImGui::GetStyle();
+	style->AntiAliasedShapes = false;
+	style->WindowRounding = 0.0f;
+	style->ScrollbarRounding = 0.0f;
+
+	style->Colors[ImGuiCol_PopupBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.86f);
+	style->Colors[ImGuiCol_TitleBg] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+	style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+	style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+	style->Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.60f);
+	style->Colors[ImGuiCol_ScrollbarGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.20f);
+	style->Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.39f);
+	style->Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
+	style->Colors[ImGuiCol_Button] = ImVec4(0.63f, 0.63f, 0.63f, 0.60f);
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.63f, 0.63f, 0.63f, 0.71f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.51f, 0.51f, 0.51f, 0.60f);
+	style->Colors[ImGuiCol_Header] = ImVec4(0.32f, 0.32f, 0.32f, 1.00f);
+	style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.53f, 0.53f, 0.53f, 0.51f);
+	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.53f, 0.53f, 0.53f, 0.63f);
+	style->Colors[ImGuiCol_CloseButton] = ImVec4(0.50f, 0.50f, 0.90f, 0.00f);
+	style->Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.70f, 0.70f, 0.90f, 0.00f);
+	style->Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 0.00f);
+	style->Colors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 1.00f, 1.00f, 0.35f);
+
+	style->Alpha = 1;
+
+	style->WindowPadding = ImVec2(8.0f, 4.0f);
+}
+
 void HL_ImGUI_Draw()
 {
 	extern ref_params_s g_pparams;
 	ImGui_ImplSdl_NewFrame(window);
 
-	if (g_pparams.paused)
+	static double lasttime = g_pparams.time;
+	bool paused = (g_pparams.time - lasttime) == 0;
+
+	if (paused)
 	{
 		SDL_ShowCursor(1);
 		if (g_iChapMenuOpen)
+		{
 			MainMenuGUI_DrawMainWindow();
+		}
+
 	}
 	else
 	{
@@ -170,6 +209,10 @@ void HL_ImGUI_Draw()
 	ImGui::Render();
 
 	SDL_GL_SwapWindow(window);
+
+	ResetStyle();
+
+	lasttime = g_pparams.time;
 }
 
 int HL_ImGUI_ProcessEvent(void* data, SDL_Event* event)

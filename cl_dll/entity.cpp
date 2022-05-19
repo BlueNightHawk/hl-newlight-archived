@@ -1076,7 +1076,7 @@ void UpdateLaserSpot(int index)
 		gHUD.m_pLaserSpot->m_vOrigin = tr.endpos;
 		gHUD.m_pLaserSpot->SetLightFlag(LIGHT_NONE);
 		gHUD.m_pLaserSpot->SetRenderFlag(RENDER_DEPTHRANGE | RENDER_FACEPLAYER_ROTATEZ);
-		gHUD.m_pLaserSpot->m_vAngles.z = g_pparams.viewangles[2];
+		gHUD.m_pLaserSpot->m_vAngles.z = g_viewinfo.actualboneangles[47][2];
 		gHUD.m_pLaserSpot->m_iRendermode = kRenderTransAdd;
 		gHUD.m_pLaserSpot->m_flDieTime = gEngfuncs.GetClientTime() + 0.1f;
 	}

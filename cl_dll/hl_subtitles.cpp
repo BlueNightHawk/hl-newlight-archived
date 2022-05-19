@@ -168,6 +168,8 @@ void Subtitles_Draw()
 {
 	ImGuiStyle* style = &ImGui::GetStyle();
 
+	static float alpha = 0;
+
 	static float l_FrameWidth = 0;
 	static float l_FrameHeight = 0;
 
@@ -264,8 +266,6 @@ void Subtitles_Draw()
 	ImGui::SetNextWindowPos(ImVec2(ScreenWidth / 2.0f - l_FrameWidth / 2.0f, ScreenHeight / 1.3f), 0);
 	ImGui::SetNextWindowSize(ImVec2(l_FrameWidth, l_FrameHeight));
 
-	ImGui::Begin("Subtitles", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
 	style->WindowRounding = 5.0f;
 	style->WindowTitleAlign = ImVec2(0.5, 0.5);
 	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.86f);
@@ -275,6 +275,8 @@ void Subtitles_Draw()
 	style->Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
 	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
 	style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);
+
+	ImGui::Begin("Subtitles", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	for (auto& pair : subtitlesToDraw)
 	{
@@ -323,11 +325,13 @@ void Subtitles_Draw()
 	auto& subtitle = pair->second;
 	if ((subtitle.duration - 0.6) <= time || numsubstodraw == 0 || numsubstodraw2 == 0)
 	{
-		style->Alpha = nlutils.lerp(style->Alpha, 0, g_pparams.frametime * 6.5f);
+		alpha = nlutils.lerp(alpha, 0, g_pparams.frametime * 6.5f);
 	}
 	else
-		style->Alpha = nlutils.lerp(style->Alpha, 1, g_pparams.frametime * 6.5f);
+		alpha = nlutils.lerp(alpha, 1, g_pparams.frametime * 6.5f);
 	
+	style->Alpha = alpha;
+
 	ImGui::SetWindowFontScale(fontScale);
 	ImGui::End();
 }

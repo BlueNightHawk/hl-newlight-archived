@@ -124,11 +124,19 @@ int nlfs_s::ParseChapters()
 	return i + 1;
 }
 
-void MainMenuGUI_Init()
+void MainMenuGUI_Init(int recache = 1)
 {
-	int num = g_iNumChapters = nlfs.ParseChapters();
+	int num = 0;
+	if (recache != 0)
+	{
+		num = g_iNumChapters = nlfs.ParseChapters();
 
-	g_iNumPages = ceil(num / 3);
+		g_iNumPages = ceil(num / 3);
+	}
+	else
+	{
+		num = g_iNumChapters;
+	}
 
 	if (num < 0)
 		return;
@@ -152,27 +160,24 @@ void GetChapterNums(int &start, int &end)
 		end = g_iNumChapters;
 }
 
+void UpdateProgression()
+{
+	for (int i = 0; i < g_iNumChapters; i++)
+	{
+		if (!strncmp(gEngfuncs.pfnGetLevelName() + 5, g_textures[i].chaptermap, strlen(gEngfuncs.pfnGetLevelName() + 5) - 4))
+		{
+			gEngfuncs.Cvar_SetValue("chaptersunlocked", i);
+			break;
+		}
+	}
+}
+
 // i skipped the documentation :)
 
-void MainMenuGUI_DrawMainWindow()
+ImGuiStyle *UpdateStyle()
 {
-	if (g_iNumChapters < 1)
-		return;
-
 	ImGuiStyle* style = &ImGui::GetStyle();
 
-	const int GAME_MODE_WINDOW_WIDTH = 255 * 3.4;
-	const int GAME_MODE_WINDOW_HEIGHT = 150 + 20;
-
-	int width = 0;
-
-	int RENDERED_WIDTH;
-	SDL_GetWindowSize(window, &RENDERED_WIDTH, NULL);
-	ImGui::SetNextWindowPos(ImVec2(RENDERED_WIDTH - GAME_MODE_WINDOW_WIDTH, 0), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(GAME_MODE_WINDOW_WIDTH, GAME_MODE_WINDOW_HEIGHT), ImGuiSetCond_FirstUseEver);
-
-	ImGui::Begin("Chapter Select", &g_iChapMenuOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-	
 	style->WindowRounding = 0.0f;
 	style->WindowTitleAlign = ImVec2(0.001f, 1.0f);
 	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 0.95f);
@@ -185,6 +190,35 @@ void MainMenuGUI_DrawMainWindow()
 	style->Colors[ImGuiCol_Button] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
 	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
 	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+	style->Alpha = 1;
+	return style;
+}
+
+void MainMenuGUI_DrawMainWindow()
+{
+	if (g_iNumChapters < 1)
+		return;
+
+	ImGuiStyle* style = UpdateStyle();
+	ImVec4 tint = ImVec4(1, 1, 1, 1);
+
+	const int GAME_MODE_WINDOW_WIDTH = 255 * 3.4;
+	const int GAME_MODE_WINDOW_HEIGHT = 150 + 20;
+
+	int width = 0;
+	int startchp = 0;
+	int endchp = 3;
+
+	GetChapterNums(startchp, endchp);
+
+	UpdateProgression();
+
+	int RENDERED_WIDTH;
+	SDL_GetWindowSize(window, &RENDERED_WIDTH, NULL);
+	ImGui::SetNextWindowPos(ImVec2(RENDERED_WIDTH - GAME_MODE_WINDOW_WIDTH, 0), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(GAME_MODE_WINDOW_WIDTH, GAME_MODE_WINDOW_HEIGHT), ImGuiSetCond_FirstUseEver);
+
+	ImGui::Begin("Chapter Select", &g_iChapMenuOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -193,31 +227,44 @@ void MainMenuGUI_DrawMainWindow()
 	ImGui::Spacing();
 	ImGui::Columns(3, 0, false);
 
-	int startchp = 0;
-	int endchp = 3;
-
-	GetChapterNums(startchp, endchp);
-
 	for (int i = startchp; i < endchp; i++)
 	{
-		ImGui::BeginChild(i, ImVec2(GAME_MODE_WINDOW_WIDTH, GAME_MODE_WINDOW_HEIGHT), false);
+		ImGui::BeginChild(i, ImVec2(GAME_MODE_WINDOW_WIDTH, GAME_MODE_WINDOW_HEIGHT), false, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
 		ImGui::Text(g_textures[i].chaptername);
 		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
-		if (ImGui::ImageButton((void*)(intptr_t)g_textures[i].texture, ImVec2(g_textures[i].width, g_textures[i].height), ImVec2(0, 0), ImVec2(1, 1), -1))
+
+		if (i > (int)nlvars.chaptersunlocked->value)
 		{
-			char szCmd[64];
-			sprintf(szCmd, "map %s", g_textures[i].chaptermap);
-			gEngfuncs.pfnClientCmd(szCmd);
-			g_iChapMenuOpen = false;
+			tint = ImVec4(1, 1, 1, 0.5);
+			style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+			style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+		}
+		else
+		{
+			tint = ImVec4(1, 1, 1, 1);
+			style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+			style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+		}
+		if (ImGui::ImageButton((void*)(intptr_t)g_textures[i].texture, ImVec2(g_textures[i].width, g_textures[i].height), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), tint))
+		{
+			if (i <= (int)nlvars.chaptersunlocked->value)
+			{
+				char szCmd[64];
+				sprintf(szCmd, "map %s", g_textures[i].chaptermap);
+				gEngfuncs.pfnClientCmd(szCmd);
+				g_iChapMenuOpen = false;
+			}
 		}
 		ImGui::EndChild();
 		ImGui::NextColumn();
 	}
 	ImGui::Columns(1, 0, false);
 
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+
 	ImGui::Spacing();
-	
 
 	if (g_iChapSelPage > 0)
 	{
@@ -256,6 +303,7 @@ void MainMenuGUI_DrawMainWindow()
 		g_iChapMenuOpen = false;
 	}
 
+	ImGui::Spacing();
 	ImGui::Spacing();
 
 	ImGui::End();

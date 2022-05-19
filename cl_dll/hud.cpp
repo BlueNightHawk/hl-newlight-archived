@@ -456,6 +456,8 @@ void nlvars_s::InitCvars()
 
 	cl_clientflashlight = CVAR_CREATE("nl_clientflashlight", "1", FCVAR_ARCHIVE);
 	cl_fakeprojflashlight = CVAR_CREATE("nl_fakeprojflashlight", "1", FCVAR_ARCHIVE);
+
+	chaptersunlocked = CVAR_CREATE("chaptersunlocked", "3", FCVAR_ARCHIVE);
 }
 
 extern bool g_iChapMenuOpen;
@@ -628,6 +630,8 @@ int CHud::GetSpriteIndex(const char* SpriteName)
 
 	return -1; // invalid sprite
 }
+
+void UpdateProgression();
 
 void CHud::VidInit()
 {

@@ -78,6 +78,8 @@ typedef struct nlvars_t
 	struct cvar_s* cl_clientflashlight;
 	struct cvar_s* cl_fakeprojflashlight;
 
+	struct cvar_s* chaptersunlocked;
+
 	void InitCvars();
 } nlvars_s;
 

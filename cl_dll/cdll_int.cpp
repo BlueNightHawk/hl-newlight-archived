@@ -147,8 +147,8 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 	return 1;
 }
 
-
-/*
+void MainMenuGUI_Init(int recache);
+	/*
 ==========================
 	HUD_VidInit
 
@@ -164,6 +164,8 @@ int DLLEXPORT HUD_VidInit()
 	gHUD.VidInit();
 
 	VGui_Startup();
+
+	MainMenuGUI_Init(0);
 
 	TRI_pModel = NULL;
 
