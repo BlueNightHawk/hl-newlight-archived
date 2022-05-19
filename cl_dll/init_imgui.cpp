@@ -177,8 +177,6 @@ void ResetStyle()
 	style->Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 0.00f);
 	style->Colors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 1.00f, 1.00f, 0.35f);
 
-	style->Alpha = 1;
-
 	style->WindowPadding = ImVec2(8.0f, 4.0f);
 }
 
@@ -188,7 +186,7 @@ void HL_ImGUI_Draw()
 	ImGui_ImplSdl_NewFrame(window);
 
 	static double lasttime = g_pparams.time;
-	bool paused = (g_pparams.time - lasttime) == 0;
+	bool paused = (g_pparams.time == lasttime);
 
 	if (paused)
 	{
@@ -201,6 +199,8 @@ void HL_ImGUI_Draw()
 	}
 	else
 	{
+		if (g_iChapMenuOpen)
+			g_iChapMenuOpen = false;
 		SDL_ShowCursor(0);
 		Subtitles_Draw();
 	}

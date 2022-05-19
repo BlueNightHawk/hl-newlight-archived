@@ -280,7 +280,6 @@ void Subtitles_Draw()
 
 	for (auto& pair : subtitlesToDraw)
 	{
-
 		bool isfar = false;
 		auto& subtitle = pair.second;
 		if (time < subtitle.delay)

@@ -162,6 +162,7 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 	{
 		g_viewinfo.m_flAnimTime = g_viewinfo.m_flCurTime = gEngfuncs.GetClientTime();
 		g_viewinfo.m_flCurFrame = 0;
+		g_viewinfo.m_iPrevSeq = -1;
 		return true;
 	}
 

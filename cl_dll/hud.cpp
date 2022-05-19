@@ -631,8 +631,7 @@ int CHud::GetSpriteIndex(const char* SpriteName)
 	return -1; // invalid sprite
 }
 
-void UpdateProgression();
-
+extern bool g_bUpdateProgression;
 void CHud::VidInit()
 {
 	cl_entity_s* view = gEngfuncs.GetViewModel();
@@ -746,6 +745,8 @@ void CHud::VidInit()
 
 	discord_integration::VidInit();
 	Subtitles_SubtClear("ektum", sizeof("ektom"), (void*)"ektum");
+
+	g_bUpdateProgression = true;
 
 	Precache();
 }

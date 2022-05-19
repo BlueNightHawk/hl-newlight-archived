@@ -956,7 +956,7 @@ void UpdateFlashlight(ref_params_t* pparams)
 
 		if (nlvars.cl_fakeprojflashlight->value != 0)
 		{
-			dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 200);
+			dist = V_min((tr.endpos - vecSrc).Length() * 0.5, 300);
 			invdist = 82 - V_min((tr.endpos - vecSrc).Length() * 0.15, 82);
 			color = 255 - V_min((tr.endpos - vecSrc).Length() * 0.15, 255);
 
@@ -969,7 +969,7 @@ void UpdateFlashlight(ref_params_t* pparams)
 		{
 			dl->origin = tr.endpos;
 			dl->color = {(byte)color, (byte)color, (byte)color};
-			dl->radius = clamp(dist * 1.05, 32, 100);
+			dl->radius = clamp(dist * 1.05, 64, 150);
 			dl->decay = 512;
 			dl->die = pparams->time + pparams->frametime * 20;
 		}

@@ -1155,6 +1155,7 @@ public:
 	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
 	void EXPORT SentryTouch(CBaseEntity* pOther);
 	void EXPORT SentryDeath();
+	int ObjectCaps() override { return CBaseTurret::ObjectCaps(); }
 };
 
 LINK_ENTITY_TO_CLASS(monster_sentry, CSentry);

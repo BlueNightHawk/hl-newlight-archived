@@ -5,6 +5,8 @@
 
 #include "hud.h"
 
+bool g_bUpdateProgression = false;
+
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height)
 {
@@ -170,6 +172,7 @@ void UpdateProgression()
 			break;
 		}
 	}
+	g_bUpdateProgression = false;
 }
 
 // i skipped the documentation :)
@@ -199,6 +202,9 @@ void MainMenuGUI_DrawMainWindow()
 	if (g_iNumChapters < 1)
 		return;
 
+	const char* skill[3] = {"Easy", "Medium", "Hard"};
+	static int selectedskill = 0;
+
 	ImGuiStyle* style = UpdateStyle();
 	ImVec4 tint = ImVec4(1, 1, 1, 1);
 
@@ -211,7 +217,8 @@ void MainMenuGUI_DrawMainWindow()
 
 	GetChapterNums(startchp, endchp);
 
-	UpdateProgression();
+	if (g_bUpdateProgression)
+		UpdateProgression();
 
 	int RENDERED_WIDTH;
 	SDL_GetWindowSize(window, &RENDERED_WIDTH, NULL);
@@ -296,6 +303,17 @@ void MainMenuGUI_DrawMainWindow()
 
 	ImGui::Spacing();
 	ImGui::Spacing();
+
+	ImGui::Text("Difficulty:");
+	ImGui::SameLine();
+	ImGui::PushItemWidth(ImGui::CalcTextSize("Medium").x + 35);
+	if (ImGui::Combo("", &selectedskill, skill, 3, -1))
+	{
+//		gEngfuncs.Con_Printf("%s \n", skill[selectedskill]);
+		gEngfuncs.Cvar_SetValue("skill", selectedskill + 1);
+	}
+	ImGui::PopItemWidth();
+	ImGui::SameLine();
 
 	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Cancel          ").x) * 0.965f);
 	if (ImGui::Button("Cancel          "))
