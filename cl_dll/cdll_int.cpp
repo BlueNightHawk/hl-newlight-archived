@@ -165,8 +165,6 @@ int DLLEXPORT HUD_VidInit()
 
 	VGui_Startup();
 
-	MainMenuGUI_Init(0);
-
 	TRI_pModel = NULL;
 
 	return 1;

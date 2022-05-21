@@ -4640,16 +4640,16 @@ void CBasePlayer::UpdateClientData()
 
 	if (m_bGiveWeapons)
 	{
-		MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, g_vecZero, pev);
-		WRITE_SHORT(-10);
-		MESSAGE_END();
-
 		// HACK to open the elevator door in office complex
 		if (!stricmp(STRING(gpGlobals->mapname), "c1a2"))
 		{
+			MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, g_vecZero, pev);
+			WRITE_SHORT(-11);
+			MESSAGE_END();
+
 			edict_t* pentTarget = NULL;
 
-			while ((pentTarget = FIND_ENTITY_BY_TARGETNAME(pentTarget, "startele1")) != nullptr)
+			while ((pentTarget = FIND_ENTITY_BY_TARGETNAME(pentTarget, "elestartmm")) != nullptr)
 			{
 				if (FNullEnt(pentTarget))
 					break;
@@ -4662,6 +4662,9 @@ void CBasePlayer::UpdateClientData()
 		}
 		else if (!stricmp(STRING(gpGlobals->mapname), "c4a1"))
 		{
+			MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, g_vecZero, pev);
+			WRITE_SHORT(-10);
+			MESSAGE_END();
 			m_iDoXenIntro = 1;
 			m_flXenIntroTime = gpGlobals->time + 0.5f;
 			if (m_pActiveItem)
@@ -4671,6 +4674,13 @@ void CBasePlayer::UpdateClientData()
 				m_pActiveItem = nullptr;
 			}
 		}
+		else
+		{
+			MESSAGE_BEGIN(MSG_ONE, gmsgWAnim, g_vecZero, pev);
+			WRITE_SHORT(-10);
+			MESSAGE_END();
+		}
+
 		gEvilImpulse101 = true;
 		for (int i = 0; i < 64; i++)
 		{

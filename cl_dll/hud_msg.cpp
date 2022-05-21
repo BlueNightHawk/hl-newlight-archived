@@ -158,8 +158,12 @@ bool CHud::MsgFunc_WAnim(const char* pszName, int iSize, void* pbuf)
 
 	const int iAnim = READ_SHORT();
 
-	if (iAnim == -10)
+	if (iAnim <= -10)
 	{
+		if (iAnim == -11)
+		{
+			gEngfuncs.SetViewAngles(Vector(0, 90, 0));
+		}
 		g_viewinfo.m_flAnimTime = g_viewinfo.m_flCurTime = gEngfuncs.GetClientTime();
 		g_viewinfo.m_flCurFrame = 0;
 		g_viewinfo.m_iPrevSeq = -1;

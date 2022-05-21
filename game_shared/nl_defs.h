@@ -29,6 +29,8 @@ typedef struct viewinfo_s
 	double m_flCurFrame;
 	double m_flCurTime;
 
+	double m_flStudioDelta;
+
 	int m_iPrevSeq;
 } vminfo_t;
 

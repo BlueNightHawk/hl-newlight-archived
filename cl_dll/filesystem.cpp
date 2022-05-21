@@ -24,6 +24,7 @@ using std::filesystem::directory_iterator;
 int nlfs_s::NextSaveFile(char* savename, char *out_savename)
 {
 	char fullpath[256] = {""};
+	char savenum[4] = {"\0"};
 	string dir = std::filesystem::current_path().string();
 	strcpy(fullpath, dir.c_str());
 	strcat(fullpath, "\\");
@@ -45,25 +46,19 @@ int nlfs_s::NextSaveFile(char* savename, char *out_savename)
 		}
 	}
 	strcpy(out_savename, savename);
-	char savenum[4] = {"\0"};
 	if (i < 10)
 	{
 		sprintf(savenum, "00%i", i);
-
-		strcat(out_savename, savenum);
 	}
 	else if (i < 100)
 	{
 		sprintf(savenum, "0%i", i);
-
-		strcat(out_savename, savenum);
 	}
 	else if (i < 1000)
 	{
 		sprintf(savenum, "%i", i);
-
-		strcat(out_savename, savenum);
 	}
+	strcat(out_savename, savenum);
 	return i;
 }
 

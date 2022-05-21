@@ -96,7 +96,6 @@ void CreateSave()
 	nlfs.NextSaveFile("Half-Life-", mapname);
 	
 	sprintf(cmd, "save %s", mapname);
-	gEngfuncs.Con_Printf("%s \n", cmd);
 	gEngfuncs.pfnClientCmd(cmd);
 }
 
@@ -213,10 +212,11 @@ void MainMenuGUI_Init(int recache = 1)
 		{
 		}	
 	}
-	for (int i = 0; i < 46; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		char pic[128];
 
+		#if 0
 		if (i + 1 < 10)
 		{
 			sprintf(pic, ".\\%s\\media\\logo\\logo-0%i.png", gEngfuncs.pfnGetGameDirectory(), i+1);
@@ -225,6 +225,9 @@ void MainMenuGUI_Init(int recache = 1)
 		{
 			sprintf(pic, ".\\%s\\media\\logo\\logo-%i.png", gEngfuncs.pfnGetGameDirectory(), i+1);
 		}
+		#endif
+		sprintf(pic, ".\\%s\\resource\\logo.png", gEngfuncs.pfnGetGameDirectory());
+
 		if (LoadTextureFromFile(pic, &g_logotex.texture[i], &g_logotex.width, &g_logotex.height))
 		{
 		}
@@ -253,7 +256,9 @@ void UpdateProgression()
 
 		if (!strncmp(gEngfuncs.pfnGetLevelName() + 5, g_textures[i].chaptermap, strlen(gEngfuncs.pfnGetLevelName() + 5) - 4))
 		{
-			gEngfuncs.Cvar_SetValue("chaptersunlocked", i);
+			if ( nlvars.chaptersunlocked->value < i )
+				gEngfuncs.Cvar_SetValue("chaptersunlocked", i);
+
 			break;
 		}
 	}
@@ -275,9 +280,9 @@ ImGuiStyle *UpdateStyle()
 	style->Colors[ImGuiCol_Header] = ImVec4(0.2f, 0.2f, 0.2f, 0.95f);
 	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.2f, 0.2f, 0.2f, 0.95f);
 	style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.2f, 0.2f, 0.2f, 0.95f);
-	style->Colors[ImGuiCol_Button] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
-	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
-	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+	style->Colors[ImGuiCol_Button] = ImVec4(0.63f, 0.63f, 0.63f, 0.60f);
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.63f, 0.63f, 0.63f, 0.71f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.51f, 0.51f, 0.51f, 0.60f);
 	style->Alpha = 1;
 	return style;
 }
@@ -295,7 +300,9 @@ void MainMenuGUI_DrawMainWindow()
 	ImGuiStyle* style = UpdateStyle();
 	ImVec4 tint = ImVec4(1, 1, 1, 1);
 
-	const int GAME_MODE_WINDOW_WIDTH = 255 * 3.6;
+	static int currentchapter = -1;
+
+	const int GAME_MODE_WINDOW_WIDTH = 255 * 3.45;
 	const int GAME_MODE_WINDOW_HEIGHT = 0;
 
 	int width = 0;
@@ -305,9 +312,6 @@ void MainMenuGUI_DrawMainWindow()
 	int x = 0, y = 0;
 
 	GetChapterNums(startchp, endchp);
-
-	if (g_bUpdateProgression)
-		UpdateProgression();
 
 	int RENDERED_WIDTH, RENDERED_HEIGHT;
 	SDL_GetWindowSize(window, &RENDERED_WIDTH, &RENDERED_HEIGHT);
@@ -329,39 +333,57 @@ void MainMenuGUI_DrawMainWindow()
 
 	for (int i = startchp; i < endchp; i++)
 	{
-		if (i > (int)nlvars.chaptersunlocked->value)
+		if (i == currentchapter)
 		{
-			tint = ImVec4(1, 1, 1, 0.5);
-			style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
-			style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+			tint = ImVec4(1, 1, 1, 1);
+			style->Colors[ImGuiCol_ButtonHovered] = ImVec4(80 / 255.0f, 80 / 255.0f, 255 / 1.0f, 0.8f);
+			style->Colors[ImGuiCol_ButtonActive] = ImVec4(80 / 255.0f, 80 / 255.0f, 255 / 1.0f, 0.8f);
+			style->Colors[ImGuiCol_Button] = ImVec4(80 / 255.0f, 80 / 255.0f, 255 / 1.0f, 0.8f);
 		}
 		else
 		{
-			tint = ImVec4(1, 1, 1, 1);
-			style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
-			style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+			if (i > (int)nlvars.chaptersunlocked->value)
+			{
+				tint = ImVec4(1, 1, 1, 0.5);
+				style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+				style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+				style->Colors[ImGuiCol_Button] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+			}
+			else
+			{
+				tint = ImVec4(1, 1, 1, 1);
+				style->Colors[ImGuiCol_ButtonHovered] = ImVec4(80 / 255.0f, 80 / 255.0f, 255 / 1.0f, 0.8f);
+				style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.3f);
+				style->Colors[ImGuiCol_Button] = ImVec4(0.63f, 0.63f, 0.63f, 0.60f);
+			}
 		}
-
-		ImGui::BeginChild(i, ImVec2(GAME_MODE_WINDOW_WIDTH, 180), false, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
+		ImGui::BeginChild(i, ImVec2(GAME_MODE_WINDOW_WIDTH, 200), false, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		if (i == startchp)
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
+		ImGui::TextColored(ImVec4(80 / 255.0f, 80 / 255.0f, 255 / 1.0f, 0.8f), "Chapter %i", i + 1);
+		if (i == startchp)
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
 		ImGui::Text(g_textures[i].chaptername);
-		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
+
+		ImGui::Spacing();
+
+		if (i == startchp)
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.012f);
 
 		if (ImGui::ImageButton((void*)(intptr_t)g_textures[i].texture, ImVec2(g_textures[i].width, g_textures[i].height), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), tint))
 		{
 			if (i <= (int)nlvars.chaptersunlocked->value)
 			{
-				char szCmd[64];
-				sprintf(szCmd, "map %s", g_textures[i].chaptermap);
-				gEngfuncs.pfnClientCmd(szCmd);
-				g_iChapMenuOpen = false;
+				currentchapter = i;
 			}
 		}
+
 		ImGui::EndChild();
 		ImGui::NextColumn();
 	}
 	ImGui::Columns(1, 0, false);
 
+	style->Colors[ImGuiCol_Button] = ImVec4(0.44f, 0.44f, 0.44f, 0.60f);
 	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
 	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
 
@@ -377,7 +399,7 @@ void MainMenuGUI_DrawMainWindow()
 		ImGui::SameLine();
 	}
 
-	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Next            ").x) * 0.965f);
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Next            ").x) * 0.964f);
 	if (g_iChapSelPage < g_iNumPages)
 	{
 		if (ImGui::Button("Next            "))
@@ -398,6 +420,7 @@ void MainMenuGUI_DrawMainWindow()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Back            ").x) * 0.022f);
 	ImGui::Text("Difficulty:");
 	ImGui::SameLine();
 	ImGui::PushItemWidth(ImGui::CalcTextSize("Medium").x + 35);
@@ -408,10 +431,20 @@ void MainMenuGUI_DrawMainWindow()
 	ImGui::PopItemWidth();
 	ImGui::SameLine();
 
-	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Cancel          ").x) * 0.965f);
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Cancel          ").x) * 0.964f);
 	if (ImGui::Button("Cancel          "))
 	{
 		g_iChapMenuOpen = false;
+	}
+	ImGui::SameLine();
+
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Start Game      ").x) * 0.84f);
+	if (ImGui::Button("Start Game      "))
+	{
+		char szCmd[64];
+		sprintf(szCmd, "map %s", g_textures[V_max(currentchapter,0)].chaptermap);
+		gEngfuncs.pfnClientCmd(szCmd);
+		g_iChapMenuOpen = false;	
 	}
 
 	if (!g_iChapMenuOpen && maplen > 0)
@@ -428,6 +461,10 @@ void MainMenuGUI_DrawQuitMenu()
 	ImGuiStyle* style = UpdateStyle();
 	ImVec4 tint = ImVec4(1, 1, 1, 1);
 
+	style->Colors[ImGuiCol_Button] = ImVec4(0.44f, 0.44f, 0.44f, 0.60f);
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+
 	const int GAME_MODE_WINDOW_WIDTH = 350;
 	const int GAME_MODE_WINDOW_HEIGHT = 100;
 	int maplen = strlen(gEngfuncs.pfnGetLevelName());
@@ -443,6 +480,8 @@ void MainMenuGUI_DrawQuitMenu()
 	ImGui::Begin("Quit", &g_bQuitMenuOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	if (maplen == 0)
 		ImGui::Text("Are you sure you want to quit?");
@@ -450,7 +489,7 @@ void MainMenuGUI_DrawQuitMenu()
 		ImGui::Text("Do you wish to save the game before quitting?");
 
 	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Cancel          ").x) * 0.9f);
-	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Cancel          ").y) * 0.75f);
+	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Cancel          ").y) * 0.8f);
 	if (ImGui::Button("Cancel          "))
 	{
 		g_bQuitMenuOpen = false;
@@ -458,30 +497,33 @@ void MainMenuGUI_DrawQuitMenu()
 	ImGui::SameLine();
 	if (maplen > 0)
 	{
-		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Don't save      ").x) * 0.557f);
-		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Don't save      ").y) * 0.75f);
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Don't save      ").x) * 0.55f);
+		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Don't save      ").y) * 0.8f);
 		if (ImGui::Button("Don't save      "))
 		{
 			gEngfuncs.pfnClientCmd("quit");
+			g_bQuitMenuOpen = false;
 		}
 		ImGui::SameLine();
 
-		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Save            ").x) * 0.225f);
-		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Save            ").y) * 0.75f);
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Save            ").x) * 0.20f);
+		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Save            ").y) * 0.8f);
 		if (ImGui::Button("Save            "))
 		{
 			CreateSave();
 			gEngfuncs.pfnClientCmd("quit");
+			g_bQuitMenuOpen = false;
 		}
 		ImGui::SameLine();
 	}
 	else
 	{
-		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Quit            ").x) * 0.57f);
-		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Quit            ").y) * 0.75f);
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Quit            ").x) * 0.55f);
+		ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Quit            ").y) * 0.8f);
 		if (ImGui::Button("Quit            "))
 		{
 			gEngfuncs.pfnClientCmd("quit");
+			g_bQuitMenuOpen = false;
 		}
 		ImGui::SameLine();
 	}
@@ -495,6 +537,10 @@ void MainMenuGUI_DrawLeaveMenu()
 {
 	ImGuiStyle* style = UpdateStyle();
 	ImVec4 tint = ImVec4(1, 1, 1, 1);
+
+	style->Colors[ImGuiCol_Button] = ImVec4(0.44f, 0.44f, 0.44f, 0.60f);
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
 
 	const int GAME_MODE_WINDOW_WIDTH = 350;
 	const int GAME_MODE_WINDOW_HEIGHT = 100;
@@ -511,19 +557,21 @@ void MainMenuGUI_DrawLeaveMenu()
 	ImGui::Begin("Leave game", &g_bLeaveMenuOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	ImGui::Text("Do you wish to save the game before leaving?");
 
 	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Cancel          ").x) * 0.9f);
-	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Cancel          ").y) * 0.75f);
+	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Cancel          ").y) * 0.8f);
 	if (ImGui::Button("Cancel          "))
 	{
 		g_bLeaveMenuOpen = false;
 	}
 	ImGui::SameLine();
 
-	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Don't save      ").x) * 0.557f);
-	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Don't save      ").y) * 0.75f);
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Don't save      ").x) * 0.55f);
+	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Don't save      ").y) * 0.8f);
 	if (ImGui::Button("Don't save      "))
 	{
 		gEngfuncs.pfnClientCmd("disconnect");
@@ -531,8 +579,8 @@ void MainMenuGUI_DrawLeaveMenu()
 	}
 	ImGui::SameLine();
 
-	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Save            ").x) * 0.225f);
-	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Save            ").y) * 0.75f);
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize("Save            ").x) * 0.20f);
+	ImGui::SetCursorPosY((ImGui::GetWindowSize().y - ImGui::CalcTextSize("Save            ").y) * 0.8f);
 	if (ImGui::Button("Save            "))
 	{
 		CreateSave();
@@ -545,4 +593,36 @@ void MainMenuGUI_DrawLeaveMenu()
 		gEngfuncs.pfnClientCmd("unpause");
 
 	ImGui::End();
+}
+
+void TRI_SprAdjustSize(int* x, int* y, int* w, int* h);
+
+
+// TODO
+void MainMenuGUI_DrawModName()
+{
+	ImGuiStyle* style = UpdateStyle();
+	ImVec4 tint = ImVec4(1, 1, 1, 1);
+
+	style->Colors[ImGuiCol_Button] = ImVec4(0.44f, 0.44f, 0.44f, 0.60f);
+	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.33f, 0.33f, 0.33f, 0.60f);
+	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.21f, 0.21f, 0.21f, 0.60f);
+
+	const int GAME_MODE_WINDOW_WIDTH = g_logotex.width;
+	const int GAME_MODE_WINDOW_HEIGHT = g_logotex.height;
+
+	int RENDERED_WIDTH, RENDERED_HEIGHT;
+	SDL_GetWindowSize(window, &RENDERED_WIDTH, &RENDERED_HEIGHT);
+
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(GAME_MODE_WINDOW_WIDTH, GAME_MODE_WINDOW_HEIGHT), ImGuiSetCond_Once);
+
+	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	ImGui::Begin("Logo", &g_bLeaveMenuOpen, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	ImGui::TextColored(ImVec4(1,0,0,1), "This build is for playtesters only! Do not distribute it anywhere else.");
+
+	ImGui::End();
+	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 0.95f);
 }

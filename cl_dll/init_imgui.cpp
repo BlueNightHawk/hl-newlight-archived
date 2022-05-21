@@ -22,6 +22,10 @@ extern int isPaused;
 extern bool inMainMenu;
 SDL_Window* window = NULL;
 
+extern bool g_bUpdateProgression;
+void UpdateProgression();
+void MainMenuGUI_DrawModName();
+
 int HL_ImGUI_ProcessEvent(void* data, SDL_Event* event);
 void HL_ImGUI_Draw();
 void MainMenuGUI_DrawMainWindow();
@@ -127,7 +131,7 @@ void HL_ImGUI_Init()
 	style->WindowPadding = ImVec2(8.0f, 4.0f);
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF(FS_ResolveModPath("resource\\DroidSans.ttf").c_str(), 16);
+	io.Fonts->AddFontFromFileTTF(FS_ResolveModPath("resource\\tahoma.ttf").c_str(), 16);
 	ImFontConfig config;
 	config.MergeMode = true;
 	static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
@@ -189,6 +193,9 @@ void HL_ImGUI_Draw()
 	static double lasttime = g_pparams.time;
 	bool paused = (g_pparams.time == lasttime);
 
+	if (g_bUpdateProgression)
+		UpdateProgression();
+
 	if (paused)
 	{
 		SDL_ShowCursor(1);
@@ -216,6 +223,9 @@ void HL_ImGUI_Draw()
 		SDL_ShowCursor(0);
 		Subtitles_Draw();
 	}
+
+	
+	MainMenuGUI_DrawModName();
 
 	glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
 	ImGui::Render();

@@ -2028,7 +2028,8 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 		V_CalcNormalRefdef(pparams);
 	}
 
-	g_pparams = *pparams;
+	if (pparams)
+		g_pparams = *pparams;
 
 	if (pparams->paused <= 0)
 	{
@@ -2042,6 +2043,13 @@ void DLLEXPORT V_CalcRefdef(struct ref_params_s* pparams)
 	// buz
 	if (nlvars.r_shadows->value >= 2)
 		SetupBuffer();
+
+	// Workaround for a weird bug that crashes the game on RELEASE builds
+	int framecount = 0;
+	double time = 0.0, prevtime = 0.0;
+	IEngineStudio.GetTimes(&framecount, &time, &prevtime);
+
+	g_viewinfo.m_flStudioDelta = time - prevtime;
 
 	/*
 // Example of how to overlay the whole screen with red at 50 % alpha

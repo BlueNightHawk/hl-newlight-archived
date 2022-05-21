@@ -1455,8 +1455,14 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 	Vector dir;
 
 	if ((flags & STUDIO_ENTITY) == 0)
-	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
-	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
+		m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
+
+	if (!m_pCurrentEntity)
+		return false;
+
+	double oldtime = 0.0;
+	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &oldtime);
+
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
 	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
 
@@ -1560,15 +1566,13 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 
 	if ((flags & STUDIO_RENDER) != 0)
 	{
-		Vector lightcol;
+		static Vector vecLightDir;
 
 		lighting.plightvec = vecLightDir;
 
 		IEngineStudio.StudioDynamicLight(m_pCurrentEntity, &lighting);
 
 		IEngineStudio.StudioEntityLight(&lighting);
-
-		VectorCopy(lighting.plightvec, lightpos);
 
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
@@ -1578,15 +1582,12 @@ bool CStudioModelRenderer::StudioDrawModel(int flags)
 		m_nTopColor = m_pCurrentEntity->curstate.colormap & 0xFF;
 		m_nBottomColor = (m_pCurrentEntity->curstate.colormap & 0xFF00) >> 8;
 
-		if ((m_pCurrentEntity->baseline.effects & FTENT_MODTRANSFORM) > 0)
-		{
-		//	lighting = gHUD.vmodel_lighting;
-		}
-
 		IEngineStudio.StudioSetRemapColors(m_nTopColor, m_nBottomColor);
 
 		StudioRenderModel();
+
 		StudioExportBoneTransform();
+
 		if (nlvars.r_dlightfx->value != 0)
 			StudioDlightEffects();
 		if (nlvars.r_glowmodels->value != 0)
@@ -1615,7 +1616,7 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 
 	int iShouldDrawLegs = (!g_iDrawLegs && m_pCurrentEntity == gEngfuncs.GetLocalPlayer()) ? 1 : 0;
 
-	dt = (m_clTime - m_clOldTime);
+	dt = g_viewinfo.m_flStudioDelta;
 	if (dt < 0)
 		dt = 0;
 	else if (dt > 1.0)
@@ -1641,7 +1642,7 @@ void CStudioModelRenderer::StudioEstimateGait(entity_state_t* pplayer)
 			VectorCopy(m_pCurrentEntity->origin, m_pPlayerInfo->prevgaitorigin);
 			m_flGaitMovement = Length(est_velocity);
 		}
-		if (dt <= 0 || m_flGaitMovement / dt < 5)
+		if (dt <= 0 || ((dt > 0) && ((m_flGaitMovement / dt) < 5)))
 		{
 			m_flGaitMovement = 0;
 			est_velocity[0] = 0;
@@ -1717,7 +1718,7 @@ void CStudioModelRenderer::StudioProcessGait(entity_state_t* pplayer)
 
 	// Con_DPrintf("%f %d\n", m_pCurrentEntity->angles[PITCH], m_pCurrentEntity->blending[0] );
 
-	dt = (m_clTime - m_clOldTime);
+	dt = g_viewinfo.m_flStudioDelta;
 	if (dt < 0)
 		dt = 0;
 	else if (dt > 1.0)
@@ -1804,7 +1805,9 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	extern ref_params_s g_pparams;
 
 	m_pCurrentEntity = IEngineStudio.GetCurrentEntity();
-	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
+	double oldtime = 0;
+	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &oldtime);
+
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
 	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
 
@@ -1969,7 +1972,8 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
 	StudioSetupBones();
 	StudioSaveBones();
-	m_pPlayerInfo->renderframe = m_nFrameCount;
+	if (m_pPlayerInfo)
+		m_pPlayerInfo->renderframe = m_nFrameCount;
 
 	m_pPlayerInfo = NULL;
 
@@ -1990,6 +1994,7 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 
 	if ((flags & STUDIO_RENDER) != 0)
 	{
+		Vector vecLightDir;
 		if (0 != m_pCvarHiModels->value && m_pRenderModel != m_pCurrentEntity->model)
 		{
 			// show highest resolution multiplayer model
@@ -2017,14 +2022,10 @@ bool CStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t* pplayer)
 		// model and frame independant
 		IEngineStudio.StudioSetupLighting(&lighting);
 
-		memcpy(&storedlight, &lighting, sizeof(alight_s));
-
 		if (iShouldDrawLegs && !cam_thirdperson)
 		{
 			m_pCurrentEntity->origin = vecAdjOrg;
 		}
-
-		VectorCopy(lighting.plightvec, lightpos);
 
 		m_pPlayerInfo = IEngineStudio.PlayerInfo(m_nPlayerIndex);
 
@@ -2093,7 +2094,7 @@ void CStudioModelRenderer::StudioLightAtPos(const float* pos, float* color, int&
 	temp.model = nlutils.GetModel("models/v_9mmhandgun.mdl");
 
 	m_pCurrentEntity = &temp;
-	IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
+	//IEngineStudio.GetTimes(&m_nFrameCount, &m_clTime, &m_clOldTime);
 	IEngineStudio.GetViewInfo(m_vRenderOrigin, m_vUp, m_vRight, m_vNormal);
 	IEngineStudio.GetAliasScale(&m_fSoftwareXScale, &m_fSoftwareYScale);
 
@@ -2657,7 +2658,7 @@ studio shadows with some asm tricks
 */
 void CStudioModelRenderer::StudioDrawShadow()
 {
-	int amblight = storedlight.ambientlight;
+	int amblight = 0;
 	float intensity = 0.0;
 
 	intensity = m_pCurrentEntity->baseline.fuser4 = nlutils.lerp(m_pCurrentEntity->baseline.fuser4, ((float)amblight / 128), gHUD.m_flTimeDelta * 17.9f);

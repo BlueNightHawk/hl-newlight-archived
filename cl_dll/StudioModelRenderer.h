@@ -245,12 +245,6 @@ public:
 	void StudioGetVerts(void);
 
 	Vector verts[MAXSTUDIOVERTS];
-	Vector lightspot;
-
-	int lightage[MAXSTUDIOBONES];
-
-	Vector lightpos;
-	Vector lightbonepos[MAXSTUDIOBONES][32];
 
 	void StudioSetupModel(int bodypart, void** ppbodypart, void** ppsubmodel);
 
@@ -258,8 +252,6 @@ public:
 	void StudioRenderPlayerShadow(int num);
 	void StudioRenderWeaponShadow(int num);
 
-	Vector vecLightDir;
-	alight_t storedlight;
 	// SHADOWS END
 
 	entity_state_t* m_pPlayer;
