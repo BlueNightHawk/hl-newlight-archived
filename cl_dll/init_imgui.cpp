@@ -26,8 +26,8 @@ int HL_ImGUI_ProcessEvent(void* data, SDL_Event* event);
 void HL_ImGUI_Draw();
 void MainMenuGUI_DrawMainWindow();
 void MainMenuGUI_Init(int recache);
-
-
+void MainMenuGUI_DrawQuitMenu();
+void MainMenuGUI_DrawLeaveMenu();
 	// To draw imgui on top of Half-Life, we take a detour from certain engine's function into HL_ImGUI_Draw function
 void HL_ImGUI_Init()
 {
@@ -150,7 +150,8 @@ void HL_ImGUI_Deinit()
 }
 
 bool g_iChapMenuOpen = false;
-
+extern bool g_bQuitMenuOpen;
+extern bool g_bLeaveMenuOpen;
 void ResetStyle()
 {
 	ImGuiStyle* style = &ImGui::GetStyle();
@@ -191,16 +192,27 @@ void HL_ImGUI_Draw()
 	if (paused)
 	{
 		SDL_ShowCursor(1);
+
+		if (g_bQuitMenuOpen)
+		{
+			MainMenuGUI_DrawQuitMenu();
+		}
+
+		if (g_bLeaveMenuOpen)
+		{
+			MainMenuGUI_DrawLeaveMenu();
+		}
+
 		if (g_iChapMenuOpen)
 		{
 			MainMenuGUI_DrawMainWindow();
 		}
-
 	}
 	else
 	{
 		if (g_iChapMenuOpen)
 			g_iChapMenuOpen = false;
+
 		SDL_ShowCursor(0);
 		Subtitles_Draw();
 	}

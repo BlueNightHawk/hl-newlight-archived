@@ -21,6 +21,52 @@ using std::endl;
 using std::string;
 using std::filesystem::directory_iterator;
 
+int nlfs_s::NextSaveFile(char* savename, char *out_savename)
+{
+	char fullpath[256] = {""};
+	string dir = std::filesystem::current_path().string();
+	strcpy(fullpath, dir.c_str());
+	strcat(fullpath, "\\");
+	strcat(fullpath, gEngfuncs.pfnGetGameDirectory());
+	strcat(fullpath, "\\SAVE");
+
+	string path = fullpath;
+
+	int i = 0;
+
+	for (const auto& file : directory_iterator(path))
+	{
+		if (file.path().extension().string().c_str() == nullptr || stricmp(file.path().extension().string().c_str(), ".sav"))
+			continue;
+	
+		if (!strncmp(savename, (file.path().string().c_str() + strlen(dir.c_str()) + strlen(gEngfuncs.pfnGetGameDirectory()) + strlen("\\SAVE") + 2), strlen(savename)))
+		{
+			i++;
+		}
+	}
+	strcpy(out_savename, savename);
+	char savenum[4] = {"\0"};
+	if (i < 10)
+	{
+		sprintf(savenum, "00%i", i);
+
+		strcat(out_savename, savenum);
+	}
+	else if (i < 100)
+	{
+		sprintf(savenum, "0%i", i);
+
+		strcat(out_savename, savenum);
+	}
+	else if (i < 1000)
+	{
+		sprintf(savenum, "%i", i);
+
+		strcat(out_savename, savenum);
+	}
+	return i;
+}
+
 void ReCacheGlowModels(void)
 {
 	for (int i = 0; i < 512; i++)

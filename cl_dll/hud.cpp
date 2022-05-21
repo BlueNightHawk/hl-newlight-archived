@@ -461,10 +461,37 @@ void nlvars_s::InitCvars()
 }
 
 extern bool g_iChapMenuOpen;
+extern bool g_bQuitMenuOpen;
+extern bool g_bLeaveMenuOpen;
+
+void LeaveMenu()
+{
+	int maplen = strlen(gEngfuncs.pfnGetLevelName());
+
+	g_bLeaveMenuOpen = !g_bLeaveMenuOpen;
+
+	if (maplen == 0)
+		return;
+
+	if (g_bLeaveMenuOpen)
+		gEngfuncs.pfnClientCmd("pause");
+	else
+		gEngfuncs.pfnClientCmd("unpause");
+}
 
 void ChapterSelect()
 {
+	int maplen = strlen(gEngfuncs.pfnGetLevelName());
+
 	g_iChapMenuOpen = !g_iChapMenuOpen;
+
+	if (maplen == 0)
+		return;
+
+	if (g_iChapMenuOpen)
+		gEngfuncs.pfnClientCmd("pause");
+	else
+		gEngfuncs.pfnClientCmd("unpause");
 }
 
 void CloseChapterSelect()
@@ -472,6 +499,37 @@ void CloseChapterSelect()
 	g_iChapMenuOpen = false;
 }
 
+void QuitMenu()
+{
+	int maplen = strlen(gEngfuncs.pfnGetLevelName());
+
+	g_bQuitMenuOpen = !g_bQuitMenuOpen;
+
+	if (maplen == 0)
+		return;
+
+	if (g_bQuitMenuOpen)
+		gEngfuncs.pfnClientCmd("pause");
+	else
+		gEngfuncs.pfnClientCmd("unpause");
+}
+
+void PlayRandomMusic()
+{
+	char path[64];
+	int num = gEngfuncs.pfnRandomLong(1, 17);
+
+	if (num < 10)
+	{
+		sprintf(path, "media/Half-Life0%i.mp3", num);
+	}
+	else
+	{
+		sprintf(path, "media/Half-Life%i.mp3", num);
+	}
+
+	gEngfuncs.pfnPrimeMusicStream(path, 1);
+}
 
 // This is called every time the DLL is loaded
 void CHud::Init()
@@ -590,8 +648,12 @@ void CHud::Init()
 	gEngfuncs.pfnAddCommand("reset_nl_cvars", ResetCvars);
 	gEngfuncs.pfnAddCommand("recache_glowmodels", ReCacheGlowModels);
 	gEngfuncs.pfnAddCommand("togglechapterselect", ChapterSelect);
+	gEngfuncs.pfnAddCommand("togglequitmenu", QuitMenu);
 	gEngfuncs.pfnAddCommand("closechapterselect", CloseChapterSelect);
+	gEngfuncs.pfnAddCommand("toggleleavemenu", LeaveMenu);
 	MsgFunc_ResetHUD(0, 0, NULL);
+
+	PlayRandomMusic();
 }
 
 // CHud destructor

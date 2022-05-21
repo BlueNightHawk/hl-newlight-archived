@@ -40,7 +40,6 @@ extern kbutton_t in_run;
 float HUD_GetFOV();
 
 extern cvar_t* sensitivity;
-
 // Think
 void CHud::Think()
 {

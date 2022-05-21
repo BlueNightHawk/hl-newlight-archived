@@ -1632,18 +1632,6 @@ void CBasePlayer::PlayerUse()
 
 	UTIL_MakeVectors(pev->v_angle); // so we know which way we are facing
 
-	TraceResult tr;
-	UTIL_TraceLine(pev->origin + pev->view_ofs, pev->origin + pev->view_ofs + (gpGlobals->v_forward * PLAYER_SEARCH_RADIUS), dont_ignore_monsters, ENT(pev), &tr);
-
-	if (tr.pHit)
-	{
-		pObject = CBaseEntity::Instance(tr.pHit);
-		if (!pObject || (pObject->ObjectCaps() & (FCAP_IMPULSE_USE | FCAP_CONTINUOUS_USE | FCAP_ONOFF_USE)) <= 0)
-		{
-			pObject = NULL;
-		}
-	}
-
 	while ((pObject = UTIL_FindEntityInSphere(pObject, pev->origin, PLAYER_SEARCH_RADIUS)) != NULL)
 	{
 

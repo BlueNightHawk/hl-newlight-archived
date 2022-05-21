@@ -135,8 +135,8 @@ int DLLEXPORT Initialize(cl_enginefunc_t* pEnginefuncs, int iVersion)
 	EV_HookEvents();
 	CL_LoadParticleMan();
 
-	if (0 == gEngfuncs.CheckParm("-novid", NULL) && 0 == gEngfuncs.CheckParm("-dev", NULL))
-		EngineClientCmd("map valve.bsp");
+//	if (0 == gEngfuncs.CheckParm("-novid", NULL) && 0 == gEngfuncs.CheckParm("-dev", NULL))
+//		EngineClientCmd("map valve.bsp");
 
 	if (!FileSystem_LoadFileSystem())
 	{

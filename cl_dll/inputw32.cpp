@@ -68,6 +68,8 @@ static bool IN_UseRawInput()
 }
 
 static bool m_bMouseThread = false;
+extern bool g_iChapMenuOpen;
+extern bool g_bQuitMenuOpen;
 
 // mouse variables
 cvar_t* m_filter;
@@ -1088,6 +1090,20 @@ IN_Move
 */
 void IN_Move(float frametime, usercmd_t* cmd)
 {
+	static int mousewasactive = 0;
+	static double lasttime = 0;
+	extern ref_params_s g_pparams;
+	bool paused = g_pparams.paused;
+
+	if (g_bQuitMenuOpen || g_iChapMenuOpen || paused)
+	{
+		IN_DeactivateMouse();
+		return;
+	}
+	else
+	{
+		IN_ActivateMouse();
+	}
 	if (!iMouseInUse && mouseactive)
 	{
 		IN_MouseMove(frametime, cmd);
