@@ -1,3 +1,6 @@
+﻿Archive of New Light
+- Archived because project is moved to a new base.
+
 ﻿Half Life : New Light SDK
 ============================
 Repository for the New Light project
